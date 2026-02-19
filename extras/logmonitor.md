@@ -60,7 +60,7 @@ compatibility:
   # OctoPrint versions being supported.
 
   octoprint:
-  - 1.4.0
+  - 1.10.0
 
   # List of compatible operating systems
   #
@@ -88,12 +88,12 @@ compatibility:
   # Compatible Python version
   #
   # It is recommended to only support Python 3 for new plugins, in which case this should be ">=3,<4"
-  # 
+  #
   # Plugins that wish to support both Python 2 and 3 should set it to ">=2.7,<4".
   #
   # Plugins that only support Python 2 will not be accepted into the plugin repository.
 
-  python: ">=3,<4"
+  python: ">=3.8,<3.14"
 
 # TODO
 # If any of the below attributes apply to your project, uncomment the corresponding lines. This is MANDATORY!

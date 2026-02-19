@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Free-Text Filtering**: Real-time client-side filtering of streamed logs
 - **Syntax Highlighting**: Color-coded severity levels for easy visual scanning
 - **Multiple Log Files**: Support for all OctoPrint log files (octoprint.log, plugin_*.log)
+- **Multi-File Streaming**: Stream multiple log files simultaneously with merged view
+- **Regex Search Mode**: Optional regex search toggle in the UI
+- **Export Results**: Export search results to CSV or TXT
+- **Log Download**: Download log files directly from the plugin tab
+- **Alert History**: View alert history with timestamps and messages
+- **Notifications**: Browser notifications for severity alerts
+- **Auto-Start Streaming**: Optional auto-start on page load
 
 #### Backend Components
 
@@ -45,12 +52,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configurable max stream buffer size (1000 lines default)
 - Auto-scroll toggle for streamed logs
 - Configurable search results per page (50 default)
+- Optional alert history tracking and size limits
+- Optional client-side log masking for sensitive data
 
 #### Testing
 
 - Unit tests for `LogTailer` (file tailing, rotation, graceful shutdown)
 - Unit tests for `LogSearcher` (text search, regex, severity filtering, pagination)
 - Unit tests for severity parsing (format validation, error handling)
+- Integration tests for REST API endpoints (security validation included)
+- Manual browser testing checklist for UI behaviors
 
 #### Documentation
 
@@ -59,6 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full docstrings for public classes and methods
 - CHANGELOG documentation (this file)
 - AGPL-3.0-or-later license file
+- CONTRIBUTING, CODE_OF_CONDUCT, AUTHORS, SECURITY documentation
+- CODEOWNERS and PR template for review workflow
 
 ### Technical Details
 
@@ -72,10 +85,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Known Limitations
 
 - Screenshots not yet included in README (documentation task)
-- Integration tests not yet implemented
-- No browser notification support (planned for future)
-- No export to CSV/TXT functionality (planned for future)
-- Single log file streaming at a time (multi-file streaming planned)
+- Test coverage is still in progress (security.py and plugin core need more tests)
+- Log file watching for new file creation not implemented (optional)
 
 ---
 
@@ -83,14 +94,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned Features
 
-- [ ] Integration tests for REST API endpoints
-- [ ] Export search results to .txt or .csv
-- [ ] Download log files directly from plugin
-- [ ] Multi-file simultaneous streaming
-- [ ] Browser/system notifications on severe alerts
-- [ ] Alert history with timestamps
-- [ ] Regex search mode toggle in UI
-- [ ] Auto-start streaming on page load (configurable)
 - [ ] Plugin Manager compatibility badge
 - [ ] Internationalization (i18n) support
 - [ ] OctoPrint Plugin Repository submission

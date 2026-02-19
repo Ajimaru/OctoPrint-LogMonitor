@@ -14,8 +14,8 @@
 5. [Plugin Settings](#5-plugin-settings)
 6. [Backend Logic, Safety & Performance](#6-backend-logic-safety--performance-)
 7. [Documentation](#7-documentation)
-8. [Testing](#8-testing-)
-9. [Optional / Advanced Features](#9-optional--advanced-features)
+8. [Testing](#8-testing)
+9. [Optional / Advanced Features](#9-optional--advanced-features-)
 10. [Security & Safety](#10-security--safety)
 
 ---
@@ -99,7 +99,7 @@ OctoPrint-LogMonitor/
 
 ## 2. Plugin Backend – Logfile Handling & API
 
-### 2.1 Log File Detection ✅
+### 2.1 Log File Detection ⬜
 
 - [x] On startup, detect available log files in OctoPrint's log directory (`self._basefolder` or `self._settings.getBaseFolder("logs")`)
 - [x] Support at minimum: `octoprint.log` and `plugin_*.log`
@@ -336,7 +336,7 @@ def get_settings_defaults(self):
 
 ## 7. Documentation
 
-### 7.1 `README.md` ✅
+### 7.1 `README.md` ⬜
 
 - [x] Plugin description and feature list
 - [ ] Screenshots (Navbar badge, Sidebar widget, main tab with stream and search) *(optional - requires runtime demo)*
@@ -405,7 +405,7 @@ def get_settings_defaults(self):
 - [x] Inline code comments explaining non-obvious logic (threading, file tailing, rate limiting)
 - [x] Docstrings on all public classes and methods (`LogTailer`, `LogSearcher`, `RateLimiter`, plugin class, all API endpoints)
 
-### 7.10 OctoPrint Plugin Repository submission docs
+### 7.10 OctoPrint Plugin Repository submission docs ⬜
 
 - [ ] Prepare plugin listing metadata (`extras/logmonitor.md`) conforming to [OctoPrint plugin repository format](https://plugins.octoprint.org/help/registering/)
 - [ ] Ensure `README.md` contains all required sections (description, installation, configuration, screenshots)
@@ -413,7 +413,17 @@ def get_settings_defaults(self):
 
 ---
 
-## 8. Testing ✅
+## 8. Testing
+
+**Current Coverage (Baseline):**
+
+- Overall: 36% (682 statements, 438 uncovered)
+- `__init__.py`: 15% (360 statements, 306 uncovered) — **Priority: HIGH**
+- `log_tailer.py`: 71% (127 statements, 37 uncovered) — **Priority: MEDIUM**
+- `log_searcher.py`: 67% (118 statements, 39 uncovered) — **Priority: MEDIUM**
+- `security.py`: 27% (77 statements, 56 uncovered) — **Priority: HIGH**
+
+### 8.1 Unit Tests ⬜
 
 - [x] Write **unit tests** for `LogSearcher`:
   - [x] Test free-text search with matches and no matches
@@ -428,11 +438,32 @@ def get_settings_defaults(self):
 - [x] Write **unit tests** for severity parsing:
   - [x] Test all severity levels parsed correctly
   - [x] Test malformed log lines handled without crash
+- [ ] Write **unit tests** for `security.py`:
+  - [ ] Test `is_safe_path()` with valid and invalid paths
+  - [ ] Test path traversal attack prevention
+  - [ ] Test rate limiter functionality (add, check, reset)
+  - [ ] Test `mask_sensitive_data()` masking patterns
+  - [ ] Test input validation functions
+
+### 8.2 Integration Tests ⬜
+
 - [x] Write **integration tests** for REST API endpoints:
   - [x] Test `/files` returns expected file list
   - [x] Test `/search` with various parameter combinations
   - [x] Test path traversal is blocked (security test)
   - [x] API error handling, validation, and security
+- [ ] Write **extended integration tests** for plugin main class:
+  - [ ] Test plugin startup and initialization
+  - [ ] Test streaming start/stop endpoints
+  - [ ] Test alert reset functionality
+  - [ ] Test WebSocket message routing
+  - [ ] Test settings save/load and behavior changes
+  - [ ] Test graceful shutdown
+  - [ ] Test concurrent requests and thread safety
+  - [ ] Test error handling and recovery
+
+### 8.3 Frontend Testing ✅
+
 - [x] Test **frontend** manually in browser (documented checklist):
   - [x] Navbar badge appears/disappears correctly
   - [x] Sidebar widget updates on alert
@@ -444,7 +475,7 @@ def get_settings_defaults(self):
 
 ---
 
-## 9. Optional / Advanced Features
+## 9. Optional / Advanced Features ⬜
 
 - [x] **Export search results** to `.txt` or `.csv` file (download button in search panel)
 - [x] **Download log file** directly from the plugin tab
@@ -620,16 +651,19 @@ def get_settings_defaults(self):
 | JavaScript ViewModel | ✅ Complete |
 | Thread safety & shutdown | ✅ Complete |
 | Security & Safety (Ch.10) | ✅ Complete |
-| Unit tests | ✅ Complete (LogTailer & LogSearcher) |
-| Integration tests | ✅ Complete (API endpoints, security, error handling) |
+| Unit tests – LogTailer & LogSearcher | ✅ Complete (71-67% coverage) |
+| Unit tests – security.py | ⬜ In Progress (27% → 80%+ target) |
+| Integration tests – API endpoints | ✅ Complete (API tested) |
+| Integration tests – plugin main class | ⬜ In Progress (15% → 80%+ target) |
+| Test Coverage – Overall | ⬜ In Progress (36% → 80%+ target) |
 | README documentation | ✅ Complete |
 | CHANGELOG documentation | ✅ Complete |
 | LICENSE file | ✅ Complete |
 | SECURITY.md | ✅ Complete |
-| CONTRIBUTING.md | ⬜ Pending |
-| CODE_OF_CONDUCT.md | ⬜ Pending |
-| AUTHORS / CONTRIBUTORS | ⬜ Pending |
-| .github/ templates | ⬜ Pending |
+| CONTRIBUTING.md | ✅ Complete |
+| CODE_OF_CONDUCT.md | ✅ Complete |
+| AUTHORS / CONTRIBUTORS | ✅ Complete |
+| .github/ templates | ✅ Complete (CODEOWNERS added) |
 | OctoPrint repo submission docs | ⬜ Pending |
 | Docstrings | ✅ Complete |
 | Browser testing (manual) | ✅ Documented checklist |
@@ -643,7 +677,7 @@ def get_settings_defaults(self):
 
 **Last Updated:** 2026-02-19
 
-> **🎉 v0.1.0 FEATURE-COMPLETE - 100%**
+> **🎉 v0.1.0 FEATURE-COMPLETE - CORE DONE, QA IN PROGRESS**
 >
 > **Core Features:** ✅ All implemented and tested
 >
@@ -663,14 +697,15 @@ def get_settings_defaults(self):
 > - Regex search pattern support
 > - Auto-start streaming on startup
 >
-> **Quality Assurance:** ✅ Complete
+> **Quality Assurance:** ⬜ In Progress
 >
-> - Unit tests for all core modules
+> - Unit tests for LogTailer and LogSearcher
 > - Integration tests with security validation
 > - Comprehensive manual testing checklist
 > - Full docstring documentation
 > - Path traversal protection
 > - Thread-safe operations
+> - Test coverage improvements in progress (security.py, plugin main class)
 >
 > **Security & Safety:** ✅ Complete
 >
