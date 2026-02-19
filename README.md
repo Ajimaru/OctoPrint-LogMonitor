@@ -14,7 +14,7 @@ Live log streaming and searching for OctoPrint with severity alerting.
 
 ## Screenshots
 
-_Coming soon_
+**TODO**: add screenhots
 
 ## Installation
 
@@ -147,6 +147,10 @@ When a log entry matches configured trigger severities:
 5. Commit your changes: `git commit -am 'Add new feature'`
 6. Push to the branch: `git push origin feature/my-feature`
 7. Submit a pull request
+
+### Contributors
+
+See [AUTHORS.md](AUTHORS.md) for the list of authors and contributors.
 
 ## Support
 

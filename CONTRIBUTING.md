@@ -251,6 +251,9 @@ Before submitting a PR, run:
 # Check code style
 flake8 octoprint_logmonitor/
 
+# Linting (optional but recommended)
+pylint octoprint_logmonitor/
+
 # Type checking (if mypy is installed)
 mypy octoprint_logmonitor/
 
@@ -340,8 +343,23 @@ Before submitting, ensure:
 
 When creating issues, please use the appropriate template:
 
-- **Bug Report** (`extras/github/bug_report.yml`) — for reporting bugs
-- **Feature Request** (`extras/github/feature_request.yml`) — for suggesting features
+- **Bug Report** (`.github/ISSUE_TEMPLATE/bug_report.yml`) — for reporting bugs
+- **Feature Request** (`.github/ISSUE_TEMPLATE/feature_request.yml`) — for suggesting features
+
+Template sources are also kept in `extras/github/` for reference.
+
+---
+
+## Contributors and Authors
+
+We keep a list of authors and contributors in [AUTHORS.md](AUTHORS.md).
+
+To add yourself, append a new line using one of the formats below:
+
+```text
+- Name <email>
+- Name (@github-handle)
+```
 
 ---
 

@@ -364,41 +364,41 @@ def get_settings_defaults(self):
 - [x] Responsible disclosure / vulnerability reporting instructions (email, timeline, scope)
 - [x] Security changelog
 
-### 7.5 `CONTRIBUTING.md`
+### 7.5 `CONTRIBUTING.md` ✅
 
-- [ ] How to set up a local development environment (clone, virtualenv, `pip install -e ".[dev]"`)
-- [ ] Coding conventions (PEP 8, type hints, docstrings)
-- [ ] Branch naming and commit message conventions (e.g. Conventional Commits)
-- [ ] How to run tests (`pytest`)
-- [ ] How to run linting / static analysis (Bandit, Pylint, Flake8)
-- [ ] Pull request process (fork → branch → PR → review → merge)
-- [ ] Issue templates reference (bug report, feature request)
-- [ ] Note that contributions are accepted under AGPL-3.0-or-later
+- [x] How to set up a local development environment (clone, virtualenv, `pip install -e ".[dev]"`)
+- [x] Coding conventions (PEP 8, type hints, docstrings)
+- [x] Branch naming and commit message conventions (e.g. Conventional Commits)
+- [x] How to run tests (`pytest`)
+- [x] How to run linting / static analysis (Bandit, Pylint, Flake8)
+- [x] Pull request process (fork → branch → PR → review → merge)
+- [x] Issue templates reference (bug report, feature request)
+- [x] Note that contributions are accepted under AGPL-3.0-or-later
 
-### 7.6 `CODE_OF_CONDUCT.md`
+### 7.6 `CODE_OF_CONDUCT.md` ✅
 
-- [ ] Adopt the [Contributor Covenant v2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/) as the project Code of Conduct
-- [ ] Define enforcement responsibilities and contact method
-- [ ] Document enforcement guidelines (warning → temporary ban → permanent ban)
+- [x] Adopt the [Contributor Covenant v2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/) as the project Code of Conduct
+- [x] Define enforcement responsibilities and contact method
+- [x] Document enforcement guidelines (warning → temporary ban → permanent ban)
 
 ### 7.7 `AUTHORS` / `CONTRIBUTORS`
 
-- [ ] List original authors with name and email (or GitHub handle)
-- [ ] Include instructions for contributors on how to add themselves
-- [ ] Link from `README.md` and `CONTRIBUTING.md`
+- [x] List original authors with name and email (or GitHub handle)
+- [x] Include instructions for contributors on how to add themselves
+- [x] Link from `README.md` and `CONTRIBUTING.md`
 
-### 7.8 `.github/` templates
+### 7.8 `.github/` templates ✅
 
-- [ ] Verify / update `bug_report.yml` issue template (already present in `extras/github/`)
-- [ ] Verify / update `feature_request.yml` issue template
-- [ ] Add `pull_request_template.md` with checklist:
-  - [ ] Description of change
-  - [ ] Related issue(s)
-  - [ ] Type of change (bugfix / feature / docs / refactor / security)
-  - [ ] Tests added / updated
-  - [ ] Documentation updated
-  - [ ] `CHANGELOG.md` entry added
-- [ ] Add `CODEOWNERS` file to assign default reviewers
+- [x] Verify / update `bug_report.yml` issue template (already present in `extras/github/`)
+- [x] Verify / update `feature_request.yml` issue template
+- [x] Add `pull_request_template.md` with checklist:
+  - [x] Description of change
+  - [x] Related issue(s)
+  - [x] Type of change (bugfix / feature / docs / refactor / security)
+  - [x] Tests added / updated
+  - [x] Documentation updated
+  - [x] `CHANGELOG.md` entry added
+- [x] Add `CODEOWNERS` file to assign default reviewers
 
 ### 7.9 Inline Code Documentation ✅
 

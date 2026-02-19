@@ -1,0 +1,35 @@
+# This file defines default code owners and reviewers for the OctoPrint Log Monitor plugin
+# GitHub will automatically request reviews from these owners when pull requests are opened
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default reviewers for the entire repository
+* @OctoPrint-LogMonitor/core-team
+
+# Core plugin logic
+octoprint_logmonitor/__init__.py @OctoPrint-LogMonitor/core-team
+octoprint_logmonitor/log_tailer.py @OctoPrint-LogMonitor/core-team
+octoprint_logmonitor/log_searcher.py @OctoPrint-LogMonitor/core-team
+octoprint_logmonitor/security.py @OctoPrint-LogMonitor/core-team @OctoPrint-LogMonitor/security-team
+
+# Frontend code
+octoprint_logmonitor/static/ @OctoPrint-LogMonitor/frontend-team
+octoprint_logmonitor/templates/ @OctoPrint-LogMonitor/frontend-team
+
+# Tests - require code owner + test specialist approval
+tests/ @OctoPrint-LogMonitor/core-team @OctoPrint-LogMonitor/test-team
+
+# Documentation
+README.md @OctoPrint-LogMonitor/core-team @OctoPrint-LogMonitor/docs-team
+CHANGELOG.md @OctoPrint-LogMonitor/core-team
+CONTRIBUTING.md @OctoPrint-LogMonitor/core-team @OctoPrint-LogMonitor/docs-team
+SECURITY.md @OctoPrint-LogMonitor/core-team @OctoPrint-LogMonitor/security-team
+CODE_OF_CONDUCT.md @OctoPrint-LogMonitor/core-team
+AUTHORS.md @OctoPrint-LogMonitor/core-team
+
+# Configuration and metadata
+setup.py @OctoPrint-LogMonitor/core-team
+pyproject.toml @OctoPrint-LogMonitor/core-team
+.github/ @OctoPrint-LogMonitor/core-team
+
+# CI/CD workflows
+.github/workflows/ @OctoPrint-LogMonitor/core-team @OctoPrint-LogMonitor/devops-team
