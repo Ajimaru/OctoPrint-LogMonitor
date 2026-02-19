@@ -1,4 +1,39 @@
+# Editors
 .qodo/
+.codacy/
 
-#Ignore vscode AI rules
+# VSCode AI rules
 .github/instructions/codacy.instructions.md
+
+# Tasks & Ideas
+#.ideas/
+
+# Python
+*.pyc
+*.swp
+*.pyo
+__pycache__/
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Development
+*.zip
+*.tar.gz
+*.log
+.env
+.venv/
+venv/
+env/

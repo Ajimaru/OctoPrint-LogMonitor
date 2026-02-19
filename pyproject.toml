@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "OctoPrint-LogMonitor"
+version = "0.1.0"
+description = "Live log streaming and searching for OctoPrint with severity alerting"
+authors = [
+    {name = "Ajimaru", email = "your.email@example.com"}
+]
+readme = {file = "README.md", content-type = "text/markdown"}
+dynamic = [
+    "license"
+]
+
+requires-python = ">=3.7, <4"
+
+# any additional requirements (besides OctoPrint) should be listed here
+dependencies = []
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = [
+    "octoprint_logmonitor",
+    "octoprint_logmonitor.*"
+]
+
+[project.entry-points."octoprint.plugin"]
+logmonitor = "octoprint_logmonitor"
+
+[project.urls]
+Homepage = "https://github.com/Ajimaru/OctoPrint-LogMonitor"
+
+[project.optional-dependencies]
+develop = [
+    "go-task-bin"
+]
