@@ -44,3 +44,4 @@ env/
 .cache/
 .githooks/
 .pre-commit-config.yaml
+.octoprint-*/
