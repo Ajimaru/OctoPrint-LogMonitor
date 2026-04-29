@@ -6,7 +6,7 @@
 .github/instructions/codacy.instructions.md
 
 # Tasks & Ideas
-#.ideas/
+.ideas/
 
 # Python
 *.pyc
@@ -37,4 +37,10 @@ Thumbs.db
 .venv/
 venv/
 env/
+.logs/
 .coverage
+.venv-octoprint-*/
+.development/
+.cache/
+.githooks/
+.pre-commit-config.yaml
