@@ -1,117 +1,125 @@
 <form class="form-horizontal">
-    <h4>{{ _('Display Settings') }}</h4>
-
+    <h4>{{ _("Display Settings") }}</h4>
     <div class="control-group">
         <div class="controls">
             <label class="checkbox">
-                <input type="checkbox" data-bind="checked: settings.plugins.logmonitor.show_navbar">
-                {{ _('Show indicator in Navbar') }}
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.show_navbar">
+                {{ _("Show indicator in Navbar") }}
             </label>
-            <span class="help-block">
-                {{ _('Display a badge in the navbar when severity alerts occur.') }}
-            </span>
+            <span class="help-block">{{ _("Display a badge in the navbar when severity alerts occur.") }}</span>
         </div>
     </div>
-
     <div class="control-group">
         <div class="controls">
             <label class="checkbox">
-                <input type="checkbox" data-bind="checked: settings.plugins.logmonitor.show_sidebar">
-                {{ _('Show widget in Sidebar') }}
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.show_sidebar">
+                {{ _("Show widget in Sidebar") }}
             </label>
-            <span class="help-block">
-                {{ _('Display a widget in the sidebar showing log monitor status.') }}
-            </span>
+            <span class="help-block">{{ _("Display a widget in the sidebar showing log monitor status.") }}</span>
         </div>
     </div>
-
-    <h4>{{ _('Severity Triggers') }}</h4>
-
+    <h4>{{ _("Severity Triggers") }}</h4>
     <div class="control-group">
-        <label class="control-label">{{ _('Trigger alerts for') }}</label>
+        <label class="control-label">{{ _("Trigger alerts for") }}</label>
         <div class="controls">
             <label class="checkbox">
-                <input type="checkbox" value="DEBUG"
+                <input type="checkbox"
+                       value="DEBUG"
                        data-bind="checked: settings.plugins.logmonitor.severity_triggers">
                 DEBUG
             </label>
             <label class="checkbox">
-                <input type="checkbox" value="INFO"
+                <input type="checkbox"
+                       value="INFO"
                        data-bind="checked: settings.plugins.logmonitor.severity_triggers">
                 INFO
             </label>
             <label class="checkbox">
-                <input type="checkbox" value="WARNING"
+                <input type="checkbox"
+                       value="WARNING"
                        data-bind="checked: settings.plugins.logmonitor.severity_triggers">
                 WARNING
             </label>
             <label class="checkbox">
-                <input type="checkbox" value="ERROR"
+                <input type="checkbox"
+                       value="ERROR"
                        data-bind="checked: settings.plugins.logmonitor.severity_triggers">
                 ERROR
             </label>
             <label class="checkbox">
-                <input type="checkbox" value="CRITICAL"
+                <input type="checkbox"
+                       value="CRITICAL"
                        data-bind="checked: settings.plugins.logmonitor.severity_triggers">
                 CRITICAL
             </label>
-            <span class="help-block">
-                {{ _('Select which severity levels should trigger navbar/sidebar alerts.') }}
-            </span>
+            <span class="help-block">{{ _("Select which severity levels should trigger navbar/sidebar alerts.") }}</span>
         </div>
     </div>
-
-    <h4>{{ _('Streaming Settings') }}</h4>
-
+    <h4>{{ _("Streaming Settings") }}</h4>
     <div class="control-group">
-        <label class="control-label">{{ _('Poll interval (ms)') }}</label>
+        <label class="control-label">{{ _("Poll interval (ms)") }}</label>
         <div class="controls">
-            <input type="number" class="input-small" min="100" max="5000" step="100"
+            <input type="number"
+                   class="input-small"
+                   min="100"
+                   max="5000"
+                   step="100"
                    data-bind="value: settings.plugins.logmonitor.stream_poll_interval_ms">
-            <span class="help-block">
-                {{ _('How often to check for new log entries (in milliseconds).') }}
-            </span>
+            <span class="help-block">{{ _("How often to check for new log entries (in milliseconds).") }}</span>
         </div>
     </div>
-
     <div class="control-group">
-        <label class="control-label">{{ _('Max stream lines') }}</label>
+        <label class="control-label">{{ _("Max stream lines") }}</label>
         <div class="controls">
-            <input type="number" class="input-small" min="100" max="10000" step="100"
+            <input type="number"
+                   class="input-small"
+                   min="100"
+                   max="10000"
+                   step="100"
                    data-bind="value: settings.plugins.logmonitor.max_stream_lines">
-            <span class="help-block">
-                {{ _('Maximum number of lines to keep in the stream view buffer.') }}
-            </span>
+            <span class="help-block">{{ _("Maximum number of lines to keep in the stream view buffer.") }}</span>
         </div>
     </div>
-
     <div class="control-group">
         <div class="controls">
             <label class="checkbox">
-                <input type="checkbox" data-bind="checked: settings.plugins.logmonitor.auto_scroll">
-                {{ _('Auto-scroll to bottom') }}
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.auto_scroll">
+                {{ _("Auto-scroll to bottom") }}
+            </label>
+            <span class="help-block">{{ _("Automatically scroll to the bottom when new log entries arrive.") }}</span>
+        </div>
+    </div>
+    <h4>{{ _("Search Settings") }}</h4>
+    <div class="control-group">
+        <label class="control-label">{{ _("Results per page") }}</label>
+        <div class="controls">
+            <input type="number"
+                   class="input-small"
+                   min="10"
+                   max="500"
+                   step="10"
+                   data-bind="value: settings.plugins.logmonitor.search_page_size">
+            <span class="help-block">{{ _("Number of search results to display per page.") }}</span>
+        </div>
+    </div>
+    <h4>{{ _("Debug") }}</h4>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.debug_mode">
+                {{ _("Enable debug mode in browser console") }}
             </label>
             <span class="help-block">
-                {{ _('Automatically scroll to the bottom when new log entries arrive.') }}
+                {{ _("Writes Log Monitor frontend state changes into the browser developer console.") }}
             </span>
         </div>
     </div>
-
-    <h4>{{ _('Search Settings') }}</h4>
-
-    <div class="control-group">
-        <label class="control-label">{{ _('Results per page') }}</label>
-        <div class="controls">
-            <input type="number" class="input-small" min="10" max="500" step="10"
-                   data-bind="value: settings.plugins.logmonitor.search_page_size">
-            <span class="help-block">
-                {{ _('Number of search results to display per page.') }}
-            </span>
-        </div>
-    </div>
-
     <div class="alert alert-info">
         <i class="fa fa-info-circle"></i>
-        {{ _('Changes take effect immediately after saving.') }}
+        {{ _("Changes take effect immediately after saving.") }}
     </div>
 </form>

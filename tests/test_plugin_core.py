@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Unit tests for core plugin behaviors in octoprint_logmonitor.__init__.
 
@@ -7,15 +6,15 @@ required OctoPrint plugin mixins.
 """
 
 import sys
-import types
 import tempfile
+import types
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import flask
 
-from octoprint_logmonitor.security import MAX_SEARCH_LIMIT, MAX_HISTORY_LIMIT
+from octoprint_logmonitor.security import MAX_HISTORY_LIMIT, MAX_SEARCH_LIMIT
 
 
 def _install_fake_octoprint():
@@ -25,16 +24,21 @@ def _install_fake_octoprint():
     octoprint_module = types.ModuleType("octoprint")
     plugin_module = types.ModuleType("octoprint.plugin")
 
-    class DummyBlueprintPlugin(object):
+    class DummyBlueprintPlugin:
         @staticmethod
         def route(_rule, methods=None, **_kwargs):
             def decorator(func):
                 return func
+
             return decorator
 
     plugin_module.StartupPlugin = type("StartupPlugin", (object,), {})
     plugin_module.TemplatePlugin = type("TemplatePlugin", (object,), {})
-    plugin_module.SettingsPlugin = type("SettingsPlugin", (object,), {})
+    plugin_module.SettingsPlugin = type(
+        "SettingsPlugin",
+        (object,),
+        {"on_settings_save": lambda self, data: data},
+    )
     plugin_module.AssetPlugin = type("AssetPlugin", (object,), {})
     plugin_module.BlueprintPlugin = DummyBlueprintPlugin
 
@@ -45,11 +49,12 @@ def _install_fake_octoprint():
 
 _install_fake_octoprint()
 
-import octoprint_logmonitor as plugin_module
+import octoprint_logmonitor as plugin_module  # noqa: E402
 
 
-class FakeSettings(object):
+class FakeSettings:
     """Minimal settings stub for plugin tests."""
+
     def __init__(self, base_dir, values):
         self._base_dir = base_dir
         self._values = values
@@ -65,6 +70,7 @@ class FakeSettings(object):
 
 class TestPluginCore(unittest.TestCase):
     """Unit tests for core plugin behaviors."""
+
     def setUp(self):
         self.app = flask.Flask(__name__)
         self.temp_dir = tempfile.mkdtemp()
@@ -75,7 +81,13 @@ class TestPluginCore(unittest.TestCase):
         self.plugin._plugin_version = "0.1.0"
         defaults = self.plugin.get_settings_defaults()
         self.plugin._settings = FakeSettings(self.temp_dir, defaults)
-        self.plugin._alert_counts = {"DEBUG": 0, "INFO": 0, "WARNING": 0, "ERROR": 0, "CRITICAL": 0}
+        self.plugin._alert_counts = {
+            "DEBUG": 0,
+            "INFO": 0,
+            "WARNING": 0,
+            "ERROR": 0,
+            "CRITICAL": 0,
+        }
         self.plugin._alert_history = []
         self.plugin._active_tailers = {}
 
@@ -100,6 +112,21 @@ class TestPluginCore(unittest.TestCase):
         config_types = {cfg["type"] for cfg in configs}
         self.assertTrue({"tab", "navbar", "sidebar", "settings"}.issubset(config_types))
 
+    def test_get_template_configs_hide_widgets_when_disabled(self):
+        values = dict(self.plugin.get_settings_defaults())
+        values.update(
+            {
+                "show_navbar": False,
+                "show_sidebar": False,
+            }
+        )
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        configs = {cfg["type"]: cfg for cfg in self.plugin.get_template_configs()}
+
+        self.assertEqual(configs["navbar"]["styles"], ["display: none"])
+        self.assertEqual(configs["sidebar"]["styles_wrapper"], ["display: none"])
+
     def test_get_log_files_filters_and_sorts(self):
         (Path(self.temp_dir) / "b.log").write_text("b")
         (Path(self.temp_dir) / "a.log").write_text("a")
@@ -114,13 +141,15 @@ class TestPluginCore(unittest.TestCase):
 
     def test_handle_log_line_triggers_alert_and_masks(self):
         values = dict(self.plugin.get_settings_defaults())
-        values.update({
-            "severity_triggers": ["ERROR"],
-            "alert_history_enabled": True,
-            "max_alert_history": 1,
-            "enable_notifications": True,
-            "mask_log_content": True,
-        })
+        values.update(
+            {
+                "severity_triggers": ["ERROR"],
+                "alert_history_enabled": True,
+                "max_alert_history": 1,
+                "enable_notifications": True,
+                "mask_log_content": True,
+            }
+        )
         self.plugin._settings = FakeSettings(self.temp_dir, values)
 
         parsed_line = {
@@ -185,7 +214,9 @@ class TestPluginCore(unittest.TestCase):
         log_path.write_text("line")
 
         with patch("octoprint_logmonitor.__init__.check_file_size", return_value=False):
-            with self.app.test_request_context("/search?file=octoprint.log", method="GET"):
+            with self.app.test_request_context(
+                "/search?file=octoprint.log", method="GET"
+            ):
                 response = self.plugin.search_logs()
 
         self.assertEqual(response.status_code, 413)
@@ -302,7 +333,9 @@ class TestPluginCore(unittest.TestCase):
 
     def test_export_results_rejects_large_payload(self):
         with self.app.test_request_context(
-            "/export", method="POST", json={"format": "csv", "results": ["x"] * (MAX_SEARCH_LIMIT + 1)}
+            "/export",
+            method="POST",
+            json={"format": "csv", "results": ["x"] * (MAX_SEARCH_LIMIT + 1)},
         ):
             response = self.plugin.export_results()
 
@@ -377,7 +410,9 @@ class TestPluginCore(unittest.TestCase):
             "b.log": MagicMock(),
         }
         with self.app.test_request_context(
-            "/stream/multi/stop", method="POST", json={"files": ["a.log"], "stop_all": True}
+            "/stream/multi/stop",
+            method="POST",
+            json={"files": ["a.log"], "stop_all": True},
         ):
             response = self.plugin.stop_multi_stream()
 
@@ -403,11 +438,13 @@ class TestPluginCore(unittest.TestCase):
         log_path = Path(self.temp_dir) / "octoprint.log"
         log_path.write_text("line")
         values = dict(self.plugin.get_settings_defaults())
-        values.update({
-            "auto_start_streaming": True,
-            "default_log_file": "octoprint.log",
-            "stream_poll_interval_ms": 100,
-        })
+        values.update(
+            {
+                "auto_start_streaming": True,
+                "default_log_file": "octoprint.log",
+                "stream_poll_interval_ms": 100,
+            }
+        )
         self.plugin._settings = FakeSettings(self.temp_dir, values)
 
         tailer = MagicMock()
@@ -421,10 +458,12 @@ class TestPluginCore(unittest.TestCase):
 
     def test_on_after_startup_missing_default_file(self):
         values = dict(self.plugin.get_settings_defaults())
-        values.update({
-            "auto_start_streaming": True,
-            "default_log_file": "missing.log",
-        })
+        values.update(
+            {
+                "auto_start_streaming": True,
+                "default_log_file": "missing.log",
+            }
+        )
         self.plugin._settings = FakeSettings(self.temp_dir, values)
 
         self.plugin.on_after_startup()
@@ -432,7 +471,9 @@ class TestPluginCore(unittest.TestCase):
 
     def test_get_log_files_missing_directory(self):
         missing_dir = Path(self.temp_dir) / "nope"
-        self.plugin._settings = FakeSettings(str(missing_dir), self.plugin.get_settings_defaults())
+        self.plugin._settings = FakeSettings(
+            str(missing_dir), self.plugin.get_settings_defaults()
+        )
 
         with self.app.test_request_context("/files", method="GET"):
             response = self.plugin.get_log_files()
@@ -443,11 +484,13 @@ class TestPluginCore(unittest.TestCase):
 
     def test_handle_log_line_without_alert(self):
         values = dict(self.plugin.get_settings_defaults())
-        values.update({
-            "severity_triggers": ["ERROR"],
-            "alert_history_enabled": True,
-            "mask_log_content": False,
-        })
+        values.update(
+            {
+                "severity_triggers": ["ERROR"],
+                "alert_history_enabled": True,
+                "mask_log_content": False,
+            }
+        )
         self.plugin._settings = FakeSettings(self.temp_dir, values)
 
         parsed_line = {
@@ -469,9 +512,7 @@ class TestPluginCore(unittest.TestCase):
             {"timestamp": f"t{i}", "level": "ERROR", "logger": "x", "message": "m"}
             for i in range(MAX_HISTORY_LIMIT + 10)
         ]
-        with self.app.test_request_context(
-            "/alert-history?limit=9999", method="GET"
-        ):
+        with self.app.test_request_context("/alert-history?limit=9999", method="GET"):
             response = self.plugin.get_alert_history()
         payload = response.get_json()
         self.assertEqual(len(payload["history"]), MAX_HISTORY_LIMIT)

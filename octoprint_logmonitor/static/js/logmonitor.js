@@ -3,20 +3,47 @@
  * JavaScript ViewModel
  */
 
-$(function() {
+$(function () {
     function LogmonitorViewModel(parameters) {
         var self = this;
+        var pluginBaseUrl = API_BASEURL + "plugin/logmonitor";
 
-        // Injected dependencies
         self.settings = parameters[0];
         self.loginState = parameters[1];
+
+        function getPluginSettings() {
+            var root = self.settings && self.settings.settings;
+            return root && root.plugins ? root.plugins.logmonitor : null;
+        }
+
+        function getPluginSetting(settingName, fallbackValue) {
+            var ps = getPluginSettings();
+            var setting = ps && ps[settingName];
+            if (typeof setting === "function") return setting();
+            return setting === undefined || setting === null
+                ? fallbackValue
+                : setting;
+        }
+
+        self.isDebugMode = ko.pureComputed(function () {
+            return !!getPluginSetting("debug_mode", false);
+        });
+
+        self.debugLog = function (message, payload) {
+            if (!self.isDebugMode()) return;
+            if (typeof payload === "undefined") {
+                console.log("[LogMonitor Debug] " + message);
+            } else {
+                console.log("[LogMonitor Debug] " + message, payload);
+            }
+        };
 
         // Observable: Stream state
         self.isStreaming = ko.observable(false);
         self.selectedLogFile = ko.observable("");
         self.availableLogFiles = ko.observableArray([]);
         self.allLines = ko.observableArray([]);
-        self.lineCount = ko.computed(function() {
+        self.lineCount = ko.computed(function () {
             return self.allLines().length;
         });
 
@@ -32,13 +59,13 @@ $(function() {
         // Observable: Alerts
         self.alertCount = ko.observable(0);
         self.alertLevel = ko.observable("");
-        self.hasAlerts = ko.computed(function() {
+        self.hasAlerts = ko.computed(function () {
             return self.alertCount() > 0;
         });
-        self.alertText = ko.computed(function() {
+        self.alertText = ko.computed(function () {
             return self.alertLevel() + ": " + self.alertCount();
         });
-        self.alertClass = ko.computed(function() {
+        self.alertClass = ko.computed(function () {
             var level = self.alertLevel().toLowerCase();
             if (level === "critical" || level === "error") {
                 return "badge-important";
@@ -67,20 +94,25 @@ $(function() {
         self.autoStartEnabled = ko.observable(false);
 
         // Computed: Displayed lines (filtered)
-        self.displayedLines = ko.computed(function() {
+        self.displayedLines = ko.computed(function () {
             var lines = self.allLines();
             var filter = self.filterText().toLowerCase();
 
-            return lines.filter(function(line) {
+            return lines.filter(function (line) {
                 // Apply severity filter
                 if (line.level === "DEBUG" && !self.showDebug()) return false;
                 if (line.level === "INFO" && !self.showInfo()) return false;
-                if (line.level === "WARNING" && !self.showWarning()) return false;
+                if (line.level === "WARNING" && !self.showWarning())
+                    return false;
                 if (line.level === "ERROR" && !self.showError()) return false;
-                if (line.level === "CRITICAL" && !self.showCritical()) return false;
+                if (line.level === "CRITICAL" && !self.showCritical())
+                    return false;
 
                 // Apply text filter
-                if (filter && line.message.toLowerCase().indexOf(filter) === -1) {
+                if (
+                    filter &&
+                    line.message.toLowerCase().indexOf(filter) === -1
+                ) {
                     return false;
                 }
 
@@ -89,7 +121,7 @@ $(function() {
         });
 
         // Computed: Status text
-        self.statusText = ko.computed(function() {
+        self.statusText = ko.computed(function () {
             if (self.isStreaming()) {
                 return "Streaming: " + self.selectedLogFile();
             }
@@ -97,63 +129,104 @@ $(function() {
         });
 
         // Computed: Stream button text
-        self.streamButtonText = ko.computed(function() {
+        self.streamButtonText = ko.computed(function () {
             return self.isStreaming() ? "Stop Streaming" : "Start Streaming";
         });
 
         // Computed: Sidebar status
-        self.statusIcon = ko.computed(function() {
+        self.statusIcon = ko.computed(function () {
             if (self.hasAlerts()) {
                 return "fa-exclamation-triangle text-error";
             }
             return "fa-check text-success";
         });
 
-        self.statusSummary = ko.computed(function() {
+        self.statusSummary = ko.computed(function () {
             if (self.hasAlerts()) {
-                return self.alertCount() + " " + self.alertLevel() + " alert(s)";
+                return (
+                    self.alertCount() + " " + self.alertLevel() + " alert(s)"
+                );
             }
             return "No alerts";
         });
 
+        self.showNavbar = ko.observable(
+            !!getPluginSetting("show_navbar", true),
+        );
+        self.showSidebar = ko.observable(
+            !!getPluginSetting("show_sidebar", true),
+        );
+
+        function bindVisibilityToSetting(settingKey, target) {
+            var ps = getPluginSettings();
+            var obs = ps && ps[settingKey];
+            if (typeof obs !== "function") return;
+            target(!!obs());
+            obs.subscribe(function (v) {
+                target(!!v);
+            });
+        }
+
         // Computed: Pagination
-        self.canGoPrevious = ko.computed(function() {
+        self.canGoPrevious = ko.computed(function () {
             return self.currentPage() > 0;
         });
 
-        self.canGoNext = ko.computed(function() {
-            var pageSize = self.settings.settings.plugins.logmonitor.search_page_size();
+        self.canGoNext = ko.pureComputed(function () {
+            var pageSize = getPluginSetting("search_page_size", 50);
             return (self.currentPage() + 1) * pageSize < self.totalResults();
         });
 
-        self.paginationInfo = ko.computed(function() {
-            var pageSize = self.settings.settings.plugins.logmonitor.search_page_size();
+        self.paginationInfo = ko.pureComputed(function () {
+            var pageSize = getPluginSetting("search_page_size", 50);
             var start = self.currentPage() * pageSize + 1;
-            var end = Math.min((self.currentPage() + 1) * pageSize, self.totalResults());
-            return "Showing " + start + "-" + end + " of " + self.totalResults();
+            var end = Math.min(
+                (self.currentPage() + 1) * pageSize,
+                self.totalResults(),
+            );
+            return (
+                "Showing " + start + "-" + end + " of " + self.totalResults()
+            );
         });
 
         // Initialize
-        self.onBeforeBinding = function() {
-            self.autoScroll(self.settings.settings.plugins.logmonitor.auto_scroll());
+        self.onBeforeBinding = function () {
+            self.autoScroll(!!getPluginSetting("auto_scroll", true));
             self.loadAvailableFiles();
         };
 
         // Load available log files
-        self.loadAvailableFiles = function() {
-            OctoPrint.simpleApiGet("logmonitor")
-                .done(function(response) {
-                    if (response.files) {
-                        self.availableLogFiles(response.files);
-                        if (response.files.length > 0) {
-                            self.selectedLogFile(self.settings.settings.plugins.logmonitor.default_log_file());
+        self.loadAvailableFiles = function () {
+            $.ajax({
+                url: pluginBaseUrl + "/files",
+                method: "GET",
+                dataType: "json",
+            }).done(function (response) {
+                if (response.files) {
+                    self.availableLogFiles(
+                        response.files.map(function (file) {
+                            return file.name;
+                        }),
+                    );
+                    if (response.files.length > 0) {
+                        var defaultFile =
+                            self.settings.settings.plugins.logmonitor.default_log_file();
+                        if (
+                            response.files.some(function (file) {
+                                return file.name === defaultFile;
+                            })
+                        ) {
+                            self.selectedLogFile(defaultFile);
+                        } else {
+                            self.selectedLogFile(response.files[0].name);
                         }
                     }
-                });
+                }
+            });
         };
 
         // Stream control
-        self.toggleStream = function() {
+        self.toggleStream = function () {
             if (self.isStreaming()) {
                 self.stopStream();
             } else {
@@ -161,55 +234,66 @@ $(function() {
             }
         };
 
-        self.startStream = function() {
+        self.startStream = function () {
             if (!self.selectedLogFile()) {
                 new PNotify({
                     title: "Log Monitor",
                     text: "Please select a log file first",
-                    type: "error"
+                    type: "error",
                 });
                 return;
             }
 
-            OctoPrint.simpleApiCommand("logmonitor", "stream/start", {
-                file: self.selectedLogFile()
-            }).done(function(response) {
-                self.isStreaming(true);
-                // Show initial lines if available
-                if (response.initial_lines) {
-                    response.initial_lines.forEach(function(line) {
-                        self.handleLogLine(line);
+            $.ajax({
+                url: pluginBaseUrl + "/stream/start",
+                method: "POST",
+                data: JSON.stringify({ file: self.selectedLogFile() }),
+                contentType: "application/json",
+                dataType: "json",
+            })
+                .done(function (response) {
+                    self.isStreaming(true);
+                    // Show initial lines if available
+                    if (response.initial_lines) {
+                        response.initial_lines.forEach(function (line) {
+                            self.handleLogLine(line);
+                        });
+                    }
+                })
+                .fail(function (error) {
+                    new PNotify({
+                        title: "Stream Error",
+                        text: "Failed to start streaming",
+                        type: "error",
                     });
-                }
-            }).fail(function(error) {
-                new PNotify({
-                    title: "Stream Error",
-                    text: "Failed to start streaming",
-                    type: "error"
                 });
-            });
         };
 
-        self.stopStream = function() {
-            OctoPrint.simpleApiCommand("logmonitor", "stream/stop")
-                .done(function() {
+        self.stopStream = function () {
+            $.ajax({
+                url: pluginBaseUrl + "/stream/stop",
+                method: "POST",
+                contentType: "application/json",
+                dataType: "json",
+            })
+                .done(function () {
                     self.isStreaming(false);
                 })
-                .fail(function(error) {
+                .fail(function (error) {
                     new PNotify({
                         title: "Stream Error",
                         text: "Failed to stop streaming",
-                        type: "error"
+                        type: "error",
                     });
                 });
         };
 
-        self.clearDisplay = function() {
+        self.clearDisplay = function () {
             self.allLines.removeAll();
         };
 
         // Search functions
-        self.performSearch = function() {
+        self.performSearch = function () {
             var levels = [];
             if (self.searchDebug()) levels.push("DEBUG");
             if (self.searchInfo()) levels.push("INFO");
@@ -217,40 +301,48 @@ $(function() {
             if (self.searchError()) levels.push("ERROR");
             if (self.searchCritical()) levels.push("CRITICAL");
 
-            var pageSize = self.settings.settings.plugins.logmonitor.search_page_size();
+            var pageSize =
+                self.settings.settings.plugins.logmonitor.search_page_size();
             var offset = self.currentPage() * pageSize;
 
-            OctoPrint.simpleApiGet("logmonitor", {
-                action: "search",
-                file: self.selectedLogFile(),
-                query: self.searchQuery(),
-                levels: levels.join(","),
-                offset: offset,
-                limit: pageSize,
-                case_sensitive: self.caseSensitive(),
-                use_regex: self.useRegex()
-            }).done(function(response) {
-                self.searchResults(response.results);
-                self.totalResults(response.total);
-                self.hasSearched(true);
-            }).fail(function(error) {
-                console.error("Search failed:", error);
-                new PNotify({
-                    title: "Search Failed",
-                    text: "Error performing search",
-                    type: "error"
+            $.ajax({
+                url: pluginBaseUrl + "/search",
+                method: "GET",
+                dataType: "json",
+                traditional: true,
+                data: {
+                    file: self.selectedLogFile(),
+                    query: self.searchQuery(),
+                    levels: levels,
+                    offset: offset,
+                    limit: pageSize,
+                    case_sensitive: self.caseSensitive(),
+                    use_regex: self.useRegex(),
+                },
+            })
+                .done(function (response) {
+                    self.searchResults(response.results);
+                    self.totalResults(response.total);
+                    self.hasSearched(true);
+                })
+                .fail(function (error) {
+                    console.error("Search failed:", error);
+                    new PNotify({
+                        title: "Search Failed",
+                        text: "Error performing search",
+                        type: "error",
+                    });
                 });
-            });
         };
 
-        self.previousPage = function() {
+        self.previousPage = function () {
             if (self.canGoPrevious()) {
                 self.currentPage(self.currentPage() - 1);
                 self.performSearch();
             }
         };
 
-        self.nextPage = function() {
+        self.nextPage = function () {
             if (self.canGoNext()) {
                 self.currentPage(self.currentPage() + 1);
                 self.performSearch();
@@ -258,107 +350,127 @@ $(function() {
         };
 
         // Alert functions
-        self.resetAlerts = function() {
-            OctoPrint.simpleApiCommand("logmonitor", "alerts/reset")
-                .done(function() {
-                    self.alertCount(0);
-                    self.alertLevel("");
-                });
+        self.resetAlerts = function () {
+            $.ajax({
+                url: pluginBaseUrl + "/alerts/reset",
+                method: "POST",
+                contentType: "application/json",
+                dataType: "json",
+            }).done(function () {
+                self.alertCount(0);
+                self.alertLevel("");
+            });
         };
 
         // NEW: Export functions
-        self.exportResults = function(format) {
+        self.exportResults = function (format) {
             if (self.searchResults().length === 0) {
                 alert("No results to export");
                 return;
             }
 
-            var exportData = {
-                results: self.searchResults(),
-                format: format || "csv"
-            };
+            var safeFormat = format === "txt" ? "txt" : "csv";
 
             $.ajax({
-                url: "/api/plugin/logmonitor/export",
+                url: pluginBaseUrl + "/export",
                 method: "POST",
-                data: JSON.stringify(exportData),
+                data: JSON.stringify({
+                    results: self.searchResults(),
+                    format: safeFormat,
+                }),
                 contentType: "application/json",
                 dataType: "text",
-                success: function(data) {
-                    var filename = "logmonitor_export." + (format || "csv");
-                    var blob = new Blob([data], {type: "text/plain"});
+                success: function (data) {
+                    var blob = new Blob([data], { type: "text/plain" });
                     var url = window.URL.createObjectURL(blob);
                     var link = document.createElement("a");
                     link.href = url;
-                    link.download = filename;
-                    document.body.appendChild(link);
+                    link.download = "logmonitor_export." + safeFormat;
+                    link.rel = "noopener";
                     link.click();
-                    document.body.removeChild(link);
                     window.URL.revokeObjectURL(url);
                 },
-                error: function() {
+                error: function () {
                     alert("Failed to export results");
-                }
+                },
             });
         };
 
         // NEW: Download log file
-        self.downloadLogFile = function(filename) {
-            var url = "/api/plugin/logmonitor/download/" + filename;
+        self.downloadLogFile = function (filename) {
+            var url =
+                pluginBaseUrl + "/download/" + encodeURIComponent(filename);
             window.location.href = url;
         };
 
         // NEW: Load alert history
-        self.loadAlertHistory = function() {
-            OctoPrint.simpleApiCommand("logmonitor", "alert-history")
-                .done(function(response) {
-                    self.alertHistory(response.history);
-                });
+        self.loadAlertHistory = function () {
+            $.ajax({
+                url: pluginBaseUrl + "/alert-history",
+                method: "GET",
+                dataType: "json",
+            }).done(function (response) {
+                self.alertHistory(response.history);
+            });
         };
 
         // NEW: Clear alert history
-        self.clearAlertHistory = function() {
+        self.clearAlertHistory = function () {
             if (!confirm("Clear all alert history?")) return;
 
-            OctoPrint.simpleApiCommand("logmonitor", "alert-history/clear")
-                .done(function() {
-                    self.alertHistory([]);
-                });
+            $.ajax({
+                url: pluginBaseUrl + "/alert-history/clear",
+                method: "POST",
+                contentType: "application/json",
+                dataType: "json",
+            }).done(function () {
+                self.alertHistory([]);
+            });
         };
 
         // NEW: Auto-start streaming on page load
-        self.onStartup = function() {
+        self.onStartup = function () {
             // Load alert history
             self.loadAlertHistory();
 
             // Request notification permission if enabled
-            if (self.settings.settings.plugins.logmonitor.enable_notifications()) {
-                if ("Notification" in window && Notification.permission === "default") {
+            if (
+                self.settings.settings.plugins.logmonitor.enable_notifications()
+            ) {
+                if (
+                    "Notification" in window &&
+                    Notification.permission === "default"
+                ) {
                     Notification.requestPermission();
                 }
             }
         };
 
-        // Auto-start streaming after plugin loads
-        self.onAfterBinding = function() {
-            if (self.settings.settings.plugins.logmonitor.auto_start_streaming()) {
-                var file = self.settings.settings.plugins.logmonitor.default_log_file();
+        self.onAfterBinding = function () {
+            bindVisibilityToSetting("show_navbar", self.showNavbar);
+            bindVisibilityToSetting("show_sidebar", self.showSidebar);
+
+            if (
+                self.settings.settings.plugins.logmonitor.auto_start_streaming()
+            ) {
+                var file =
+                    self.settings.settings.plugins.logmonitor.default_log_file();
                 if (file) {
                     self.selectedLogFile(file);
-                    setTimeout(function() {
+                    setTimeout(function () {
                         self.startStream();
                     }, 500);
                 }
             }
         };
 
-        self.openTab = function() {
-            $('a[href="#tab_plugin_logmonitor"]').tab('show');
+        self.openTab = function () {
+            $('a[href="#tab_plugin_logmonitor"]').tab("show");
             self.resetAlerts();
         };
 
         // WebSocket message handling
-        self.onDataUpdaterPluginMessage = function(plugin, data) {
+        self.onDataUpdaterPluginMessage = function (plugin, data) {
             if (plugin !== "logmonitor") return;
 
             if (data.type === "log_line") {
@@ -368,11 +480,12 @@ $(function() {
             }
         };
 
-        self.handleLogLine = function(line) {
+        self.handleLogLine = function (line) {
             self.allLines.push(line);
 
             // Trim buffer if needed
-            var maxLines = self.settings.settings.plugins.logmonitor.max_stream_lines();
+            var maxLines =
+                self.settings.settings.plugins.logmonitor.max_stream_lines();
             if (self.allLines().length > maxLines) {
                 self.allLines.shift();
             }
@@ -383,21 +496,22 @@ $(function() {
             }
         };
 
-        self.handleAlert = function(alert) {
+        self.handleAlert = function (alert) {
             self.alertCount(alert.count);
             self.alertLevel(alert.level);
 
             // NEW: Browser notification support
             if (alert.notification_enabled && "Notification" in window) {
                 if (Notification.permission === "granted") {
-                    var notificationMessage = alert.message || "Severity: " + alert.level;
+                    var notificationMessage =
+                        alert.message || "Severity: " + alert.level;
                     try {
                         new Notification("Log Monitor - " + alert.level, {
                             body: notificationMessage,
                             tag: "logmonitor-alert",
-                            requireInteraction: false
+                            requireInteraction: false,
                         });
-                    } catch(e) {
+                    } catch (e) {
                         console.error("Notification failed:", e);
                     }
                 } else if (Notification.permission !== "denied") {
@@ -409,18 +523,20 @@ $(function() {
             if (alert.notification_enabled) {
                 try {
                     // Use a small beep sound encoded in base64
-                    var audio = new Audio("data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA==");
+                    var audio = new Audio(
+                        "data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA==",
+                    );
                     audio.volume = 0.5;
-                    audio.play().catch(function() {
+                    audio.play().catch(function () {
                         // Sound playback failed, continue silently
                     });
-                } catch(e) {
+                } catch (e) {
                     // Audio not supported
                 }
             }
         };
 
-        self.scrollToBottom = function() {
+        self.scrollToBottom = function () {
             var container = $(".logmonitor-output");
             if (container.length) {
                 container.scrollTop(container[0].scrollHeight);
@@ -435,7 +551,7 @@ $(function() {
         elements: [
             "#tab_plugin_logmonitor",
             "#navbar_plugin_logmonitor",
-            "#sidebar_plugin_logmonitor"
-        ]
+            "#sidebar_plugin_logmonitor_wrapper",
+        ],
     });
 });

@@ -1,26 +1,22 @@
-<div class="logmonitor-sidebar" data-bind="visible: settings.settings.plugins.logmonitor.show_sidebar">
-    <h4>{{ _('Log Monitor') }}</h4>
-
+<div class="logmonitor-sidebar">
+    <h4>{{ _("Log Monitor") }}</h4>
     <div class="logmonitor-sidebar-content">
         <div class="logmonitor-sidebar-status">
             <i class="fa" data-bind="css: statusIcon"></i>
             <span data-bind="text: statusSummary"></span>
         </div>
-
         <div class="logmonitor-sidebar-alerts" data-bind="visible: hasAlerts()">
             <div class="alert" data-bind="css: alertClass">
                 <strong data-bind="text: alertText"></strong>
             </div>
         </div>
-
         <div class="logmonitor-sidebar-actions">
             <button class="btn btn-block btn-small" data-bind="click: openTab">
-                <i class="fa fa-external-link"></i> {{ _('Open Log Monitor') }}
+                <i class="fa fa-external-link"></i> {{ _("Open Log Monitor") }}
             </button>
-
             <button class="btn btn-block btn-small"
                     data-bind="click: resetAlerts, visible: hasAlerts()">
-                <i class="fa fa-check"></i> {{ _('Clear Alerts') }}
+                <i class="fa fa-check"></i> {{ _("Clear Alerts") }}
             </button>
         </div>
     </div>
