@@ -511,18 +511,6 @@ $(function () {
         self.onStartup = function () {
             // Load alert history
             self.loadAlertHistory();
-
-            // Request notification permission if enabled
-            if (
-                self.settings.settings.plugins.logmonitor.enable_notifications()
-            ) {
-                if (
-                    "Notification" in window &&
-                    Notification.permission === "default"
-                ) {
-                    Notification.requestPermission();
-                }
-            }
         };
 
         self.onAfterBinding = function () {
@@ -573,23 +561,23 @@ $(function () {
             self.alertCount(alert.count);
             self.alertLevel(alert.level);
 
-            // NEW: Browser notification support
-            if (alert.notification_enabled && "Notification" in window) {
-                if (Notification.permission === "granted") {
-                    var notificationMessage =
-                        alert.message || "Severity: " + alert.level;
-                    try {
-                        new Notification("Log Monitor - " + alert.level, {
-                            body: notificationMessage,
-                            tag: "logmonitor-alert",
-                            requireInteraction: false,
-                        });
-                    } catch (e) {
-                        console.error("Notification failed:", e);
-                    }
-                } else if (Notification.permission !== "denied") {
-                    Notification.requestPermission();
+            // In-app OctoPrint-style toast notification (PNotify)
+            if (alert.notification_enabled) {
+                var notificationMessage =
+                    alert.message || "Severity: " + alert.level;
+                var pnotifyType = "info";
+
+                if (alert.level === "CRITICAL" || alert.level === "ERROR") {
+                    pnotifyType = "error";
+                } else if (alert.level === "WARNING") {
+                    pnotifyType = "notice";
                 }
+
+                new PNotify({
+                    title: "Log Monitor - " + alert.level,
+                    text: notificationMessage,
+                    type: pnotifyType,
+                });
             }
 
             // NEW: Play sound if available (optional)
