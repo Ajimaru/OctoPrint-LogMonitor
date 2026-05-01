@@ -212,6 +212,27 @@ $(function () {
             );
         });
 
+        self.updateSettingsDefaultLogFileDropdown = function (fileNames) {
+            var select = $("#settings_plugin_logmonitor_default_log_file");
+            if (!select.length) return;
+
+            var current = getPluginSetting("default_log_file", "");
+
+            select.empty();
+            select.append($('<option value="">Select log file...</option>'));
+
+            fileNames.forEach(function (name) {
+                select.append($("<option></option>").val(name).text(name));
+            });
+
+            if (current && fileNames.indexOf(current) !== -1) {
+                select.val(current);
+            }
+
+            // Trigger change so settings observable picks up selection.
+            select.trigger("change");
+        };
+
         // Initialize
         self.onBeforeBinding = function () {
             self.autoScroll(!!getPluginSetting("auto_scroll", true));
@@ -241,6 +262,7 @@ $(function () {
                         });
 
                     self.availableLogFiles(fileNames);
+                    self.updateSettingsDefaultLogFileDropdown(fileNames);
 
                     if (fileNames.length > 0) {
                         var defaultFile = getPluginSetting(
@@ -266,6 +288,15 @@ $(function () {
                         type: "error",
                     });
                 });
+        };
+
+        self.onSettingsShown = function () {
+            var files = self.availableLogFiles();
+            if (files.length > 0) {
+                self.updateSettingsDefaultLogFileDropdown(files);
+            } else {
+                self.loadAvailableFiles();
+            }
         };
 
         // Stream control

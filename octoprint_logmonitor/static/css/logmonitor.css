@@ -5,297 +5,301 @@
 
 /* Container */
 .logmonitor-container {
-    padding: 10px;
+  padding: 10px;
 }
 
 .logmonitor-container h3 {
-    margin-top: 0;
+  margin-top: 0;
 }
 
 .logmonitor-container h4 {
-    margin-top: 20px;
-    margin-bottom: 10px;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 5px;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 5px;
 }
 
 /* Stream Panel */
 .logmonitor-stream-panel {
-    margin-bottom: 30px;
+  margin-bottom: 30px;
 }
 
 .logmonitor-controls {
-    margin-bottom: 15px;
-    background: #f5f5f5;
-    padding: 10px;
-    border-radius: 4px;
+  margin-bottom: 15px;
+  background: #f5f5f5;
+  padding: 10px;
+  border-radius: 4px;
 }
 
 .logmonitor-controls-row {
-    margin-bottom: 10px;
+  margin-bottom: 10px;
 }
 
 .logmonitor-controls-row:last-child {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .logmonitor-file-select {
-    margin-right: 10px;
-    max-width: 250px;
+  margin-right: 10px;
+  max-width: 250px;
 }
 
 /* Log Output */
 .logmonitor-output {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
-    font-size: 12px;
-    background: #1e1e1e;
-    color: #d4d4d4;
-    padding: 10px;
-    border-radius: 4px;
-    height: 500px;
-    overflow-y: scroll;
-    overflow-x: auto;
-    white-space: pre-wrap;
-    word-wrap: break-word;
+  font-family:
+    "Monaco", "Menlo", "Ubuntu Mono", "Consolas", "source-code-pro", monospace;
+  font-size: 12px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 10px;
+  border-radius: 4px;
+  height: 500px;
+  overflow-y: scroll;
+  overflow-x: auto;
+  white-space: normal;
 }
 
 .logmonitor-line {
-    padding: 2px 0;
-    line-height: 1.4;
+  padding: 2px 0;
+  line-height: 1.4;
+  white-space: normal;
 }
 
 .logmonitor-timestamp {
-    color: #808080;
-    margin-right: 8px;
+  color: #808080;
+  margin-right: 8px;
 }
 
 .logmonitor-level {
-    font-weight: bold;
-    margin-right: 8px;
-    min-width: 65px;
-    display: inline-block;
+  font-weight: bold;
+  margin-right: 8px;
+  min-width: 65px;
+  display: inline-block;
 }
 
 .logmonitor-logger {
-    color: #9cdcfe;
-    margin-right: 8px;
+  color: #9cdcfe;
+  margin-right: 8px;
 }
 
 .logmonitor-message {
-    color: #d4d4d4;
+  color: #d4d4d4;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* Severity Colors */
 .logmonitor-level-debug .logmonitor-level {
-    color: #808080;
+  color: #808080;
 }
 
 .logmonitor-level-info .logmonitor-level {
-    color: #4ec9b0;
+  color: #4ec9b0;
 }
 
 .logmonitor-level-warning .logmonitor-level {
-    color: #dcdcaa;
+  color: #dcdcaa;
 }
 
 .logmonitor-level-error .logmonitor-level {
-    color: #f48771;
+  color: #f48771;
 }
 
 .logmonitor-level-critical .logmonitor-level {
-    color: #ff0000;
-    font-weight: bold;
-    text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+  color: #ff0000;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
 }
 
 .logmonitor-level-critical {
-    background: rgba(255, 0, 0, 0.1);
+  background: rgba(255, 0, 0, 0.1);
 }
 
 /* Status Bar */
 .logmonitor-status {
-    margin-top: 10px;
-    padding: 8px;
-    background: #f5f5f5;
-    border-radius: 4px;
-    font-size: 12px;
-    color: #666;
+  margin-top: 10px;
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #666;
 }
 
 /* Search Panel */
 .logmonitor-search-panel {
-    margin-top: 30px;
+  margin-top: 30px;
 }
 
 .logmonitor-search-controls {
-    margin-bottom: 15px;
+  margin-bottom: 15px;
 }
 
 .logmonitor-search-filters {
-    margin: 10px 0;
+  margin: 10px 0;
 }
 
 .logmonitor-search-results {
-    margin-top: 15px;
+  margin-top: 15px;
 }
 
 .logmonitor-search-result {
-    padding: 8px;
-    margin-bottom: 5px;
-    border-left: 3px solid #ddd;
-    background: #f9f9f9;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
-    font-size: 12px;
+  padding: 8px;
+  margin-bottom: 5px;
+  border-left: 3px solid #ddd;
+  background: #f9f9f9;
+  font-family:
+    "Monaco", "Menlo", "Ubuntu Mono", "Consolas", "source-code-pro", monospace;
+  font-size: 12px;
 }
 
 .logmonitor-search-result.logmonitor-level-debug {
-    border-left-color: #808080;
+  border-left-color: #808080;
 }
 
 .logmonitor-search-result.logmonitor-level-info {
-    border-left-color: #4ec9b0;
+  border-left-color: #4ec9b0;
 }
 
 .logmonitor-search-result.logmonitor-level-warning {
-    border-left-color: #dcdcaa;
-    background: #fffbf0;
+  border-left-color: #dcdcaa;
+  background: #fffbf0;
 }
 
 .logmonitor-search-result.logmonitor-level-error {
-    border-left-color: #f48771;
-    background: #fff5f5;
+  border-left-color: #f48771;
+  background: #fff5f5;
 }
 
 .logmonitor-search-result.logmonitor-level-critical {
-    border-left-color: #ff0000;
-    background: #ffebeb;
+  border-left-color: #ff0000;
+  background: #ffebeb;
 }
 
 .logmonitor-pagination {
-    margin-top: 15px;
-    text-align: center;
+  margin-top: 15px;
+  text-align: center;
 }
 
 .logmonitor-pagination button {
-    margin: 0 5px;
+  margin: 0 5px;
 }
 
 .logmonitor-pagination span {
-    margin: 0 10px;
-    color: #666;
+  margin: 0 10px;
+  color: #666;
 }
 
 /* Navbar */
 .logmonitor-navbar {
-    display: inline-block;
+  display: inline-block;
 }
 
 .logmonitor-navbar-link {
-    position: relative;
-    display: inline-block;
-    padding: 5px 10px;
-    color: #333;
-    text-decoration: none;
+  position: relative;
+  display: inline-block;
+  padding: 5px 10px;
+  color: #333;
+  text-decoration: none;
 }
 
 .logmonitor-navbar-link:hover {
-    color: #000;
-    text-decoration: none;
+  color: #000;
+  text-decoration: none;
 }
 
 .logmonitor-badge {
-    position: absolute;
-    top: 0;
-    right: 0;
-    padding: 2px 5px;
-    font-size: 10px;
-    font-weight: bold;
-    border-radius: 3px;
-    background: #d9534f;
-    color: white;
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 2px 5px;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 3px;
+  background: #d9534f;
+  color: white;
 }
 
 .logmonitor-badge.badge-warning {
-    background: #f0ad4e;
+  background: #f0ad4e;
 }
 
 .logmonitor-badge.badge-info {
-    background: #5bc0de;
+  background: #5bc0de;
 }
 
 /* Sidebar */
 .logmonitor-sidebar {
-    margin-bottom: 15px;
+  margin-bottom: 15px;
 }
 
 .logmonitor-sidebar h4 {
-    margin-top: 0;
-    font-size: 14px;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 5px;
+  margin-top: 0;
+  font-size: 14px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 5px;
 }
 
 .logmonitor-sidebar-content {
-    padding: 5px 0;
+  padding: 5px 0;
 }
 
 .logmonitor-sidebar-status {
-    margin-bottom: 10px;
-    padding: 8px;
-    background: #f5f5f5;
-    border-radius: 3px;
+  margin-bottom: 10px;
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 3px;
 }
 
 .logmonitor-sidebar-status i {
-    margin-right: 5px;
+  margin-right: 5px;
 }
 
 .logmonitor-sidebar-alerts {
-    margin-bottom: 10px;
+  margin-bottom: 10px;
 }
 
 .logmonitor-sidebar-alerts .alert {
-    margin-bottom: 5px;
-    padding: 8px;
+  margin-bottom: 5px;
+  padding: 8px;
 }
 
 .logmonitor-sidebar-actions button {
-    margin-bottom: 5px;
+  margin-bottom: 5px;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .logmonitor-output {
-        height: 300px;
-    }
-    
-    .logmonitor-file-select {
-        max-width: 100%;
-        display: block;
-        margin-bottom: 5px;
-    }
+  .logmonitor-output {
+    height: 300px;
+  }
+
+  .logmonitor-file-select {
+    max-width: 100%;
+    display: block;
+    margin-bottom: 5px;
+  }
 }
 
 /* Dark theme support */
 body[data-theme="dark"] .logmonitor-controls,
 body[data-theme="dark"] .logmonitor-status {
-    background: #2d2d2d;
-    color: #d4d4d4;
+  background: #2d2d2d;
+  color: #d4d4d4;
 }
 
 body[data-theme="dark"] .logmonitor-search-result {
-    background: #2d2d2d;
-    color: #d4d4d4;
+  background: #2d2d2d;
+  color: #d4d4d4;
 }
 
 body[data-theme="dark"] .logmonitor-search-result.logmonitor-level-warning {
-    background: #3d3520;
+  background: #3d3520;
 }
 
 body[data-theme="dark"] .logmonitor-search-result.logmonitor-level-error {
-    background: #3d2520;
+  background: #3d2520;
 }
 
 body[data-theme="dark"] .logmonitor-search-result.logmonitor-level-critical {
-    background: #3d1515;
+  background: #3d1515;
 }

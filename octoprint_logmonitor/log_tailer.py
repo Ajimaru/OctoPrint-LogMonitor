@@ -31,6 +31,16 @@ class LogTailer:
         r"(.+)$"
     )
 
+    # Serial log often uses: YYYY-MM-DD HH:MM:SS,ms - MESSAGE
+    SIMPLE_LOG_PATTERN = re.compile(
+        r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:,\d{3})?)\s+-\s+(.+)$"
+    )
+
+    # Virtual printer serial lines often use: YYYY-MM-DD HH:MM:SS,ms >>> MESSAGE
+    SERIAL_IO_PATTERN = re.compile(
+        r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:,\d{3})?)\s+(>>>|<<<)\s+(.+)$"
+    )
+
     def __init__(
         self,
         filepath: str,
@@ -220,26 +230,62 @@ class LogTailer:
             Dictionary with parsed fields
         """
         line = line.rstrip("\n\r")
+        raw_line = line.replace("\t", "    ")
 
-        match = self.LOG_PATTERN.match(line)
+        match = self.LOG_PATTERN.match(raw_line)
 
         if match:
+            message = match.group(4).replace("\t", "    ")
             return {
                 "timestamp": match.group(1),
                 "logger": match.group(2).strip(),
                 "level": match.group(3),
-                "message": match.group(4),
-                "raw": line,
+                "message": message,
+                "raw": raw_line,
             }
-        else:
-            # Line doesn't match expected format, return as-is
+
+        simple_match = self.SIMPLE_LOG_PATTERN.match(raw_line)
+        if simple_match:
+            message = simple_match.group(2).strip()
+            level = "INFO"
+            upper_message = message.upper()
+            if "CRITICAL" in upper_message:
+                level = "CRITICAL"
+            elif "ERROR" in upper_message:
+                level = "ERROR"
+            elif "WARNING" in upper_message:
+                level = "WARNING"
+            elif "DEBUG" in upper_message:
+                level = "DEBUG"
+
             return {
-                "timestamp": "",
-                "logger": "",
-                "level": "UNKNOWN",
-                "message": line,
-                "raw": line,
+                "timestamp": simple_match.group(1),
+                "logger": "serial.log",
+                "level": level,
+                "message": message,
+                "raw": raw_line,
             }
+
+        serial_match = self.SERIAL_IO_PATTERN.match(raw_line)
+        if serial_match:
+            direction = serial_match.group(2)
+            message = serial_match.group(3).strip()
+            return {
+                "timestamp": serial_match.group(1),
+                "logger": "serial.log",
+                "level": "INFO",
+                "message": f"{direction} {message}",
+                "raw": raw_line,
+            }
+
+        # Line doesn't match expected format, return as-is
+        return {
+            "timestamp": "",
+            "logger": "",
+            "level": "UNKNOWN",
+            "message": raw_line,
+            "raw": raw_line,
+        }
 
     def get_last_n_lines(self, n: int = 100) -> list:
         """

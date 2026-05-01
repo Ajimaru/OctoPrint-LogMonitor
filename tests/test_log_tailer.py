@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
 """
 Tests for LogTailer class.
 """
+
 import os
 import tempfile
 import time
@@ -33,11 +33,7 @@ class TestLogTailer(unittest.TestCase):
 
     def test_start_stop(self):
         """Test starting and stopping the tailer."""
-        tailer = LogTailer(
-            str(self.log_file),
-            self._callback,
-            poll_interval=0.1
-        )
+        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
 
         # Start tailer
         self.assertTrue(tailer.start())
@@ -50,15 +46,9 @@ class TestLogTailer(unittest.TestCase):
     def test_tail_new_lines(self):
         """Test that new lines are captured."""
         # Write initial content
-        self.log_file.write_text(
-            "2024-01-01 10:00:00,000 - test - INFO - Initial\n"
-        )
+        self.log_file.write_text("2024-01-01 10:00:00,000 - test - INFO - Initial\n")
 
-        tailer = LogTailer(
-            str(self.log_file),
-            self._callback,
-            poll_interval=0.1
-        )
+        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
 
         tailer.start()
         time.sleep(0.2)  # Allow tailer to start
@@ -92,11 +82,7 @@ class TestLogTailer(unittest.TestCase):
         ]
         self.log_file.write_text("".join(lines))
 
-        tailer = LogTailer(
-            str(self.log_file),
-            self._callback,
-            poll_interval=0.1
-        )
+        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
 
         # Get last 2 lines
         last_lines = tailer.get_last_n_lines(2)
@@ -111,11 +97,7 @@ class TestLogTailer(unittest.TestCase):
 
     def test_file_rotation(self):
         """Test handling of log file rotation."""
-        tailer = LogTailer(
-            str(self.log_file),
-            self._callback,
-            poll_interval=0.1
-        )
+        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
 
         # Write initial content
         self.log_file.write_text(
@@ -143,9 +125,7 @@ class TestLogTailer(unittest.TestCase):
     def test_invalid_file(self):
         """Test behavior with non-existent file."""
         tailer = LogTailer(
-            "/nonexistent/path/file.log",
-            self._callback,
-            poll_interval=0.1
+            "/nonexistent/path/file.log", self._callback, poll_interval=0.1
         )
 
         # Should fail to start
@@ -154,15 +134,50 @@ class TestLogTailer(unittest.TestCase):
 
     def test_double_start(self):
         """Test that starting already running tailer returns False."""
-        tailer = LogTailer(
-            str(self.log_file),
-            self._callback,
-            poll_interval=0.1
-        )
+        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
 
         self.assertTrue(tailer.start())
         self.assertFalse(tailer.start())  # Second start should fail
         tailer.stop()
+
+    def test_parse_simple_serial_log_line(self):
+        """Serial-style lines without explicit logger/level should still parse."""
+        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
+        line = "2026-05-01 19:58:57,717 - serial.log is currently not enabled" "\n"
+
+        parsed = tailer._parse_line(line)
+
+        self.assertEqual(parsed["timestamp"], "2026-05-01 19:58:57,717")
+        self.assertEqual(parsed["logger"], "serial.log")
+        self.assertEqual(parsed["level"], "INFO")
+        self.assertIn("serial.log is currently not enabled", parsed["message"])
+
+    def test_parse_line_normalizes_tabs(self):
+        """Tab characters should be normalized to spaces to avoid visual jumps."""
+        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
+        line = "2026-05-01 20:00:00,000 - test - INFO - A\tB\tC\n"
+
+        parsed = tailer._parse_line(line)
+
+        self.assertNotIn("\t", parsed["message"])
+        self.assertNotIn("\t", parsed["raw"])
+
+    def test_parse_serial_io_arrow_line(self):
+        """Virtual printer serial lines with >>>/<<< should not be UNKNOWN."""
+        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
+        out_line = "2026-05-01 20:03:06,887 >>> wait\n"
+        in_line = "2026-05-01 20:03:06,888 <<< ok\n"
+
+        parsed_out = tailer._parse_line(out_line)
+        parsed_in = tailer._parse_line(in_line)
+
+        self.assertEqual(parsed_out["level"], "INFO")
+        self.assertEqual(parsed_out["logger"], "serial.log")
+        self.assertEqual(parsed_out["message"], ">>> wait")
+
+        self.assertEqual(parsed_in["level"], "INFO")
+        self.assertEqual(parsed_in["logger"], "serial.log")
+        self.assertEqual(parsed_in["message"], "<<< ok")
 
 
 if __name__ == "__main__":

@@ -61,10 +61,10 @@
     <div class="control-group">
         <label class="control-label">{{ _("Default log file") }}</label>
         <div class="controls">
-            <select class="input-medium"
+            <select id="settings_plugin_logmonitor_default_log_file"
+                    class="input-medium"
                     data-bind="value: settings.plugins.logmonitor.default_log_file">
                 <option value="">{{ _("Select log file...") }}</option>
-                {% for filename in log_files %}<option value="{{ filename }}">{{ filename }}</option>{% endfor %}
             </select>
             <span class="help-block">{{ _("Log file pre-selected in the stream dropdown on page load.") }}</span>
         </div>
