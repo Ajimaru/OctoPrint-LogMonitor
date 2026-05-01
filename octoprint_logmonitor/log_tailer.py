@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 Log Tailer Module
 
@@ -6,13 +5,11 @@ Provides background thread-based log file tailing functionality.
 Similar to 'tail -f' behavior for live log streaming.
 """
 
-from __future__ import absolute_import
-
-import threading
-import time
 import os
 import re
-from typing import Callable, Dict, Optional, Any
+import threading
+import time
+from typing import Any, Callable, Optional
 
 
 class LogTailer:
@@ -26,20 +23,20 @@ class LogTailer:
     - Calls callback for each new line
     """
 
-    # OctoPrint log format: YYYY-MM-DD HH:MM:SS,ms - LOGGER - LEVEL - MESSAGE
+    # OctoPrint log format: YYYY-MM-DD HH:MM:SS[,ms] - LOGGER - LEVEL - MESSAGE
     LOG_PATTERN = re.compile(
-        r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})\s+-\s+'
-        r'([^\-]+)\s+-\s+'
-        r'(DEBUG|INFO|WARNING|ERROR|CRITICAL)\s+-\s+'
-        r'(.+)$'
+        r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:,\d{3})?)\s+-\s+"
+        r"([^\-]+)\s+-\s+"
+        r"(DEBUG|INFO|WARNING|ERROR|CRITICAL)\s+-\s+"
+        r"(.+)$"
     )
 
     def __init__(
         self,
         filepath: str,
-        callback: Callable[[Dict[str, Any]], None],
+        callback: Callable[[dict[str, Any]], None],
         poll_interval: float = 0.5,
-        logger: Optional[Any] = None
+        logger: Optional[Any] = None,
     ):
         """
         Initialize the log tailer.
@@ -82,10 +79,7 @@ class LogTailer:
                 return False
 
             try:
-                self._file = open(
-                    self._filepath, 'r', encoding='utf-8',
-                    errors='replace'
-                )
+                self._file = open(self._filepath, encoding="utf-8", errors="replace")
                 self._file_inode = os.fstat(self._file.fileno()).st_ino
 
                 # Seek to end of file (start tailing from current position)
@@ -97,9 +91,7 @@ class LogTailer:
                 self._running = True
 
                 if self._logger:
-                    self._logger.info(
-                        f"LogTailer started for {self._filepath}"
-                    )
+                    self._logger.info(f"LogTailer started for {self._filepath}")
 
                 return True
 
@@ -134,9 +126,7 @@ class LogTailer:
 
             if self._thread.is_alive():
                 if self._logger:
-                    self._logger.warning(
-                        "LogTailer thread did not stop gracefully"
-                    )
+                    self._logger.warning("LogTailer thread did not stop gracefully")
                 return False
 
         if self._file:
@@ -200,7 +190,7 @@ class LogTailer:
         try:
             current_inode = os.stat(self._filepath).st_ino
             return current_inode != self._file_inode
-        except (OSError, IOError):
+        except OSError:
             return False
 
     def _reopen_file(self):
@@ -209,10 +199,7 @@ class LogTailer:
             if self._file:
                 self._file.close()
 
-            self._file = open(
-                self._filepath, 'r', encoding='utf-8',
-                errors='replace'
-            )
+            self._file = open(self._filepath, encoding="utf-8", errors="replace")
             self._file_inode = os.fstat(self._file.fileno()).st_ino
 
             # Start from beginning of new file
@@ -222,7 +209,7 @@ class LogTailer:
             if self._logger:
                 self._logger.error(f"Failed to reopen log file: {e}")
 
-    def _parse_line(self, line: str) -> Dict[str, Any]:
+    def _parse_line(self, line: str) -> dict[str, Any]:
         """
         Parse a log line into structured format.
 
@@ -232,7 +219,7 @@ class LogTailer:
         Returns:
             Dictionary with parsed fields
         """
-        line = line.rstrip('\n\r')
+        line = line.rstrip("\n\r")
 
         match = self.LOG_PATTERN.match(line)
 
@@ -242,7 +229,7 @@ class LogTailer:
                 "logger": match.group(2).strip(),
                 "level": match.group(3),
                 "message": match.group(4),
-                "raw": line
+                "raw": line,
             }
         else:
             # Line doesn't match expected format, return as-is
@@ -251,7 +238,7 @@ class LogTailer:
                 "logger": "",
                 "level": "UNKNOWN",
                 "message": line,
-                "raw": line
+                "raw": line,
             }
 
     def get_last_n_lines(self, n: int = 100) -> list:
@@ -268,10 +255,7 @@ class LogTailer:
             return []
 
         try:
-            with open(
-                self._filepath, 'r', encoding='utf-8',
-                errors='replace'
-            ) as f:
+            with open(self._filepath, encoding="utf-8", errors="replace") as f:
                 # Read all lines
                 lines = f.readlines()
 

@@ -59,6 +59,27 @@
     </div>
     <h4>{{ _("Streaming Settings") }}</h4>
     <div class="control-group">
+        <label class="control-label">{{ _("Default log file") }}</label>
+        <div class="controls">
+            <select class="input-medium"
+                    data-bind="value: settings.plugins.logmonitor.default_log_file">
+                <option value="">{{ _("Select log file...") }}</option>
+                {% for filename in log_files %}<option value="{{ filename }}">{{ filename }}</option>{% endfor %}
+            </select>
+            <span class="help-block">{{ _("Log file pre-selected in the stream dropdown on page load.") }}</span>
+        </div>
+    </div>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.auto_start_streaming">
+                {{ _("Auto-start streaming on page load") }}
+            </label>
+            <span class="help-block">{{ _("Automatically start streaming the default log file when OctoPrint loads.") }}</span>
+        </div>
+    </div>
+    <div class="control-group">
         <label class="control-label">{{ _("Poll interval (ms)") }}</label>
         <div class="controls">
             <input type="number"
@@ -87,12 +108,22 @@
             <label class="checkbox">
                 <input type="checkbox"
                        data-bind="checked: settings.plugins.logmonitor.auto_scroll">
-                {{ _("Auto-scroll to bottom") }}
+                {{ _("Auto-scroll enabled by default") }}
             </label>
-            <span class="help-block">{{ _("Automatically scroll to the bottom when new log entries arrive.") }}</span>
+            <span class="help-block">{{ _("Sets the initial auto-scroll state when the page loads. Can be toggled at any time directly in the stream view.") }}</span>
         </div>
     </div>
     <h4>{{ _("Search Settings") }}</h4>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.regex_search_enabled">
+                {{ _("Enable regex search by default") }}
+            </label>
+            <span class="help-block">{{ _("Pre-enable the regex search option in the search form.") }}</span>
+        </div>
+    </div>
     <div class="control-group">
         <label class="control-label">{{ _("Results per page") }}</label>
         <div class="controls">
@@ -103,6 +134,50 @@
                    step="10"
                    data-bind="value: settings.plugins.logmonitor.search_page_size">
             <span class="help-block">{{ _("Number of search results to display per page.") }}</span>
+        </div>
+    </div>
+    <h4>{{ _("Alerts &amp; Notifications") }}</h4>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.enable_notifications">
+                {{ _("Enable browser notifications") }}
+            </label>
+            <span class="help-block">{{ _("Show a browser notification when a severity alert fires.") }}</span>
+        </div>
+    </div>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.alert_history_enabled">
+                {{ _("Keep alert history") }}
+            </label>
+            <span class="help-block">{{ _("Store triggered alerts in a history list.") }}</span>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">{{ _("Max alert history entries") }}</label>
+        <div class="controls">
+            <input type="number"
+                   class="input-small"
+                   min="10"
+                   max="1000"
+                   step="10"
+                   data-bind="value: settings.plugins.logmonitor.max_alert_history">
+            <span class="help-block">{{ _("Maximum number of alert history entries to keep.") }}</span>
+        </div>
+    </div>
+    <h4>{{ _("Privacy") }}</h4>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.mask_log_content">
+                {{ _("Mask sensitive data in stream") }}
+            </label>
+            <span class="help-block">{{ _("Redact API keys, passwords and e-mail addresses from streamed log lines.") }}</span>
         </div>
     </div>
     <h4>{{ _("Debug") }}</h4>

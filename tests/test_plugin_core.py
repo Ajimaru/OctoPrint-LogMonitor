@@ -164,17 +164,16 @@ class TestPluginCore(unittest.TestCase):
         self.assertEqual(self.plugin._alert_counts["ERROR"], 1)
         self.assertEqual(len(self.plugin._alert_history), 1)
 
+        # Alert message is still sent immediately via WebSocket
         calls = self.plugin._plugin_manager.send_plugin_message.call_args_list
-        self.assertEqual(len(calls), 2)
-        log_line_payload = None
-        for call in calls:
-            payload = call.args[1]
-            if payload.get("type") == "log_line":
-                log_line_payload = payload
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0].args[1]["type"], "severity_alert")
 
-        self.assertIsNotNone(log_line_payload)
-        self.assertNotIn("secret123", log_line_payload["data"]["message"])
-        self.assertNotIn("secret123", log_line_payload["data"]["raw"])
+        # Log line goes into buffer (masked)
+        self.assertEqual(len(self.plugin._line_buffer), 1)
+        log_line_payload = self.plugin._line_buffer[0]
+        self.assertNotIn("secret123", log_line_payload["message"])
+        self.assertNotIn("secret123", log_line_payload["raw"])
 
     def test_search_logs_rate_limited(self):
         self.plugin._search_rate_limiter = MagicMock()
@@ -263,8 +262,9 @@ class TestPluginCore(unittest.TestCase):
 
     def test_alert_history_invalid_limit(self):
         with self.app.test_request_context("/alert-history?limit=bad", method="GET"):
-            response = self.plugin.get_alert_history()
-        self.assertEqual(response.status_code, 400)
+            result = self.plugin.get_alert_history()
+        status_code = result[1] if isinstance(result, tuple) else result.status_code
+        self.assertEqual(status_code, 400)
 
     def test_start_stream_rejects_invalid_filename(self):
         with self.app.test_request_context(
@@ -503,9 +503,12 @@ class TestPluginCore(unittest.TestCase):
         self.plugin._handle_log_line(parsed_line)
 
         self.assertEqual(self.plugin._alert_counts["ERROR"], 0)
+        # No WebSocket message sent (line is buffered, not pushed directly)
         calls = self.plugin._plugin_manager.send_plugin_message.call_args_list
-        self.assertEqual(len(calls), 1)
-        self.assertEqual(calls[0].args[1]["type"], "log_line")
+        self.assertEqual(len(calls), 0)
+        # Line ends up in the buffer
+        self.assertEqual(len(self.plugin._line_buffer), 1)
+        self.assertEqual(self.plugin._line_buffer[0]["level"], "INFO")
 
     def test_get_alert_history_clamps_limit(self):
         self.plugin._alert_history = [

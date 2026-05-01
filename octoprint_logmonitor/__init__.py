@@ -53,6 +53,10 @@ class LogmonitorPlugin(
         self._active_tailers = {}  # Support multi-file streaming
         # Rate-limit search API: max 10 requests per minute per client
         self._search_rate_limiter = RateLimiter(max_calls=10, period=60.0)
+        # Line buffer: collect lines, flush as batch to reduce WebSocket pressure
+        self._line_buffer = []
+        self._line_buffer_lock = threading.Lock()
+        self._flush_timer = None
 
     # ~~ StartupPlugin mixin
 
@@ -129,8 +133,8 @@ class LogmonitorPlugin(
             "show_sidebar": True,
             "severity_triggers": ["WARNING", "ERROR", "CRITICAL"],
             "default_log_file": "octoprint.log",
-            "stream_poll_interval_ms": 500,
-            "max_stream_lines": 1000,
+            "stream_poll_interval_ms": 1000,
+            "max_stream_lines": 500,
             "search_page_size": 50,
             "auto_scroll": True,
             "auto_start_streaming": False,  # NEW
@@ -182,6 +186,30 @@ class LogmonitorPlugin(
                 "custom_bindings": False,
             },
         ]
+
+    def get_template_vars(self):
+        """Provide additional template variables for rendering settings UI."""
+        return {
+            "log_files": self._get_available_log_filenames(),
+        }
+
+    def _get_available_log_filenames(self):
+        """Return sorted list of available .log filenames from OctoPrint log folder."""
+        try:
+            log_dir = self._settings.getBaseFolder("logs")
+            if not os.path.exists(log_dir):
+                return []
+
+            files = []
+            for filename in os.listdir(log_dir):
+                filepath = os.path.join(log_dir, filename)
+                if os.path.isfile(filepath) and filename.endswith(".log"):
+                    files.append(filename)
+
+            return sorted(files)
+        except Exception as e:
+            self._logger.error(f"Error listing log filenames for template vars: {e}")
+            return []
 
     # ~~ BlueprintPlugin mixin
 
@@ -368,6 +396,13 @@ class LogmonitorPlugin(
 
             # Start tailing
             if self._tailer.start():
+                # Start batch-flush timer
+                if self._flush_timer:
+                    self._flush_timer.cancel()
+                with self._line_buffer_lock:
+                    self._line_buffer.clear()
+                self._start_flush_timer()
+
                 # Send initial lines
                 initial_lines_count = 100  # Default
                 initial_lines = self._tailer.get_last_n_lines(initial_lines_count)
@@ -390,6 +425,11 @@ class LogmonitorPlugin(
     def stop_stream(self):
         """Stop log streaming."""
         try:
+            if self._flush_timer:
+                self._flush_timer.cancel()
+                self._flush_timer = None
+            with self._line_buffer_lock:
+                self._line_buffer.clear()
             if self._tailer and self._tailer.is_running():
                 self._tailer.stop()
                 self._tailer = None
@@ -714,10 +754,40 @@ class LogmonitorPlugin(
         """
         self._logger.warning(f"[SECURITY] {event_type}: {detail}")
 
+    def _start_flush_timer(self):
+        """Start the periodic line-buffer flush timer."""
+        interval = max(0.5, self._settings.get(["stream_poll_interval_ms"]) / 1000.0)
+        self._flush_timer = threading.Timer(interval, self._flush_line_buffer)
+        self._flush_timer.daemon = True
+        self._flush_timer.start()
+
+    def _flush_line_buffer(self):
+        """Flush buffered lines as a single batch WebSocket message."""
+        with self._line_buffer_lock:
+            if not self._line_buffer:
+                # Reschedule even if empty, as long as streaming is active
+                if self._tailer and self._tailer.is_running() or self._active_tailers:
+                    self._start_flush_timer()
+                return
+            batch = self._line_buffer[:]
+            self._line_buffer.clear()
+
+        max_lines = self._settings.get(["max_stream_lines"])
+        if len(batch) > max_lines:
+            batch = batch[-max_lines:]
+
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {"type": "log_lines", "data": batch}
+        )
+
+        # Reschedule
+        if self._tailer and self._tailer.is_running() or self._active_tailers:
+            self._start_flush_timer()
+
     def _handle_log_line(self, parsed_line):
         """
         Handle a new log line from the tailer.
-        Sends it via WebSocket and checks for severity alerts.
+        Buffers it for batched WebSocket delivery; checks severity alerts immediately.
 
         Args:
             parsed_line: Parsed log line dictionary
@@ -769,10 +839,9 @@ class LogmonitorPlugin(
             else:
                 send_line = parsed_line
 
-            # Send log line to all connected clients
-            self._plugin_manager.send_plugin_message(
-                self._identifier, {"type": "log_line", "data": send_line}
-            )
+            # Buffer line for batched WebSocket delivery
+            with self._line_buffer_lock:
+                self._line_buffer.append(send_line)
 
         except Exception as e:
             self._logger.error(f"Error handling log line: {e}")
@@ -811,8 +880,6 @@ __plugin_license__ = "AGPL-3.0-or-later"
 
 
 # ~~ Plugin loading
-
-
 def __plugin_load__():
     """Load the plugin."""
     global __plugin_implementation__

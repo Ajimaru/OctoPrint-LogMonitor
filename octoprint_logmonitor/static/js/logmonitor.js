@@ -6,7 +6,12 @@
 $(function () {
     function LogmonitorViewModel(parameters) {
         var self = this;
-        var pluginBaseUrl = API_BASEURL + "plugin/logmonitor";
+        // BlueprintPlugin routes are served under /plugin/<id>/, NOT /api/plugin/<id>/
+        var pluginBaseUrl = "/plugin/logmonitor";
+
+        function pluginAjax(opts) {
+            return $.ajax(opts);
+        }
 
         self.settings = parameters[0];
         self.loginState = parameters[1];
@@ -37,6 +42,24 @@ $(function () {
                 console.log("[LogMonitor Debug] " + message, payload);
             }
         };
+
+        // Line buffer for batching DOM updates
+        var lineBuffer = [];
+        var flushIntervalId = null;
+
+        function flushLineBuffer() {
+            if (lineBuffer.length === 0) return;
+            var batch = lineBuffer.splice(0, lineBuffer.length);
+            var maxLines = getPluginSetting("max_stream_lines", 500);
+            var combined = self.allLines().concat(batch);
+            if (combined.length > maxLines) {
+                combined = combined.slice(combined.length - maxLines);
+            }
+            self.allLines(combined);
+            if (self.autoScroll()) {
+                self.scrollToBottom();
+            }
+        }
 
         // Observable: Stream state
         self.isStreaming = ko.observable(false);
@@ -197,32 +220,52 @@ $(function () {
 
         // Load available log files
         self.loadAvailableFiles = function () {
-            $.ajax({
+            pluginAjax({
                 url: pluginBaseUrl + "/files",
                 method: "GET",
                 dataType: "json",
-            }).done(function (response) {
-                if (response.files) {
-                    self.availableLogFiles(
-                        response.files.map(function (file) {
-                            return file.name;
-                        }),
-                    );
-                    if (response.files.length > 0) {
-                        var defaultFile =
-                            self.settings.settings.plugins.logmonitor.default_log_file();
-                        if (
-                            response.files.some(function (file) {
-                                return file.name === defaultFile;
-                            })
-                        ) {
+            })
+                .done(function (response) {
+                    var rawFiles = Array.isArray(response && response.files)
+                        ? response.files
+                        : [];
+
+                    var fileNames = rawFiles
+                        .map(function (file) {
+                            return typeof file === "string"
+                                ? file
+                                : file && file.name;
+                        })
+                        .filter(function (name) {
+                            return typeof name === "string" && name.length > 0;
+                        });
+
+                    self.availableLogFiles(fileNames);
+
+                    if (fileNames.length > 0) {
+                        var defaultFile = getPluginSetting(
+                            "default_log_file",
+                            "",
+                        );
+                        if (fileNames.indexOf(defaultFile) !== -1) {
                             self.selectedLogFile(defaultFile);
                         } else {
-                            self.selectedLogFile(response.files[0].name);
+                            self.selectedLogFile(fileNames[0]);
                         }
                     }
-                }
-            });
+                })
+                .fail(function (xhr) {
+                    self.debugLog("Failed to load log file list", {
+                        status: xhr && xhr.status,
+                        responseText: xhr && xhr.responseText,
+                        url: pluginBaseUrl + "/files",
+                    });
+                    new PNotify({
+                        title: "Log Monitor",
+                        text: "Could not load available log files.",
+                        type: "error",
+                    });
+                });
         };
 
         // Stream control
@@ -244,7 +287,7 @@ $(function () {
                 return;
             }
 
-            $.ajax({
+            pluginAjax({
                 url: pluginBaseUrl + "/stream/start",
                 method: "POST",
                 data: JSON.stringify({ file: self.selectedLogFile() }),
@@ -253,10 +296,11 @@ $(function () {
             })
                 .done(function (response) {
                     self.isStreaming(true);
+                    flushIntervalId = setInterval(flushLineBuffer, 1000);
                     // Show initial lines if available
                     if (response.initial_lines) {
                         response.initial_lines.forEach(function (line) {
-                            self.handleLogLine(line);
+                            lineBuffer.push(line);
                         });
                     }
                 })
@@ -270,13 +314,16 @@ $(function () {
         };
 
         self.stopStream = function () {
-            $.ajax({
+            pluginAjax({
                 url: pluginBaseUrl + "/stream/stop",
                 method: "POST",
                 contentType: "application/json",
                 dataType: "json",
             })
                 .done(function () {
+                    clearInterval(flushIntervalId);
+                    flushIntervalId = null;
+                    flushLineBuffer();
                     self.isStreaming(false);
                 })
                 .fail(function (error) {
@@ -289,7 +336,8 @@ $(function () {
         };
 
         self.clearDisplay = function () {
-            self.allLines.removeAll();
+            lineBuffer.length = 0;
+            self.allLines([]);
         };
 
         // Search functions
@@ -305,7 +353,7 @@ $(function () {
                 self.settings.settings.plugins.logmonitor.search_page_size();
             var offset = self.currentPage() * pageSize;
 
-            $.ajax({
+            pluginAjax({
                 url: pluginBaseUrl + "/search",
                 method: "GET",
                 dataType: "json",
@@ -351,7 +399,7 @@ $(function () {
 
         // Alert functions
         self.resetAlerts = function () {
-            $.ajax({
+            pluginAjax({
                 url: pluginBaseUrl + "/alerts/reset",
                 method: "POST",
                 contentType: "application/json",
@@ -371,7 +419,7 @@ $(function () {
 
             var safeFormat = format === "txt" ? "txt" : "csv";
 
-            $.ajax({
+            pluginAjax({
                 url: pluginBaseUrl + "/export",
                 method: "POST",
                 data: JSON.stringify({
@@ -405,7 +453,7 @@ $(function () {
 
         // NEW: Load alert history
         self.loadAlertHistory = function () {
-            $.ajax({
+            pluginAjax({
                 url: pluginBaseUrl + "/alert-history",
                 method: "GET",
                 dataType: "json",
@@ -418,7 +466,7 @@ $(function () {
         self.clearAlertHistory = function () {
             if (!confirm("Clear all alert history?")) return;
 
-            $.ajax({
+            pluginAjax({
                 url: pluginBaseUrl + "/alert-history/clear",
                 method: "POST",
                 contentType: "application/json",
@@ -474,26 +522,20 @@ $(function () {
             if (plugin !== "logmonitor") return;
 
             if (data.type === "log_line") {
-                self.handleLogLine(data.data);
+                lineBuffer.push(data.data);
+            } else if (data.type === "log_lines") {
+                if (Array.isArray(data.data)) {
+                    data.data.forEach(function (line) {
+                        lineBuffer.push(line);
+                    });
+                }
             } else if (data.type === "severity_alert") {
                 self.handleAlert(data);
             }
         };
 
         self.handleLogLine = function (line) {
-            self.allLines.push(line);
-
-            // Trim buffer if needed
-            var maxLines =
-                self.settings.settings.plugins.logmonitor.max_stream_lines();
-            if (self.allLines().length > maxLines) {
-                self.allLines.shift();
-            }
-
-            // Auto-scroll
-            if (self.autoScroll()) {
-                self.scrollToBottom();
-            }
+            lineBuffer.push(line);
         };
 
         self.handleAlert = function (alert) {
