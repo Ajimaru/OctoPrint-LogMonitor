@@ -73,8 +73,8 @@ $(function () {
         // Observable: Filters
         self.autoScroll = ko.observable(true);
         self.filterText = ko.observable("");
-        self.showDebug = ko.observable(true);
-        self.showInfo = ko.observable(true);
+        self.showDebug = ko.observable(false);
+        self.showInfo = ko.observable(false);
         self.showWarning = ko.observable(true);
         self.showError = ko.observable(true);
         self.showCritical = ko.observable(true);

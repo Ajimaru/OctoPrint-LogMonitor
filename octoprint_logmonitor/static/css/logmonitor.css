@@ -190,21 +190,8 @@
 }
 
 /* Navbar */
-.logmonitor-navbar {
-  display: inline-block;
-}
-
 .logmonitor-navbar-link {
   position: relative;
-  display: inline-block;
-  padding: 5px 10px;
-  color: #333;
-  text-decoration: none;
-}
-
-.logmonitor-navbar-link:hover {
-  color: #000;
-  text-decoration: none;
 }
 
 .logmonitor-badge {
