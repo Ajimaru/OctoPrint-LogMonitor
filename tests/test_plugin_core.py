@@ -236,7 +236,7 @@ class TestPluginCore(unittest.TestCase):
         log_path.write_text("line")
 
         with patch(
-            "octoprint_logmonitor.__init__.check_file_size", return_value=False
+            "octoprint_logmonitor.check_file_size", return_value=False
         ), self.app.test_request_context("/search?file=octoprint.log", method="GET"):
             response = self.plugin.search_logs()
 
@@ -311,7 +311,7 @@ class TestPluginCore(unittest.TestCase):
         tailer.get_last_n_lines.return_value = [{"raw": "line 2"}]
 
         with patch(
-            "octoprint_logmonitor.__init__.LogTailer", return_value=tailer
+            "octoprint_logmonitor.LogTailer", return_value=tailer
         ), self.app.test_request_context(
             "/stream/start", method="POST", json={"file": "octoprint.log"}
         ):
@@ -419,7 +419,7 @@ class TestPluginCore(unittest.TestCase):
         tailer.start.return_value = True
 
         with patch(
-            "octoprint_logmonitor.__init__.LogTailer", return_value=tailer
+            "octoprint_logmonitor.LogTailer", return_value=tailer
         ), self.app.test_request_context(
             "/stream/multi/start", method="POST", json={"files": ["a.log", "b.log"]}
         ):
@@ -475,7 +475,7 @@ class TestPluginCore(unittest.TestCase):
         tailer = MagicMock()
         tailer.start.return_value = True
 
-        with patch("octoprint_logmonitor.__init__.LogTailer", return_value=tailer):
+        with patch("octoprint_logmonitor.LogTailer", return_value=tailer):
             self.plugin.on_after_startup()
 
         tailer.start.assert_called_once()
@@ -560,7 +560,7 @@ class TestPluginCore(unittest.TestCase):
         log_path.write_text("line")
 
         with patch(
-            "octoprint_logmonitor.__init__.check_file_size", return_value=False
+            "octoprint_logmonitor.check_file_size", return_value=False
         ), self.app.test_request_context(
             "/stream/start", method="POST", json={"file": "octoprint.log"}
         ):

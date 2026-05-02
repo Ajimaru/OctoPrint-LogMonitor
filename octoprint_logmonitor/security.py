@@ -167,7 +167,7 @@ def validate_pagination(
     if not isinstance(limit, int) or limit < 1:
         return False, "limit must be a positive integer"
     if limit > max_limit:
-        return False, f"limit must not exceed {max_limit}"
+        return False, f"limit exceeds maximum of {max_limit}"
     return True, ""
 
 
