@@ -23,6 +23,8 @@ class LogTailer:
     - Calls callback for each new line
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     # OctoPrint log format: YYYY-MM-DD HH:MM:SS[,ms] - LOGGER - LEVEL - MESSAGE
     LOG_PATTERN = re.compile(
         r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:,\d{3})?)\s+-\s+"
@@ -89,7 +91,10 @@ class LogTailer:
                 return False
 
             try:
-                self._file = open(self._filepath, encoding="utf-8", errors="replace")
+                # File handle is owned by the tailer for its lifetime; closed in stop().
+                self._file = open(  # noqa: SIM115  pylint: disable=consider-using-with
+                    self._filepath, encoding="utf-8", errors="replace"
+                )
                 self._file_inode = os.fstat(self._file.fileno()).st_ino
 
                 # Seek to end of file (start tailing from current position)
@@ -105,7 +110,7 @@ class LogTailer:
 
                 return True
 
-            except Exception as e:
+            except (OSError, RuntimeError) as e:
                 if self._logger:
                     self._logger.error(f"Failed to start LogTailer: {e}")
                 if self._file:
@@ -142,7 +147,7 @@ class LogTailer:
         if self._file:
             try:
                 self._file.close()
-            except Exception as e:
+            except OSError as e:
                 if self._logger:
                     self._logger.error(f"Error closing log file: {e}")
             finally:
@@ -168,6 +173,10 @@ class LogTailer:
                         self._logger.info("Log file rotated, reopening")
                     self._reopen_file()
 
+                if self._file is None:
+                    time.sleep(self._poll_interval)
+                    continue
+
                 # Read new lines
                 line = self._file.readline()
 
@@ -176,14 +185,16 @@ class LogTailer:
                     parsed = self._parse_line(line)
                     try:
                         self._callback(parsed)
-                    except Exception as e:
+                    except Exception as e:  # pylint: disable=broad-exception-caught
+                        # Callback is user-supplied; never let it kill the thread.
                         if self._logger:
                             self._logger.error(f"Error in callback: {e}")
                 else:
                     # No new data, wait before next check
                     time.sleep(self._poll_interval)
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            # Top-level guard: the background thread must never propagate exceptions.
             if self._logger:
                 self._logger.error(f"Error in LogTailer thread: {e}")
         finally:
@@ -209,13 +220,16 @@ class LogTailer:
             if self._file:
                 self._file.close()
 
-            self._file = open(self._filepath, encoding="utf-8", errors="replace")
+            # File handle is owned by the tailer; closed in stop().
+            self._file = open(  # noqa: SIM115  pylint: disable=consider-using-with
+                self._filepath, encoding="utf-8", errors="replace"
+            )
             self._file_inode = os.fstat(self._file.fileno()).st_ino
 
             # Start from beginning of new file
             self._file.seek(0, 0)
 
-        except Exception as e:
+        except OSError as e:
             if self._logger:
                 self._logger.error(f"Failed to reopen log file: {e}")
 
@@ -311,7 +325,7 @@ class LogTailer:
                 # Parse each line
                 return [self._parse_line(line) for line in last_lines]
 
-        except Exception as e:
+        except OSError as e:
             if self._logger:
                 self._logger.error(f"Error reading last lines: {e}")
             return []

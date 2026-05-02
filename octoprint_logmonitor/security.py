@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 Security Utilities Module
 
@@ -7,14 +6,11 @@ Provides path validation, input sanitization, rate limiting, and sensitive
 data masking to protect against common web security threats.
 """
 
-from __future__ import absolute_import
-
 import os
 import re
-import time
 import threading
-from typing import Dict, List, Optional, Tuple
-
+import time
+from typing import Optional
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -32,29 +28,29 @@ MAX_HISTORY_LIMIT: int = 500
 
 #: Regex patterns used to detect and mask sensitive values in log text.
 #: Each entry is a (compiled_pattern, replacement_string) pair.
-_SENSITIVE_PATTERNS: List[Tuple[re.Pattern, str]] = [
+_SENSITIVE_PATTERNS: list[tuple[re.Pattern, str]] = [
     # API keys / tokens / secrets  (key = value  or  key: value)
     (
         re.compile(
-            r'(?i)(api[_\-]?key|apikey|access[_\-]?token|auth[_\-]?token'
-            r'|secret[_\-]?key|client[_\-]?secret)\s*[:=]\s*\S+',
+            r"(?i)(api[_\-]?key|apikey|access[_\-]?token|auth[_\-]?token"
+            r"|secret[_\-]?key|client[_\-]?secret)\s*[:=]\s*\S+",
         ),
-        r'\1: [REDACTED]',
+        r"\1: [REDACTED]",
     ),
     # Passwords
     (
-        re.compile(r'(?i)(password|passwd|pwd)\s*[:=]\s*\S+'),
-        r'\1: [REDACTED]',
+        re.compile(r"(?i)(password|passwd|pwd)\s*[:=]\s*\S+"),
+        r"\1: [REDACTED]",
     ),
     # E-mail addresses
     (
-        re.compile(r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}'),
-        '[EMAIL REDACTED]',
+        re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"),
+        "[EMAIL REDACTED]",
     ),
     # Bearer tokens in HTTP headers
     (
-        re.compile(r'(?i)(bearer|basic)\s+[A-Za-z0-9+/=._~\-]{8,}'),
-        r'\1 [REDACTED]',
+        re.compile(r"(?i)(bearer|basic)\s+[A-Za-z0-9+/=._~\-]{8,}"),
+        r"\1 [REDACTED]",
     ),
 ]
 
@@ -62,6 +58,7 @@ _SENSITIVE_PATTERNS: List[Tuple[re.Pattern, str]] = [
 # ---------------------------------------------------------------------------
 # Path / Filename Validation
 # ---------------------------------------------------------------------------
+
 
 def is_safe_path(base_dir: str, filename: str) -> bool:
     """
@@ -90,7 +87,7 @@ def is_safe_path(base_dir: str, filename: str) -> bool:
         candidate = os.path.realpath(os.path.abspath(os.path.join(abs_base, filename)))
         # Candidate must start with base followed by a separator, OR equal base itself
         return candidate == abs_base or candidate.startswith(abs_base + os.sep)
-    except Exception:
+    except (OSError, ValueError, TypeError):
         return False
 
 
@@ -112,19 +109,18 @@ def validate_filename(filename: str) -> bool:
     """
     if not filename or not isinstance(filename, str):
         return False
-    if '/' in filename or '\\' in filename:
+    if "/" in filename or "\\" in filename:
         return False
-    if filename.startswith('.'):
+    if filename.startswith("."):
         return False
     # os.path.basename strips any remaining path prefix
-    if os.path.basename(filename) != filename:
-        return False
-    return True
+    return os.path.basename(filename) == filename
 
 
 # ---------------------------------------------------------------------------
 # File Size Guard
 # ---------------------------------------------------------------------------
+
 
 def check_file_size(filepath: str, max_bytes: int = MAX_FILE_SIZE_BYTES) -> bool:
     """
@@ -150,7 +146,10 @@ def check_file_size(filepath: str, max_bytes: int = MAX_FILE_SIZE_BYTES) -> bool
 # Input Validation Helpers
 # ---------------------------------------------------------------------------
 
-def validate_pagination(offset: int, limit: int, max_limit: int = MAX_SEARCH_LIMIT) -> Tuple[bool, str]:
+
+def validate_pagination(
+    offset: int, limit: int, max_limit: int = MAX_SEARCH_LIMIT
+) -> tuple[bool, str]:
     """
     Validate ``offset`` and ``limit`` pagination parameters.
 
@@ -175,7 +174,9 @@ def validate_pagination(offset: int, limit: int, max_limit: int = MAX_SEARCH_LIM
 VALID_SEVERITY_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
 
 
-def validate_severity_levels(levels: Optional[List[str]]) -> Tuple[List[str], List[str]]:
+def validate_severity_levels(
+    levels: Optional[list[str]],
+) -> tuple[list[str], list[str]]:
     """
     Partition *levels* into valid and invalid severity level strings.
 
@@ -195,6 +196,7 @@ def validate_severity_levels(levels: Optional[List[str]]) -> Tuple[List[str], Li
 # ---------------------------------------------------------------------------
 # Sensitive Data Masking
 # ---------------------------------------------------------------------------
+
 
 def mask_sensitive_data(text: str) -> str:
     """
@@ -218,6 +220,7 @@ def mask_sensitive_data(text: str) -> str:
 # ---------------------------------------------------------------------------
 # Rate Limiter
 # ---------------------------------------------------------------------------
+
 
 class RateLimiter:
     """
@@ -245,7 +248,7 @@ class RateLimiter:
         """
         self._max_calls = max_calls
         self._period = period
-        self._clients: Dict[str, List[float]] = {}
+        self._clients: dict[str, list[float]] = {}
         self._lock = threading.Lock()
 
     def is_allowed(self, client_key: str) -> bool:

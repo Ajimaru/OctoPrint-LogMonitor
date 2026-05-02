@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 Log Searcher Module
 
@@ -6,13 +5,11 @@ Provides efficient log file searching with pagination and severity filtering.
 Memory-efficient implementation that streams through large log files.
 """
 
-from __future__ import absolute_import
-
-import re
-import os
 import csv
 import io
-from typing import List, Dict, Optional, Any, Set
+import os
+import re
+from typing import Any, ClassVar, Optional
 
 
 class LogSearcher:
@@ -30,13 +27,19 @@ class LogSearcher:
 
     # OctoPrint log format: YYYY-MM-DD HH:MM:SS,ms - LOGGER - LEVEL - MESSAGE
     LOG_PATTERN = re.compile(
-        r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})\s+-\s+'
-        r'([^\-]+)\s+-\s+'
-        r'(DEBUG|INFO|WARNING|ERROR|CRITICAL)\s+-\s+'
-        r'(.+)$'
+        r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})\s+-\s+"
+        r"([^\-]+)\s+-\s+"
+        r"(DEBUG|INFO|WARNING|ERROR|CRITICAL)\s+-\s+"
+        r"(.+)$"
     )
 
-    VALID_LEVELS = {'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'}
+    VALID_LEVELS: ClassVar[set[str]] = {
+        "DEBUG",
+        "INFO",
+        "WARNING",
+        "ERROR",
+        "CRITICAL",
+    }
 
     def __init__(self, logger: Optional[Any] = None):
         """
@@ -47,17 +50,19 @@ class LogSearcher:
         """
         self._logger = logger
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-locals,too-many-branches
     def search(
         self,
         filepath: str,
         query: str = "",
-        levels: Optional[List[str]] = None,
+        levels: Optional[list[str]] = None,
         offset: int = 0,
         limit: int = 50,
         case_sensitive: bool = False,
         use_regex: bool = False,
-        context_lines: int = 0
-    ) -> Dict[str, Any]:
+        context_lines: int = 0,
+    ) -> dict[str, Any]:
         """
         Search log file for matching entries.
 
@@ -86,14 +91,16 @@ class LogSearcher:
                 "total": 0,
                 "offset": offset,
                 "limit": limit,
-                "error": "Log file not found"
+                "error": "Log file not found",
             }
 
         # Validate and normalize severity levels
         if levels is not None:
-            levels = set(l.upper() for l in levels if l.upper() in self.VALID_LEVELS)
+            allowed_levels: set[str] = {
+                lvl.upper() for lvl in levels if lvl.upper() in self.VALID_LEVELS
+            }
         else:
-            levels = self.VALID_LEVELS.copy()
+            allowed_levels = self.VALID_LEVELS.copy()
 
         # Compile search pattern
         search_pattern = None
@@ -115,7 +122,7 @@ class LogSearcher:
                     "total": 0,
                     "offset": offset,
                     "limit": limit,
-                    "error": f"Invalid search pattern: {e}"
+                    "error": f"Invalid search pattern: {e}",
                 }
 
         # Search the file
@@ -124,7 +131,7 @@ class LogSearcher:
             total_matches = 0
             current_match = 0
 
-            with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+            with open(filepath, encoding="utf-8", errors="replace") as f:
                 lines = f.readlines()
 
             # Process lines
@@ -132,7 +139,7 @@ class LogSearcher:
                 parsed = self._parse_line(line)
 
                 # Check if line matches filters
-                if self._matches_filters(parsed, search_pattern, levels):
+                if self._matches_filters(parsed, search_pattern, allowed_levels):
                     total_matches += 1
 
                     # Check if we should include this match (pagination)
@@ -142,10 +149,10 @@ class LogSearcher:
 
                         # Add context lines if requested
                         if context_lines > 0:
-                            match_entry['context_before'] = self._get_context_lines(
+                            match_entry["context_before"] = self._get_context_lines(
                                 lines, i, context_lines, before=True
                             )
-                            match_entry['context_after'] = self._get_context_lines(
+                            match_entry["context_after"] = self._get_context_lines(
                                 lines, i, context_lines, before=False
                             )
 
@@ -161,10 +168,10 @@ class LogSearcher:
                 "results": results,
                 "total": total_matches,
                 "offset": offset,
-                "limit": limit
+                "limit": limit,
             }
 
-        except Exception as e:
+        except OSError as e:
             if self._logger:
                 self._logger.error(f"Error searching log file: {e}")
             return {
@@ -172,10 +179,10 @@ class LogSearcher:
                 "total": 0,
                 "offset": offset,
                 "limit": limit,
-                "error": "An error occurred while searching the log file"
+                "error": "An error occurred while searching the log file",
             }
 
-    def _parse_line(self, line: str) -> Dict[str, Any]:
+    def _parse_line(self, line: str) -> dict[str, Any]:
         """
         Parse a log line into structured format.
 
@@ -185,7 +192,7 @@ class LogSearcher:
         Returns:
             Dictionary with parsed fields
         """
-        line = line.rstrip('\n\r')
+        line = line.rstrip("\n\r")
 
         match = self.LOG_PATTERN.match(line)
 
@@ -195,23 +202,22 @@ class LogSearcher:
                 "logger": match.group(2).strip(),
                 "level": match.group(3),
                 "message": match.group(4),
-                "raw": line
+                "raw": line,
             }
-        else:
-            # Line doesn't match expected format
-            return {
-                "timestamp": "",
-                "logger": "",
-                "level": "UNKNOWN",
-                "message": line,
-                "raw": line
-            }
+        # Line doesn't match expected format
+        return {
+            "timestamp": "",
+            "logger": "",
+            "level": "UNKNOWN",
+            "message": line,
+            "raw": line,
+        }
 
     def _matches_filters(
         self,
-        parsed: Dict[str, Any],
+        parsed: dict[str, Any],
         search_pattern: Optional[re.Pattern],
-        levels: Set[str]
+        levels: set[str],
     ) -> bool:
         """
         Check if a parsed log entry matches search filters.
@@ -225,26 +231,21 @@ class LogSearcher:
             True if entry matches all filters
         """
         # Check severity level
-        if parsed['level'] not in levels and parsed['level'] != 'UNKNOWN':
+        if parsed["level"] not in levels and parsed["level"] != "UNKNOWN":
             return False
 
-        # Check search pattern
-        if search_pattern:
-            # Search in message field
-            if not search_pattern.search(parsed['message']):
-                # Also try searching in full raw line
-                if not search_pattern.search(parsed['raw']):
-                    return False
+        if not search_pattern:
+            return True
 
-        return True
+        # Search in message field, fall back to full raw line
+        return bool(
+            search_pattern.search(parsed["message"])
+            or search_pattern.search(parsed["raw"])
+        )
 
     def _get_context_lines(
-        self,
-        lines: List[str],
-        index: int,
-        count: int,
-        before: bool = True
-    ) -> List[Dict[str, Any]]:
+        self, lines: list[str], index: int, count: int, before: bool = True
+    ) -> list[dict[str, Any]]:
         """
         Get context lines before or after a match.
 
@@ -271,7 +272,7 @@ class LogSearcher:
 
         return context
 
-    def get_file_stats(self, filepath: str) -> Dict[str, Any]:
+    def get_file_stats(self, filepath: str) -> dict[str, Any]:
         """
         Get statistics about a log file.
 
@@ -282,24 +283,21 @@ class LogSearcher:
             Dictionary with file statistics
         """
         if not os.path.exists(filepath):
-            return {
-                "exists": False,
-                "error": "File not found"
-            }
+            return {"exists": False, "error": "File not found"}
 
         try:
             stats = os.stat(filepath)
 
             # Count lines and severity levels
             level_counts = {level: 0 for level in self.VALID_LEVELS}
-            level_counts['UNKNOWN'] = 0
+            level_counts["UNKNOWN"] = 0
             total_lines = 0
 
-            with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+            with open(filepath, encoding="utf-8", errors="replace") as f:
                 for line in f:
                     total_lines += 1
                     parsed = self._parse_line(line)
-                    level = parsed['level']
+                    level = parsed["level"]
                     if level in level_counts:
                         level_counts[level] += 1
 
@@ -308,18 +306,15 @@ class LogSearcher:
                 "size_bytes": stats.st_size,
                 "total_lines": total_lines,
                 "level_counts": level_counts,
-                "modified_time": stats.st_mtime
+                "modified_time": stats.st_mtime,
             }
 
-        except Exception as e:
+        except OSError as e:
             if self._logger:
                 self._logger.error(f"Error getting file stats: {e}")
-            return {
-                "exists": True,
-                "error": str(e)
-            }
+            return {"exists": True, "error": str(e)}
 
-    def export_to_csv(self, results: List[Dict[str, Any]]) -> str:
+    def export_to_csv(self, results: list[dict[str, Any]]) -> str:
         """
         Export search results to CSV format.
 
@@ -331,22 +326,23 @@ class LogSearcher:
         """
         output = io.StringIO()
         writer = csv.DictWriter(
-            output,
-            fieldnames=['timestamp', 'logger', 'level', 'message']
+            output, fieldnames=["timestamp", "logger", "level", "message"]
         )
 
         writer.writeheader()
         for result in results:
-            writer.writerow({
-                'timestamp': result.get('timestamp', ''),
-                'logger': result.get('logger', ''),
-                'level': result.get('level', ''),
-                'message': result.get('message', '')
-            })
+            writer.writerow(
+                {
+                    "timestamp": result.get("timestamp", ""),
+                    "logger": result.get("logger", ""),
+                    "level": result.get("level", ""),
+                    "message": result.get("message", ""),
+                }
+            )
 
         return output.getvalue()
 
-    def export_to_txt(self, results: List[Dict[str, Any]]) -> str:
+    def export_to_txt(self, results: list[dict[str, Any]]) -> str:
         """
         Export search results to plain text format.
 
@@ -358,10 +354,10 @@ class LogSearcher:
         """
         lines = []
         for result in results:
-            timestamp = result.get('timestamp', '')
-            logger = result.get('logger', '')
-            level = result.get('level', '')
-            message = result.get('message', '')
+            timestamp = result.get("timestamp", "")
+            logger = result.get("logger", "")
+            level = result.get("level", "")
+            message = result.get("message", "")
 
             # Format: TIMESTAMP - LOGGER - LEVEL - MESSAGE
             line = f"{timestamp} - {logger} - {level} - {message}"

@@ -4,9 +4,14 @@ OctoPrint Log Monitor Plugin
 Provides live log streaming and searching capabilities with severity-based alerting.
 """
 
+# pylint: disable=broad-except,global-statement
+# intentional: plugin handlers must not crash OctoPrint
+
+import logging
 import os
 import threading
 from datetime import datetime
+from typing import Any
 
 import flask
 import octoprint.plugin
@@ -42,6 +47,13 @@ class LogmonitorPlugin(
     - Navbar and Sidebar indicators for severity alerts
     - Configurable severity triggers
     """
+
+    # OctoPrint-injected attributes (set by plugin framework at runtime)
+    _logger: logging.Logger
+    _settings: Any
+    _plugin_manager: Any
+    _identifier: str
+    _plugin_version: str
 
     def __init__(self):
         super().__init__()
@@ -262,7 +274,7 @@ class LogmonitorPlugin(
 
             # --- Parse & validate parameters ---
             filename = flask.request.args.get(
-                "file", self._settings.get(["default_log_file"])
+                "file", str(self._settings.get(["default_log_file"]) or "")
             )
             query = flask.request.args.get("query", "")
             raw_levels = flask.request.args.getlist("levels")
@@ -276,7 +288,7 @@ class LogmonitorPlugin(
                 offset = int(flask.request.args.get("offset", 0))
                 limit = int(
                     flask.request.args.get(
-                        "limit", self._settings.get(["search_page_size"])
+                        "limit", str(self._settings.get(["search_page_size"]))
                     )
                 )
             except (ValueError, TypeError):
@@ -879,13 +891,18 @@ __plugin_url__ = "https://github.com/Ajimaru/OctoPrint-LogMonitor"
 __plugin_license__ = "AGPL-3.0-or-later"
 
 
+# Module-level plugin variables (populated by __plugin_load__)
+__plugin_implementation__: "LogmonitorPlugin | None" = None
+__plugin_hooks__: dict = {}
+
+
 # ~~ Plugin loading
 def __plugin_load__():
     """Load the plugin."""
-    global __plugin_implementation__
+    global __plugin_implementation__  # type: ignore[reportUnnecessaryGlobalStatement]
     __plugin_implementation__ = LogmonitorPlugin()
 
-    global __plugin_hooks__
+    global __plugin_hooks__  # type: ignore[reportUnnecessaryGlobalStatement]
     __plugin_hooks__ = {
         "octoprint.plugin.softwareupdate.check_config": (
             __plugin_implementation__.get_update_information
