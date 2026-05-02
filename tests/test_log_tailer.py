@@ -14,6 +14,8 @@ from octoprint_logmonitor.log_tailer import LogTailer
 class TestLogTailer(unittest.TestCase):
     """Test cases for LogTailer functionality."""
 
+    # pylint: disable=protected-access
+
     def setUp(self):
         """Create a temporary log file for testing."""
         self.temp_dir = tempfile.mkdtemp()
@@ -27,7 +29,7 @@ class TestLogTailer(unittest.TestCase):
             self.log_file.unlink()
         os.rmdir(self.temp_dir)
 
-    def _callback(self, line: str):
+    def _callback(self, line: dict) -> None:
         """Callback function to capture received log lines."""
         self.received_lines.append(line)
 
@@ -143,7 +145,7 @@ class TestLogTailer(unittest.TestCase):
     def test_parse_simple_serial_log_line(self):
         """Serial-style lines without explicit logger/level should still parse."""
         tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
-        line = "2026-05-01 19:58:57,717 - serial.log is currently not enabled" "\n"
+        line = "2026-05-01 19:58:57,717 - serial.log is currently not enabled\n"
 
         parsed = tailer._parse_line(line)
 

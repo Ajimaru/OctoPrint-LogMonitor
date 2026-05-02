@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Unit tests for OctoPrint Log Monitor security module.
 
@@ -10,24 +9,24 @@ Tests the security utilities including:
 - Rate limiting
 """
 
-import os
+# pylint: disable=protected-access
+
+import shutil
 import tempfile
 import time
 import unittest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 from octoprint_logmonitor.security import (
-    is_safe_path,
-    validate_filename,
+    MAX_SEARCH_LIMIT,
+    VALID_SEVERITY_LEVELS,
+    RateLimiter,
     check_file_size,
+    is_safe_path,
+    mask_sensitive_data,
+    validate_filename,
     validate_pagination,
     validate_severity_levels,
-    mask_sensitive_data,
-    RateLimiter,
-    VALID_SEVERITY_LEVELS,
-    MAX_FILE_SIZE_BYTES,
-    MAX_SEARCH_LIMIT,
 )
 
 
@@ -40,7 +39,6 @@ class TestPathValidation(unittest.TestCase):
 
     def tearDown(self):
         """Clean up temporary directory."""
-        import shutil
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_safe_path_simple_filename(self):
@@ -87,12 +85,12 @@ class TestPathValidation(unittest.TestCase):
 
     def test_none_base_dir_rejected(self):
         """Test that None base_dir returns False."""
-        result = is_safe_path(None, "file.log")
+        result = is_safe_path(None, "file.log")  # type: ignore[arg-type]
         self.assertFalse(result)
 
     def test_none_filename_rejected(self):
         """Test that None filename returns False."""
-        result = is_safe_path(self.temp_dir, None)
+        result = is_safe_path(self.temp_dir, None)  # type: ignore[arg-type]
         self.assertFalse(result)
 
 
@@ -137,11 +135,11 @@ class TestFilenameValidation(unittest.TestCase):
 
     def test_none_rejected(self):
         """Test that None is rejected."""
-        self.assertFalse(validate_filename(None))
+        self.assertFalse(validate_filename(None))  # type: ignore[arg-type]
 
     def test_non_string_rejected(self):
         """Test that non-string types are rejected."""
-        self.assertFalse(validate_filename(123))
+        self.assertFalse(validate_filename(123))  # type: ignore[arg-type]
 
 
 class TestFileSizeCheck(unittest.TestCase):
@@ -154,7 +152,6 @@ class TestFileSizeCheck(unittest.TestCase):
 
     def tearDown(self):
         """Clean up temporary files."""
-        import shutil
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_small_file_within_limit(self):
@@ -230,17 +227,17 @@ class TestPaginationValidation(unittest.TestCase):
 
     def test_offset_non_integer(self):
         """Test that non-integer offset is rejected."""
-        valid, error = validate_pagination("invalid", 50)
+        valid, _error = validate_pagination("invalid", 50)  # type: ignore[arg-type]
         self.assertFalse(valid)
 
     def test_limit_non_integer(self):
         """Test that non-integer limit is rejected."""
-        valid, error = validate_pagination(0, "invalid")
+        valid, _error = validate_pagination(0, "invalid")  # type: ignore[arg-type]
         self.assertFalse(valid)
 
     def test_large_offset(self):
         """Test that large valid offset is accepted."""
-        valid, error = validate_pagination(1000000, 50)
+        valid, _error = validate_pagination(1000000, 50)
         self.assertTrue(valid)
 
 

@@ -5,11 +5,14 @@ These tests run without a real OctoPrint environment by stubbing the
 required OctoPrint plugin mixins.
 """
 
+# pylint: disable=protected-access,missing-function-docstring,too-many-public-methods
+
 import sys
 import tempfile
 import types
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import flask
@@ -18,38 +21,44 @@ from octoprint_logmonitor.security import MAX_HISTORY_LIMIT, MAX_SEARCH_LIMIT
 
 
 def _install_fake_octoprint():
+    """Stub octoprint.plugin so the plugin module imports without OctoPrint."""
     if "octoprint" in sys.modules:
         return
 
     octoprint_module = types.ModuleType("octoprint")
-    plugin_module = types.ModuleType("octoprint.plugin")
+    fake_plugin = types.ModuleType("octoprint.plugin")
 
+    # pylint: disable=too-few-public-methods
     class DummyBlueprintPlugin:
+        """Minimal BlueprintPlugin stand-in providing a no-op route decorator."""
+
         @staticmethod
-        def route(_rule, methods=None, **_kwargs):
+        def route(_rule, methods=None, **_kwargs):  # pylint: disable=unused-argument
+            """No-op route decorator that returns the view function unchanged."""
+
             def decorator(func):
                 return func
 
             return decorator
 
-    plugin_module.StartupPlugin = type("StartupPlugin", (object,), {})
-    plugin_module.TemplatePlugin = type("TemplatePlugin", (object,), {})
-    plugin_module.SettingsPlugin = type(
+    fake_plugin.StartupPlugin = type("StartupPlugin", (object,), {})  # type: ignore[attr-defined]
+    fake_plugin.TemplatePlugin = type("TemplatePlugin", (object,), {})  # type: ignore[attr-defined]
+    fake_plugin.SettingsPlugin = type(  # type: ignore[attr-defined]
         "SettingsPlugin",
         (object,),
         {"on_settings_save": lambda self, data: data},
     )
-    plugin_module.AssetPlugin = type("AssetPlugin", (object,), {})
-    plugin_module.BlueprintPlugin = DummyBlueprintPlugin
+    fake_plugin.AssetPlugin = type("AssetPlugin", (object,), {})  # type: ignore[attr-defined]
+    fake_plugin.BlueprintPlugin = DummyBlueprintPlugin  # type: ignore[attr-defined]
 
-    octoprint_module.plugin = plugin_module
+    octoprint_module.plugin = fake_plugin  # type: ignore[attr-defined]
     sys.modules["octoprint"] = octoprint_module
-    sys.modules["octoprint.plugin"] = plugin_module
+    sys.modules["octoprint.plugin"] = fake_plugin
 
 
 _install_fake_octoprint()
 
-import octoprint_logmonitor as plugin_module  # noqa: E402
+import octoprint_logmonitor as plugin_module  # noqa: E402  pylint: disable=wrong-import-position
 
 
 class FakeSettings:
@@ -60,21 +69,35 @@ class FakeSettings:
         self._values = values
 
     def get(self, keys):
+        """Return setting value by key (or first key from a list)."""
         if isinstance(keys, list):
             return self._values.get(keys[0])
         return self._values.get(keys)
 
-    def getBaseFolder(self, _name):
+    def getBaseFolder(self, _name):  # pylint: disable=invalid-name
+        """Return the configured base folder (OctoPrint-style camelCase API)."""
         return self._base_dir
 
 
 class TestPluginCore(unittest.TestCase):
     """Unit tests for core plugin behaviors."""
 
+    @staticmethod
+    def _resp(result):
+        """Return Flask Response, unwrapping (response, status) tuples."""
+        return result[0] if isinstance(result, tuple) else result
+
+    @staticmethod
+    def _status(result) -> int:
+        """Return the HTTP status code regardless of tuple/Response form."""
+        return result[1] if isinstance(result, tuple) else result.status_code
+
     def setUp(self):
         self.app = flask.Flask(__name__)
         self.temp_dir = tempfile.mkdtemp()
-        self.plugin = plugin_module.LogmonitorPlugin()
+        # Annotated as Any so MagicMock assignments to typed attributes
+        # (_logger, _plugin_manager, _settings, etc.) don't trip the type checker.
+        self.plugin: Any = plugin_module.LogmonitorPlugin()
         self.plugin._logger = MagicMock()
         self.plugin._plugin_manager = MagicMock()
         self.plugin._identifier = "logmonitor"
@@ -135,7 +158,7 @@ class TestPluginCore(unittest.TestCase):
         with self.app.test_request_context("/files", method="GET"):
             response = self.plugin.get_log_files()
 
-        payload = response.get_json()
+        payload = self._resp(response).get_json()
         filenames = [entry["name"] for entry in payload["files"]]
         self.assertEqual(filenames, ["a.log", "b.log"])
 
@@ -182,43 +205,42 @@ class TestPluginCore(unittest.TestCase):
         with self.app.test_request_context("/search", method="GET"):
             response = self.plugin.search_logs()
 
-        self.assertEqual(response.status_code, 429)
+        self.assertEqual(self._status(response), 429)
 
     def test_search_logs_invalid_offset_limit(self):
         with self.app.test_request_context("/search?offset=bad&limit=5", method="GET"):
             response = self.plugin.search_logs()
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self._status(response), 400)
 
     def test_search_logs_invalid_severity(self):
         with self.app.test_request_context("/search?levels=NOPE", method="GET"):
             response = self.plugin.search_logs()
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self._status(response), 400)
 
     def test_search_logs_rejects_invalid_filename(self):
         with self.app.test_request_context("/search?file=../bad.log", method="GET"):
             response = self.plugin.search_logs()
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self._status(response), 400)
 
     def test_search_logs_missing_file(self):
         with self.app.test_request_context("/search?file=missing.log", method="GET"):
             response = self.plugin.search_logs()
 
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(self._status(response), 404)
 
     def test_search_logs_rejects_large_file(self):
         log_path = Path(self.temp_dir) / "octoprint.log"
         log_path.write_text("line")
 
-        with patch("octoprint_logmonitor.__init__.check_file_size", return_value=False):
-            with self.app.test_request_context(
-                "/search?file=octoprint.log", method="GET"
-            ):
-                response = self.plugin.search_logs()
+        with patch(
+            "octoprint_logmonitor.__init__.check_file_size", return_value=False
+        ), self.app.test_request_context("/search?file=octoprint.log", method="GET"):
+            response = self.plugin.search_logs()
 
-        self.assertEqual(response.status_code, 413)
+        self.assertEqual(self._status(response), 413)
 
     def test_search_logs_success(self):
         log_path = Path(self.temp_dir) / "octoprint.log"
@@ -234,14 +256,14 @@ class TestPluginCore(unittest.TestCase):
         with self.app.test_request_context("/search?file=octoprint.log", method="GET"):
             response = self.plugin.search_logs()
 
-        payload = response.get_json()
+        payload = self._resp(response).get_json()
         self.assertEqual(payload["total"], 0)
 
     def test_reset_alerts_endpoint(self):
         self.plugin._alert_counts["ERROR"] = 3
         with self.app.test_request_context("/alerts/reset", method="POST"):
             response = self.plugin.reset_alerts()
-        self.assertEqual(response.get_json()["status"], "reset")
+        self.assertEqual(self._resp(response).get_json()["status"], "reset")
         self.assertEqual(self.plugin._alert_counts["ERROR"], 0)
 
     def test_alert_history_endpoints(self):
@@ -251,13 +273,13 @@ class TestPluginCore(unittest.TestCase):
         ]
         with self.app.test_request_context("/alert-history?limit=1", method="GET"):
             response = self.plugin.get_alert_history()
-        payload = response.get_json()
+        payload = self._resp(response).get_json()
         self.assertEqual(payload["total"], 2)
         self.assertEqual(len(payload["history"]), 1)
 
         with self.app.test_request_context("/alert-history/clear", method="POST"):
             response = self.plugin.clear_alert_history()
-        self.assertEqual(response.get_json()["status"], "cleared")
+        self.assertEqual(self._resp(response).get_json()["status"], "cleared")
         self.assertEqual(self.plugin._alert_history, [])
 
     def test_alert_history_invalid_limit(self):
@@ -271,14 +293,14 @@ class TestPluginCore(unittest.TestCase):
             "/stream/start", method="POST", json={"file": "../bad.log"}
         ):
             response = self.plugin.start_stream()
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self._status(response), 400)
 
     def test_start_stream_missing_file(self):
         with self.app.test_request_context(
             "/stream/start", method="POST", json={"file": "missing.log"}
         ):
             response = self.plugin.start_stream()
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(self._status(response), 404)
 
     def test_start_stream_success(self):
         log_path = Path(self.temp_dir) / "octoprint.log"
@@ -288,13 +310,14 @@ class TestPluginCore(unittest.TestCase):
         tailer.start.return_value = True
         tailer.get_last_n_lines.return_value = [{"raw": "line 2"}]
 
-        with patch("octoprint_logmonitor.__init__.LogTailer", return_value=tailer):
-            with self.app.test_request_context(
-                "/stream/start", method="POST", json={"file": "octoprint.log"}
-            ):
-                response = self.plugin.start_stream()
+        with patch(
+            "octoprint_logmonitor.__init__.LogTailer", return_value=tailer
+        ), self.app.test_request_context(
+            "/stream/start", method="POST", json={"file": "octoprint.log"}
+        ):
+            response = self.plugin.start_stream()
 
-        payload = response.get_json()
+        payload = self._resp(response).get_json()
         self.assertEqual(payload["status"], "started")
         self.assertEqual(payload["file"], "octoprint.log")
         self.assertEqual(payload["initial_lines"], [{"raw": "line 2"}])
@@ -306,12 +329,12 @@ class TestPluginCore(unittest.TestCase):
 
         with self.app.test_request_context("/stream/stop", method="POST"):
             response = self.plugin.stop_stream()
-        self.assertEqual(response.get_json()["status"], "stopped")
+        self.assertEqual(self._resp(response).get_json()["status"], "stopped")
         self.assertIsNone(self.plugin._tailer)
 
         with self.app.test_request_context("/stream/stop", method="POST"):
             response = self.plugin.stop_stream()
-        self.assertEqual(response.get_json()["status"], "not_running")
+        self.assertEqual(self._resp(response).get_json()["status"], "not_running")
 
     def test_export_results_csv(self):
         self.plugin._searcher = MagicMock()
@@ -321,7 +344,7 @@ class TestPluginCore(unittest.TestCase):
             "/export", method="POST", json={"format": "csv", "results": []}
         ):
             response = self.plugin.export_results()
-        self.assertEqual(response.mimetype, "text/csv")
+        self.assertEqual(self._resp(response).mimetype, "text/csv")
 
     def test_export_results_rejects_invalid_format(self):
         with self.app.test_request_context(
@@ -329,7 +352,7 @@ class TestPluginCore(unittest.TestCase):
         ):
             response = self.plugin.export_results()
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self._status(response), 400)
 
     def test_export_results_rejects_large_payload(self):
         with self.app.test_request_context(
@@ -339,7 +362,7 @@ class TestPluginCore(unittest.TestCase):
         ):
             response = self.plugin.export_results()
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self._status(response), 400)
 
     def test_download_log_file(self):
         log_path = Path(self.temp_dir) / "octoprint.log"
@@ -347,24 +370,25 @@ class TestPluginCore(unittest.TestCase):
 
         with self.app.test_request_context("/download/octoprint.log", method="GET"):
             response = self.plugin.download_log_file("octoprint.log")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("attachment;", response.headers.get("Content-Disposition", ""))
+        self.assertEqual(self._status(response), 200)
+        disposition = self._resp(response).headers.get("Content-Disposition", "")
+        self.assertIn("attachment;", disposition)
 
     def test_download_log_file_rejects_invalid_filename(self):
         with self.app.test_request_context("/download/../bad.log", method="GET"):
             response = self.plugin.download_log_file("../bad.log")
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self._status(response), 400)
 
     def test_download_log_file_missing(self):
         with self.app.test_request_context("/download/missing.log", method="GET"):
             response = self.plugin.download_log_file("missing.log")
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(self._status(response), 404)
 
     def test_get_active_streams(self):
         self.plugin._active_tailers = {"a.log": MagicMock(), "b.log": MagicMock()}
         with self.app.test_request_context("/multi-stream", method="GET"):
             response = self.plugin.get_active_streams()
-        payload = response.get_json()
+        payload = self._resp(response).get_json()
         self.assertEqual(payload["count"], 2)
         self.assertEqual(set(payload["active_streams"]), {"a.log", "b.log"})
 
@@ -378,14 +402,14 @@ class TestPluginCore(unittest.TestCase):
             "/stream/multi/start", method="POST", json={"files": "not-a-list"}
         ):
             response = self.plugin.start_multi_stream()
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self._status(response), 400)
 
     def test_start_multi_stream_limits_count(self):
         with self.app.test_request_context(
             "/stream/multi/start", method="POST", json={"files": ["a.log"] * 25}
         ):
             response = self.plugin.start_multi_stream()
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self._status(response), 400)
 
     def test_start_multi_stream_success(self):
         (Path(self.temp_dir) / "a.log").write_text("a")
@@ -394,13 +418,14 @@ class TestPluginCore(unittest.TestCase):
         tailer = MagicMock()
         tailer.start.return_value = True
 
-        with patch("octoprint_logmonitor.__init__.LogTailer", return_value=tailer):
-            with self.app.test_request_context(
-                "/stream/multi/start", method="POST", json={"files": ["a.log", "b.log"]}
-            ):
-                response = self.plugin.start_multi_stream()
+        with patch(
+            "octoprint_logmonitor.__init__.LogTailer", return_value=tailer
+        ), self.app.test_request_context(
+            "/stream/multi/start", method="POST", json={"files": ["a.log", "b.log"]}
+        ):
+            response = self.plugin.start_multi_stream()
 
-        payload = response.get_json()
+        payload = self._resp(response).get_json()
         self.assertEqual(payload["status"], "multi_started")
         self.assertEqual(set(payload["started"]), {"a.log", "b.log"})
 
@@ -416,7 +441,7 @@ class TestPluginCore(unittest.TestCase):
         ):
             response = self.plugin.stop_multi_stream()
 
-        payload = response.get_json()
+        payload = self._resp(response).get_json()
         self.assertEqual(payload["status"], "all_stopped")
         self.assertEqual(len(self.plugin._active_tailers), 0)
 
@@ -478,7 +503,7 @@ class TestPluginCore(unittest.TestCase):
         with self.app.test_request_context("/files", method="GET"):
             response = self.plugin.get_log_files()
 
-        payload = response.get_json()
+        payload = self._resp(response).get_json()
         self.assertEqual(payload["files"], [])
         self.assertIn("error", payload)
 
@@ -517,7 +542,7 @@ class TestPluginCore(unittest.TestCase):
         ]
         with self.app.test_request_context("/alert-history?limit=9999", method="GET"):
             response = self.plugin.get_alert_history()
-        payload = response.get_json()
+        payload = self._resp(response).get_json()
         self.assertEqual(len(payload["history"]), MAX_HISTORY_LIMIT)
 
     def test_export_results_txt(self):
@@ -528,19 +553,20 @@ class TestPluginCore(unittest.TestCase):
             "/export", method="POST", json={"format": "txt", "results": []}
         ):
             response = self.plugin.export_results()
-        self.assertEqual(response.mimetype, "text/plain")
+        self.assertEqual(self._resp(response).mimetype, "text/plain")
 
     def test_start_stream_rejects_large_file(self):
         log_path = Path(self.temp_dir) / "octoprint.log"
         log_path.write_text("line")
 
-        with patch("octoprint_logmonitor.__init__.check_file_size", return_value=False):
-            with self.app.test_request_context(
-                "/stream/start", method="POST", json={"file": "octoprint.log"}
-            ):
-                response = self.plugin.start_stream()
+        with patch(
+            "octoprint_logmonitor.__init__.check_file_size", return_value=False
+        ), self.app.test_request_context(
+            "/stream/start", method="POST", json={"file": "octoprint.log"}
+        ):
+            response = self.plugin.start_stream()
 
-        self.assertEqual(response.status_code, 413)
+        self.assertEqual(self._status(response), 413)
 
     def test_start_multi_stream_invalid_entries(self):
         (Path(self.temp_dir) / "a.log").write_text("a")
@@ -552,7 +578,7 @@ class TestPluginCore(unittest.TestCase):
         ):
             response = self.plugin.start_multi_stream()
 
-        payload = response.get_json()
+        payload = self._resp(response).get_json()
         self.assertEqual(payload["status"], "multi_started")
         self.assertIn("a.log", payload["started"])
         self.assertGreaterEqual(len(payload["failed"]), 2)
@@ -567,7 +593,7 @@ class TestPluginCore(unittest.TestCase):
         ):
             response = self.plugin.stop_multi_stream()
 
-        payload = response.get_json()
+        payload = self._resp(response).get_json()
         self.assertEqual(payload["status"], "multi_stopped")
         self.assertIn("a.log", payload["stopped"])
         self.assertEqual(set(self.plugin._active_tailers.keys()), {"b.log"})

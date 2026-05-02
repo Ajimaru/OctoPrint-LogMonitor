@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Integration tests for OctoPrint Log Monitor REST API endpoints.
 
@@ -9,11 +8,12 @@ Tests the plugin's REST API routes with various scenarios including:
 - Alert management
 - Security (path traversal prevention)
 """
+
+import contextlib
 import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
 
 # Note: These tests assume the plugin is installed in an OctoPrint environment
 # For standalone testing, we'll mock the OctoPrint dependencies
@@ -32,13 +32,17 @@ class TestAPIEndpoints(unittest.TestCase):
         self.plugin_log = Path(self.temp_dir) / "plugin_test.log"
 
         # Write test content
-        log_content = "\n".join([
-            "2026-02-19 10:00:00,000 - octoprint.server - INFO - Starting OctoPrint",
-            "2026-02-19 10:00:01,000 - octoprint.printer - WARNING - Printer not responding",
-            "2026-02-19 10:00:02,000 - plugin.test - ERROR - Test plugin error",
-            "2026-02-19 10:00:03,000 - octoprint.server - CRITICAL - Critical error occurred",
-            "2026-02-19 10:00:04,000 - octoprint.printer - DEBUG - Debug info",
-        ])
+        log_content = "\n".join(
+            [
+                "2026-02-19 10:00:00,000 - octoprint.server - INFO - Starting OctoPrint",
+                "2026-02-19 10:00:01,000 - octoprint.printer - WARNING"
+                " - Printer not responding",
+                "2026-02-19 10:00:02,000 - plugin.test - ERROR - Test plugin error",
+                "2026-02-19 10:00:03,000 - octoprint.server - CRITICAL"
+                " - Critical error occurred",
+                "2026-02-19 10:00:04,000 - octoprint.printer - DEBUG - Debug info",
+            ]
+        )
 
         self.log_file.write_text(log_content)
         self.plugin_log.write_text(log_content)
@@ -48,10 +52,8 @@ class TestAPIEndpoints(unittest.TestCase):
         for f in [self.log_file, self.plugin_log]:
             if f.exists():
                 f.unlink()
-        try:
+        with contextlib.suppress(OSError):
             os.rmdir(self.temp_dir)
-        except OSError:
-            pass
 
     def test_files_endpoint_lists_log_files(self):
         """
@@ -70,13 +72,13 @@ class TestAPIEndpoints(unittest.TestCase):
                 {
                     "name": "octoprint.log",
                     "size": os.path.getsize(self.log_file),
-                    "modified": os.path.getmtime(self.log_file)
+                    "modified": os.path.getmtime(self.log_file),
                 },
                 {
                     "name": "plugin_test.log",
                     "size": os.path.getsize(self.plugin_log),
-                    "modified": os.path.getmtime(self.plugin_log)
-                }
+                    "modified": os.path.getmtime(self.plugin_log),
+                },
             ]
         }
 
@@ -103,12 +105,15 @@ class TestAPIEndpoints(unittest.TestCase):
                     "logger": "octoprint.printer",
                     "level": "WARNING",
                     "message": "Printer not responding",
-                    "raw": "2026-02-19 10:00:01,000 - octoprint.printer - WARNING - Printer not responding"
+                    "raw": (
+                        "2026-02-19 10:00:01,000 - octoprint.printer"
+                        " - WARNING - Printer not responding"
+                    ),
                 }
             ],
             "total": 1,
             "offset": 0,
-            "limit": 50
+            "limit": 50,
         }
 
         # Validate structure
@@ -130,16 +135,10 @@ class TestAPIEndpoints(unittest.TestCase):
         # Simulate filtering for ERROR and CRITICAL only
         expected_result = {
             "results": [
-                {
-                    "level": "ERROR",
-                    "message": "Test plugin error"
-                },
-                {
-                    "level": "CRITICAL",
-                    "message": "Critical error occurred"
-                }
+                {"level": "ERROR", "message": "Test plugin error"},
+                {"level": "CRITICAL", "message": "Critical error occurred"},
             ],
-            "total": 2
+            "total": 2,
         }
 
         # Verify all results match filter criteria
@@ -183,7 +182,7 @@ class TestAPIEndpoints(unittest.TestCase):
         ]
 
         # Each should match the same result
-        for query, _ in test_cases:
+        for _query, _ in test_cases:
             # This demonstrates case-insensitive matching behavior
             pass
 
@@ -206,9 +205,16 @@ class TestAPIEndpoints(unittest.TestCase):
 
         for dangerous_filename in dangerous_filenames:
             # Each should be rejected
-            has_path_traversal = '/' in dangerous_filename or '\\' in dangerous_filename or dangerous_filename.startswith('.')
-            self.assertTrue(has_path_traversal,
-                          f"Test case '{dangerous_filename}' should have path traversal indicators")
+            has_path_traversal = (
+                "/" in dangerous_filename
+                or "\\" in dangerous_filename
+                or dangerous_filename.startswith(".")
+            )
+            self.assertTrue(
+                has_path_traversal,
+                f"Test case '{dangerous_filename}' should have path"
+                " traversal indicators",
+            )
 
     def test_path_traversal_protection_search_endpoint(self):
         """
@@ -219,17 +225,28 @@ class TestAPIEndpoints(unittest.TestCase):
         - Validates that requested file is within log directory
         """
         # Only safe filenames should pass validation
-        safe_filenames = ["octoprint.log", "plugin_test.log", "plugin_myplugin.log"]
-        unsafe_filenames = ["../../../etc/passwd", "..\\..\\windows\\system32\\config\\sam"]
+        safe_filenames = [
+            "octoprint.log",
+            "plugin_test.log",
+            "plugin_myplugin.log",
+        ]
+        unsafe_filenames = [
+            "../../../etc/passwd",
+            "..\\..\\windows\\system32\\config\\sam",
+        ]
 
         for safe_file in safe_filenames:
             # These should be allowed
-            has_traversal = ('/' in safe_file or '\\' in safe_file or safe_file.startswith('.'))
+            has_traversal = (
+                "/" in safe_file or "\\" in safe_file or safe_file.startswith(".")
+            )
             self.assertFalse(has_traversal, f"{safe_file} should be safe")
 
         for unsafe_file in unsafe_filenames:
             # These should be blocked
-            has_traversal = ('/' in unsafe_file or '\\' in unsafe_file or unsafe_file.startswith('.'))
+            has_traversal = (
+                "/" in unsafe_file or "\\" in unsafe_file or unsafe_file.startswith(".")
+            )
             self.assertTrue(has_traversal, f"{unsafe_file} should be blocked")
 
     def test_stream_start_endpoint(self):
@@ -247,7 +264,7 @@ class TestAPIEndpoints(unittest.TestCase):
             "initial_lines": [
                 {"timestamp": "2026-02-19 10:00:00,000", "level": "INFO"},
                 {"timestamp": "2026-02-19 10:00:01,000", "level": "WARNING"},
-            ]
+            ],
         }
 
         self.assertEqual(expected_response["status"], "started")
@@ -272,9 +289,13 @@ class TestAPIEndpoints(unittest.TestCase):
         for payload in invalid_payloads:
             filename = payload["file"]
             # Check if filename contains any path traversal indicators
-            has_traversal = any(char in filename for char in ['/', '\\']) or filename.startswith('.')
-            self.assertTrue(has_traversal,
-                           f"Test payload '{filename}' should demonstrate path traversal")
+            has_traversal = any(
+                char in filename for char in ["/", "\\"]
+            ) or filename.startswith(".")
+            self.assertTrue(
+                has_traversal,
+                f"Test payload '{filename}' should demonstrate path traversal",
+            )
 
     def test_stream_stop_endpoint(self):
         """
@@ -391,7 +412,7 @@ class TestAPISecurityIntegration(unittest.TestCase):
 
         # These should be treated as literal search strings
         # and will safely match nothing in the log file
-        for query in dangerous_queries:
+        for _query in dangerous_queries:
             # Each query is treated as literal text, making SQL injection impossible
             pass
 
@@ -434,7 +455,6 @@ class TestAPIIntegrationWithPlugin(unittest.TestCase):
         """
         # This would be tested with mock threading
         # Document expected behavior
-        pass
 
     def test_large_file_handling(self):
         """
@@ -451,8 +471,11 @@ class TestAPIIntegrationWithPlugin(unittest.TestCase):
         max_results_per_call = 50
         expected_calls_needed = large_file_lines // max_results_per_call
 
-        self.assertGreater(expected_calls_needed, 1,
-                          "Large files should require multiple paginated requests")
+        self.assertGreater(
+            expected_calls_needed,
+            1,
+            "Large files should require multiple paginated requests",
+        )
 
 
 class TestManualBrowserTesting(unittest.TestCase):
@@ -477,7 +500,6 @@ class TestManualBrowserTesting(unittest.TestCase):
         7. Disable "Show in Navbar" in settings
         8. Verify badge disappears
         """
-        pass
 
     def test_manual_sidebar_widget(self):
         """
@@ -492,7 +514,6 @@ class TestManualBrowserTesting(unittest.TestCase):
         6. Click widget to navigate to plugin tab
         7. Verify alerts are marked as acknowledged
         """
-        pass
 
     def test_manual_live_stream(self):
         """
@@ -510,7 +531,6 @@ class TestManualBrowserTesting(unittest.TestCase):
         9. Toggle auto-scroll setting
         10. Verify behavior changes
         """
-        pass
 
     def test_manual_search_pagination(self):
         """
@@ -528,7 +548,6 @@ class TestManualBrowserTesting(unittest.TestCase):
         9. Verify correct results on each page
         10. Check "Total results" count matches pagination
         """
-        pass
 
     def test_manual_settings_save_load(self):
         """
@@ -548,7 +567,6 @@ class TestManualBrowserTesting(unittest.TestCase):
         11. Trigger an alert for a disabled severity
         12. Verify alert doesn't appear (respects settings)
         """
-        pass
 
     def test_manual_severity_filtering(self):
         """
@@ -567,7 +585,6 @@ class TestManualBrowserTesting(unittest.TestCase):
            - Click Search
         8. Verify results only contain ERROR entries
         """
-        pass
 
     def test_manual_connection_status(self):
         """
@@ -582,8 +599,7 @@ class TestManualBrowserTesting(unittest.TestCase):
         6. Verify status returns to "Connected"
         7. Verify logs resume streaming
         """
-        pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
