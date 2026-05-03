@@ -47,6 +47,7 @@ class LogSearcher:
         "WARNING",
         "ERROR",
         "CRITICAL",
+        "UNKNOWN",
     }
 
     def __init__(self, logger: Optional[Any] = None):
@@ -249,7 +250,7 @@ class LogSearcher:
             True if entry matches all filters
         """
         # Check severity level
-        if parsed["level"] not in levels and parsed["level"] != "UNKNOWN":
+        if parsed["level"] not in levels:
             return False
 
         if not search_pattern:

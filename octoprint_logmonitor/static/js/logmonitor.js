@@ -116,6 +116,7 @@ $(function () {
         self.showWarning = ko.observable(true);
         self.showError = ko.observable(true);
         self.showCritical = ko.observable(true);
+        self.showUnknown = ko.observable(false);
 
         // Observable: Alerts
         self.alertCount = ko.observable(0);
@@ -143,6 +144,7 @@ $(function () {
         self.searchWarning = ko.observable(true);
         self.searchError = ko.observable(true);
         self.searchCritical = ko.observable(true);
+        self.searchUnknown = ko.observable(false);
         self.searchResults = ko.observableArray([]);
         self.hasSearched = ko.observable(false);
         self.currentPage = ko.observable(0);
@@ -174,6 +176,8 @@ $(function () {
                     return false;
                 if (line.level === "ERROR" && !self.showError()) return false;
                 if (line.level === "CRITICAL" && !self.showCritical())
+                    return false;
+                if (line.level === "UNKNOWN" && !self.showUnknown())
                     return false;
 
                 // Apply text filter
@@ -593,6 +597,7 @@ $(function () {
             if (self.searchWarning()) levels.push("WARNING");
             if (self.searchError()) levels.push("ERROR");
             if (self.searchCritical()) levels.push("CRITICAL");
+            if (self.searchUnknown()) levels.push("UNKNOWN");
 
             var pageSize =
                 self.settings.settings.plugins.logmonitor.search_page_size();

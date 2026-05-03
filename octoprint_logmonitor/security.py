@@ -171,7 +171,9 @@ def validate_pagination(
     return True, ""
 
 
-VALID_SEVERITY_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
+VALID_SEVERITY_LEVELS = frozenset(
+    {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "UNKNOWN"}
+)
 
 
 def validate_severity_levels(

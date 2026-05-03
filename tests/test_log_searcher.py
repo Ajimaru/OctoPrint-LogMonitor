@@ -205,6 +205,49 @@ class TestLogSearcher(unittest.TestCase):
 
         compact_file.unlink()
 
+    def test_search_unknown_filter_only_returns_unknown(self):
+        """UNKNOWN filter should return only parser-unclassified lines."""
+        mixed_file = Path(self.temp_dir) / "mixed.log"
+        mixed_file.write_text(
+            "2024-01-01 10:00:00,000 - octoprint - INFO - Known\n"
+            "unparsed line without octoprint format\n"
+        )
+
+        result = self.searcher.search(
+            filepath=str(mixed_file),
+            query="",
+            levels=["UNKNOWN"],
+            offset=0,
+            limit=10,
+        )
+
+        self.assertEqual(result["total"], 1)
+        self.assertEqual(result["results"][0]["level"], "UNKNOWN")
+        self.assertIn("unparsed line", result["results"][0]["message"])
+
+        mixed_file.unlink()
+
+    def test_search_explicit_levels_exclude_unknown_when_not_selected(self):
+        """UNKNOWN lines should be excluded when levels do not include UNKNOWN."""
+        mixed_file = Path(self.temp_dir) / "mixed_levels.log"
+        mixed_file.write_text(
+            "2024-01-01 10:00:00,000 - octoprint - INFO - Known\n"
+            "unparsed line without octoprint format\n"
+        )
+
+        result = self.searcher.search(
+            filepath=str(mixed_file),
+            query="",
+            levels=["INFO"],
+            offset=0,
+            limit=10,
+        )
+
+        self.assertEqual(result["total"], 1)
+        self.assertEqual(result["results"][0]["level"], "INFO")
+
+        mixed_file.unlink()
+
     def test_empty_file(self):
         """Test searching in empty file."""
         empty_file = Path(self.temp_dir) / "empty.log"
