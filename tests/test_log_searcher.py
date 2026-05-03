@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
 """
 Tests for LogSearcher class.
 """
+
 import os
 import tempfile
 import unittest
@@ -44,11 +44,7 @@ class TestLogSearcher(unittest.TestCase):
     def test_search_all_lines(self):
         """Test searching without filters returns all lines."""
         result = self.searcher.search(
-            filepath=str(self.log_file),
-            query="",
-            levels=None,
-            offset=0,
-            limit=100
+            filepath=str(self.log_file), query="", levels=None, offset=0, limit=100
         )
 
         self.assertEqual(result["total"], 8)
@@ -57,11 +53,7 @@ class TestLogSearcher(unittest.TestCase):
     def test_search_text_query(self):
         """Test text search."""
         result = self.searcher.search(
-            filepath=str(self.log_file),
-            query="Error",
-            levels=None,
-            offset=0,
-            limit=100
+            filepath=str(self.log_file), query="Error", levels=None, offset=0, limit=100
         )
 
         # Should match lines containing "Error" in any field
@@ -81,7 +73,7 @@ class TestLogSearcher(unittest.TestCase):
             levels=None,
             offset=0,
             limit=100,
-            use_regex=True
+            use_regex=True,
         )
 
         # Should match lines with "plugin.test" logger
@@ -98,7 +90,7 @@ class TestLogSearcher(unittest.TestCase):
             query="",
             levels=["ERROR", "CRITICAL"],
             offset=0,
-            limit=100
+            limit=100,
         )
 
         self.assertEqual(result["total"], 3)
@@ -112,7 +104,7 @@ class TestLogSearcher(unittest.TestCase):
             query="plugin",
             levels=["ERROR"],
             offset=0,
-            limit=100
+            limit=100,
         )
 
         # Should match only ERROR lines from plugin.test logger
@@ -132,7 +124,7 @@ class TestLogSearcher(unittest.TestCase):
             query="",
             levels=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
             offset=0,
-            limit=3
+            limit=3,
         )
 
         # Should get all 8 lines total
@@ -145,7 +137,7 @@ class TestLogSearcher(unittest.TestCase):
             query="",
             levels=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
             offset=3,
-            limit=3
+            limit=3,
         )
 
         self.assertEqual(len(result_page2["results"]), 3)
@@ -153,7 +145,7 @@ class TestLogSearcher(unittest.TestCase):
         # Results should be different (different timestamps)
         self.assertNotEqual(
             result_page1["results"][0]["timestamp"],
-            result_page2["results"][0]["timestamp"]
+            result_page2["results"][0]["timestamp"],
         )
 
     def test_get_file_stats(self):
@@ -170,11 +162,7 @@ class TestLogSearcher(unittest.TestCase):
     def test_invalid_file(self):
         """Test behavior with non-existent file."""
         result = self.searcher.search(
-            filepath="/nonexistent/file.log",
-            query="",
-            levels=None,
-            offset=0,
-            limit=10
+            filepath="/nonexistent/file.log", query="", levels=None, offset=0, limit=10
         )
 
         self.assertEqual(result["total"], 0)
@@ -189,11 +177,33 @@ class TestLogSearcher(unittest.TestCase):
             levels=None,
             offset=0,
             limit=10,
-            use_regex=True
+            use_regex=True,
         )
 
         # Should return error
         self.assertIn("error", result)
+
+    def test_search_compact_warning_line_matches_severity_filter(self):
+        """Compact warning lines should be parsed as WARNING in search mode."""
+        compact_file = Path(self.temp_dir) / "compact.log"
+        compact_file.write_text(
+            "2026-05-03 22:20:17,441WARNING octoprint.plugins.logmonitor "
+            "The templates of this plugin are currently not being autoescaped\n"
+        )
+
+        result = self.searcher.search(
+            filepath=str(compact_file),
+            query="",
+            levels=["WARNING"],
+            offset=0,
+            limit=10,
+        )
+
+        self.assertEqual(result["total"], 1)
+        self.assertEqual(result["results"][0]["level"], "WARNING")
+        self.assertEqual(result["results"][0]["logger"], "octoprint.plugins.logmonitor")
+
+        compact_file.unlink()
 
     def test_empty_file(self):
         """Test searching in empty file."""
@@ -201,11 +211,7 @@ class TestLogSearcher(unittest.TestCase):
         empty_file.touch()
 
         result = self.searcher.search(
-            filepath=str(empty_file),
-            query="test",
-            levels=None,
-            offset=0,
-            limit=10
+            filepath=str(empty_file), query="test", levels=None, offset=0, limit=10
         )
 
         self.assertEqual(result["total"], 0)

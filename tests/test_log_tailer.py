@@ -181,6 +181,21 @@ class TestLogTailer(unittest.TestCase):
         self.assertEqual(parsed_in["logger"], "serial.log")
         self.assertEqual(parsed_in["message"], "<<< ok")
 
+    def test_parse_compact_warning_line(self):
+        """Compact OctoPrint warning lines should still map to WARNING level."""
+        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
+        line = (
+            "2026-05-03 22:20:17,441WARNING octoprint.plugins.logmonitor "
+            "The templates of this plugin are currently not being autoescaped\n"
+        )
+
+        parsed = tailer._parse_line(line)
+
+        self.assertEqual(parsed["timestamp"], "2026-05-03 22:20:17,441")
+        self.assertEqual(parsed["level"], "WARNING")
+        self.assertEqual(parsed["logger"], "octoprint.plugins.logmonitor")
+        self.assertIn("autoescaped", parsed["message"])
+
 
 if __name__ == "__main__":
     unittest.main()
