@@ -52,7 +52,7 @@
             <div class="logmonitor-line"
                  data-bind="css: 'logmonitor-level-' + level.toLowerCase()">
                 <span class="logmonitor-timestamp"
-                      data-bind="visible: timestamp, text: timestamp"></span><span class="logmonitor-level" data-bind="text: level"></span><span class="logmonitor-logger" data-bind="visible: logger, text: logger"></span><span class="logmonitor-message" data-bind="text: message"></span>
+                      data-bind="visible: timestamp, text: timestamp"></span><span class="logmonitor-level" data-bind="text: level + ' '"></span><span class="logmonitor-logger" data-bind="visible: logger, text: logger"></span><span class="logmonitor-message" data-bind="text: message"></span>
             </div>
         </div>
         <div class="logmonitor-status">
@@ -100,7 +100,7 @@
                 <div class="logmonitor-search-result"
                      data-bind="css: 'logmonitor-level-' + level.toLowerCase()">
                     <span class="logmonitor-timestamp"
-                          data-bind="visible: timestamp, text: timestamp"></span><span class="logmonitor-level" data-bind="text: level"></span><span class="logmonitor-logger" data-bind="visible: logger, text: logger"></span><span class="logmonitor-message" data-bind="text: message"></span>
+                          data-bind="visible: timestamp, text: timestamp"></span><span class="logmonitor-level" data-bind="text: level + ' '"></span><span class="logmonitor-logger" data-bind="visible: logger, text: logger"></span><span class="logmonitor-message" data-bind="text: message"></span>
                 </div>
             </div>
             <div class="logmonitor-pagination">
