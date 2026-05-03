@@ -5,12 +5,14 @@
         <h4>{{ _("Live Log Stream") }}</h4>
         <div class="logmonitor-controls">
             <div class="logmonitor-controls-row">
-                <select data-bind="value: selectedLogFile, options: availableLogFiles"
+                <select data-bind="value: selectedLogFile, options: availableLogFiles, enable: !streamControlsDisabled()"
                         class="logmonitor-file-select">
                     <option value="">{{ _("Select log file...") }}</option>
                 </select>
                 <button class="btn btn-primary"
-                        data-bind="click: toggleStream, text: streamButtonText">{{ _("Start Streaming") }}</button>
+                        data-bind="click: toggleStream, text: streamButtonText, enable: !streamControlsDisabled()">
+                    {{ _("Start Streaming") }}
+                </button>
                 <button class="btn btn-default" data-bind="click: clearDisplay">{{ _("Clear") }}</button>
             </div>
             <div class="logmonitor-controls-row">

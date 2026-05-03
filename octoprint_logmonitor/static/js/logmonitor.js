@@ -73,9 +73,19 @@ $(function () {
 
         // Observable: Stream state
         self.isStreaming = ko.observable(false);
+        self.isSwitchingStream = ko.observable(false);
         self.selectedLogFile = ko.observable("");
+        self.activeStreamFile = ko.observable("");
         self.availableLogFiles = ko.observableArray([]);
         self.allLines = ko.observableArray([]);
+        var suppressStreamSwitch = false;
+
+        function setSelectedLogFile(value) {
+            suppressStreamSwitch = true;
+            self.selectedLogFile(value);
+            suppressStreamSwitch = false;
+        }
+
         self.lineCount = ko.computed(function () {
             return self.allLines().length;
         });
@@ -156,7 +166,13 @@ $(function () {
         // Computed: Status text
         self.statusText = ko.computed(function () {
             if (self.isStreaming()) {
-                return "Streaming: " + self.selectedLogFile();
+                var activeFile =
+                    self.activeStreamFile() || self.selectedLogFile();
+                var text = "Streaming: " + activeFile;
+                if (self.isSwitchingStream()) {
+                    text += " (switching...)";
+                }
+                return text;
             }
             return "Not streaming";
         });
@@ -164,6 +180,10 @@ $(function () {
         // Computed: Stream button text
         self.streamButtonText = ko.computed(function () {
             return self.isStreaming() ? "Stop Streaming" : "Start Streaming";
+        });
+
+        self.streamControlsDisabled = ko.pureComputed(function () {
+            return self.isSwitchingStream();
         });
 
         // Computed: Sidebar status
@@ -247,7 +267,7 @@ $(function () {
             var currentSelection = self.selectedLogFile();
 
             if (defaultFile && fileNames.indexOf(defaultFile) !== -1) {
-                self.selectedLogFile(defaultFile);
+                setSelectedLogFile(defaultFile);
                 return;
             }
 
@@ -258,7 +278,7 @@ $(function () {
                 return;
             }
 
-            self.selectedLogFile(fileNames[0]);
+            setSelectedLogFile(fileNames[0]);
         }
 
         // Initialize
@@ -318,6 +338,8 @@ $(function () {
 
         // Stream control
         self.toggleStream = function () {
+            if (self.isSwitchingStream()) return;
+
             if (self.isStreaming()) {
                 self.stopStream();
             } else {
@@ -325,8 +347,10 @@ $(function () {
             }
         };
 
-        self.startStream = function () {
-            if (!self.selectedLogFile()) {
+        self.startStream = function (targetFile, options) {
+            var opts = options || {};
+            var streamFile = targetFile || self.selectedLogFile();
+            if (!streamFile) {
                 new PNotify({
                     title: "Log Monitor",
                     text: "Please select a log file first",
@@ -335,16 +359,31 @@ $(function () {
                 return;
             }
 
+            if (self.isSwitchingStream()) return;
+            self.isSwitchingStream(true);
+
             pluginAjax({
                 url: pluginBaseUrl + "/stream/start",
                 method: "POST",
-                data: JSON.stringify({ file: self.selectedLogFile() }),
+                data: JSON.stringify({ file: streamFile }),
                 contentType: "application/json",
                 dataType: "json",
             })
                 .done(function (response) {
+                    if (opts.isAutoSwitch) {
+                        lineBuffer.length = 0;
+                        self.allLines([]);
+                    }
+
                     self.isStreaming(true);
-                    flushIntervalId = setInterval(flushLineBuffer, 1000);
+                    self.activeStreamFile(
+                        (response && response.file) || streamFile,
+                    );
+
+                    if (!flushIntervalId) {
+                        flushIntervalId = setInterval(flushLineBuffer, 1000);
+                    }
+
                     // Show initial lines if available
                     if (response.initial_lines) {
                         response.initial_lines.forEach(function (line) {
@@ -353,11 +392,17 @@ $(function () {
                     }
                 })
                 .fail(function (error) {
+                    if (opts.isAutoSwitch) {
+                        setSelectedLogFile(self.activeStreamFile() || "");
+                    }
                     new PNotify({
                         title: "Stream Error",
                         text: "Failed to start streaming",
                         type: "error",
                     });
+                })
+                .always(function () {
+                    self.isSwitchingStream(false);
                 });
         };
 
@@ -373,6 +418,7 @@ $(function () {
                     flushIntervalId = null;
                     flushLineBuffer();
                     self.isStreaming(false);
+                    self.activeStreamFile("");
                 })
                 .fail(function (error) {
                     new PNotify({
@@ -380,6 +426,9 @@ $(function () {
                         text: "Failed to stop streaming",
                         type: "error",
                     });
+                })
+                .always(function () {
+                    self.isSwitchingStream(false);
                 });
         };
 
@@ -548,10 +597,20 @@ $(function () {
                         typeof newValue === "string" &&
                         files.indexOf(newValue) !== -1
                     ) {
-                        self.selectedLogFile(newValue);
+                        setSelectedLogFile(newValue);
                     }
                 });
             }
+
+            self.selectedLogFile.subscribe(function (newValue) {
+                if (suppressStreamSwitch) return;
+                if (!self.isStreaming() || self.isSwitchingStream()) return;
+                if (typeof newValue !== "string" || newValue.length === 0)
+                    return;
+                if (newValue === self.activeStreamFile()) return;
+
+                self.startStream(newValue, { isAutoSwitch: true });
+            });
 
             if (
                 self.settings.settings.plugins.logmonitor.auto_start_streaming()
@@ -559,7 +618,7 @@ $(function () {
                 var file =
                     self.settings.settings.plugins.logmonitor.default_log_file();
                 if (file) {
-                    self.selectedLogFile(file);
+                    setSelectedLogFile(file);
                     setTimeout(function () {
                         self.startStream();
                     }, 500);
