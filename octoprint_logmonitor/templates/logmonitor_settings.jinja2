@@ -120,12 +120,16 @@
                            value="DEBUG"
                            data-bind="checked: settings.plugins.logmonitor.severity_triggers">
                     DEBUG
+                    <span class="label label-warning">{{ _("Spam risk") }}</span>
+                    <span class="muted">{{ _("Very high alert volume when OctoPrint debug mode is enabled.") }}</span>
                 </label>
                 <label class="checkbox">
                     <input type="checkbox"
                            value="INFO"
                            data-bind="checked: settings.plugins.logmonitor.severity_triggers">
                     INFO
+                    <span class="label label-warning">{{ _("Spam risk") }}</span>
+                    <span class="muted">{{ _("Can generate many alerts because log files usually contain frequent INFO entries.") }}</span>
                 </label>
                 <label class="checkbox">
                     <input type="checkbox"
