@@ -15,6 +15,20 @@ $(function () {
 
         self.settings = parameters[0];
         self.loginState = parameters[1];
+        self.activeSubtab = ko.observable("live");
+
+        self.switchSubtab = function (tabName) {
+            if (tabName !== "live" && tabName !== "history") {
+                return false;
+            }
+
+            self.activeSubtab(tabName);
+            if (tabName === "history") {
+                self.loadAlertHistory();
+            }
+
+            return false;
+        };
 
         function getPluginSettings() {
             var root = self.settings && self.settings.settings;
@@ -135,6 +149,13 @@ $(function () {
         self.caseSensitive = ko.observable(false);
         self.alertHistory = ko.observableArray([]);
         self.autoStartEnabled = ko.observable(false);
+        self.historySummary = ko.pureComputed(function () {
+            var count = self.alertHistory().length;
+            if (count === 1) {
+                return "1 history entry";
+            }
+            return count + " history entries";
+        });
 
         // Computed: Displayed lines (filtered)
         self.displayedLines = ko.computed(function () {
@@ -681,7 +702,10 @@ $(function () {
                 method: "GET",
                 dataType: "json",
             }).done(function (response) {
-                self.alertHistory(response.history);
+                var history = Array.isArray(response && response.history)
+                    ? response.history.slice().reverse()
+                    : [];
+                self.alertHistory(history);
             });
         };
 
@@ -751,6 +775,7 @@ $(function () {
 
         self.openTab = function () {
             $('a[href="#tab_plugin_logmonitor"]').tab("show");
+            self.activeSubtab("live");
             self.resetAlerts();
         };
 

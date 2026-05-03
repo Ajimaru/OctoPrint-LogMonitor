@@ -1,117 +1,157 @@
 <div id="tab_plugin_logmonitor" class="logmonitor-container">
     <h3>{{ _("Log Monitor") }}</h3>
-    <!-- Stream Panel -->
-    <div class="logmonitor-stream-panel">
-        <h4>{{ _("Live Log Stream") }}</h4>
-        <div class="logmonitor-controls">
-            <div class="logmonitor-controls-row">
-                <select data-bind="value: selectedLogFile, options: availableLogFiles, enable: !streamControlsDisabled()"
-                        class="logmonitor-file-select">
-                    <option value="">{{ _("Select log file...") }}</option>
-                </select>
-                <button class="btn btn-primary"
-                        data-bind="click: toggleStream, text: streamButtonText, enable: !streamControlsDisabled()">
-                    {{ _("Start Streaming") }}
-                </button>
-                <button class="btn btn-default" data-bind="click: clearDisplay">{{ _("Clear") }}</button>
+    <ul class="nav nav-tabs logmonitor-subtabs">
+        <li data-bind="css: { active: activeSubtab() === 'live' }">
+            <a href="#"
+               data-bind="click: function () { return switchSubtab('live'); }">{{ _("Live Log Stream") }}</a>
+        </li>
+        <li data-bind="css: { active: activeSubtab() === 'history' }">
+            <a href="#"
+               data-bind="click: function () { return switchSubtab('history'); }">{{ _("History-Liste") }}</a>
+        </li>
+    </ul>
+    <div class="logmonitor-subtab-panel"
+         data-bind="visible: activeSubtab() === 'live'">
+        <!-- Stream Panel -->
+        <div class="logmonitor-stream-panel">
+            <h4>{{ _("Live Log Stream") }}</h4>
+            <div class="logmonitor-controls">
+                <div class="logmonitor-controls-row">
+                    <select data-bind="value: selectedLogFile, options: availableLogFiles, enable: !streamControlsDisabled()"
+                            class="logmonitor-file-select">
+                        <option value="">{{ _("Select log file...") }}</option>
+                    </select>
+                    <button class="btn btn-primary"
+                            data-bind="click: toggleStream, text: streamButtonText, enable: !streamControlsDisabled()">
+                        {{ _("Start Streaming") }}
+                    </button>
+                    <button class="btn btn-default" data-bind="click: clearDisplay">{{ _("Clear") }}</button>
+                </div>
+                <div class="logmonitor-controls-row">
+                    <label class="checkbox inline">
+                        <input type="checkbox" data-bind="checked: autoScroll">
+                        {{ _("Auto-scroll") }}
+                    </label>
+                    <label class="checkbox inline">
+                        <input type="checkbox" data-bind="checked: showDebug">
+                        {{ _("Show DEBUG") }}
+                    </label>
+                    <label class="checkbox inline">
+                        <input type="checkbox" data-bind="checked: showInfo">
+                        {{ _("Show INFO") }}
+                    </label>
+                    <label class="checkbox inline">
+                        <input type="checkbox" data-bind="checked: showWarning">
+                        {{ _("Show WARNING") }}
+                    </label>
+                    <label class="checkbox inline">
+                        <input type="checkbox" data-bind="checked: showError">
+                        {{ _("Show ERROR") }}
+                    </label>
+                    <label class="checkbox inline">
+                        <input type="checkbox" data-bind="checked: showCritical">
+                        {{ _("Show CRITICAL") }}
+                    </label>
+                </div>
+                <div class="logmonitor-controls-row">
+                    <input type="text"
+                           class="input-block-level"
+                           data-bind="value: filterText, valueUpdate: 'input'"
+                           placeholder="{{ _('Filter logs...') }}">
+                </div>
             </div>
-            <div class="logmonitor-controls-row">
-                <label class="checkbox inline">
-                    <input type="checkbox" data-bind="checked: autoScroll">
-                    {{ _("Auto-scroll") }}
-                </label>
-                <label class="checkbox inline">
-                    <input type="checkbox" data-bind="checked: showDebug">
-                    {{ _("Show DEBUG") }}
-                </label>
-                <label class="checkbox inline">
-                    <input type="checkbox" data-bind="checked: showInfo">
-                    {{ _("Show INFO") }}
-                </label>
-                <label class="checkbox inline">
-                    <input type="checkbox" data-bind="checked: showWarning">
-                    {{ _("Show WARNING") }}
-                </label>
-                <label class="checkbox inline">
-                    <input type="checkbox" data-bind="checked: showError">
-                    {{ _("Show ERROR") }}
-                </label>
-                <label class="checkbox inline">
-                    <input type="checkbox" data-bind="checked: showCritical">
-                    {{ _("Show CRITICAL") }}
-                </label>
-            </div>
-            <div class="logmonitor-controls-row">
-                <input type="text"
-                       class="input-block-level"
-                       data-bind="value: filterText, valueUpdate: 'input'"
-                       placeholder="{{ _('Filter logs...') }}">
-            </div>
-        </div>
-        <div class="logmonitor-output" data-bind="foreach: displayedLines">
-            <div class="logmonitor-line"
-                 data-bind="css: 'logmonitor-level-' + level.toLowerCase()">
-                <span class="logmonitor-timestamp"
-                      data-bind="visible: timestamp, text: timestamp"></span><span class="logmonitor-level" data-bind="text: level + ' '"></span><span class="logmonitor-logger" data-bind="visible: logger, text: logger"></span><span class="logmonitor-message" data-bind="text: message"></span>
-            </div>
-        </div>
-        <div class="logmonitor-status">
-            <span data-bind="text: statusText"></span>
-            <span data-bind="visible: lineCount() > 0">
-                ({{ _("Lines:") }} <span data-bind="text: lineCount"></span>)
-            </span>
-        </div>
-    </div>
-    <!-- Search Panel -->
-    <div class="logmonitor-search-panel">
-        <h4>{{ _("Search Logs") }}</h4>
-        <div class="logmonitor-search-controls">
-            <input type="text"
-                   class="input-block-level"
-                   data-bind="value: searchQuery, valueUpdate: 'input'"
-                   placeholder="{{ _('Search query...') }}">
-            <div class="logmonitor-search-filters">
-                <label class="checkbox inline">
-                    <input type="checkbox" data-bind="checked: searchDebug">
-                    DEBUG
-                </label>
-                <label class="checkbox inline">
-                    <input type="checkbox" data-bind="checked: searchInfo">
-                    INFO
-                </label>
-                <label class="checkbox inline">
-                    <input type="checkbox" data-bind="checked: searchWarning">
-                    WARNING
-                </label>
-                <label class="checkbox inline">
-                    <input type="checkbox" data-bind="checked: searchError">
-                    ERROR
-                </label>
-                <label class="checkbox inline">
-                    <input type="checkbox" data-bind="checked: searchCritical">
-                    CRITICAL
-                </label>
-            </div>
-            <button class="btn btn-primary" data-bind="click: performSearch">{{ _("Search") }}</button>
-        </div>
-        <div class="logmonitor-search-results"
-             data-bind="visible: searchResults().length > 0">
-            <div data-bind="foreach: searchResults">
-                <div class="logmonitor-search-result"
+            <div class="logmonitor-output" data-bind="foreach: displayedLines">
+                <div class="logmonitor-line"
                      data-bind="css: 'logmonitor-level-' + level.toLowerCase()">
                     <span class="logmonitor-timestamp"
                           data-bind="visible: timestamp, text: timestamp"></span><span class="logmonitor-level" data-bind="text: level + ' '"></span><span class="logmonitor-logger" data-bind="visible: logger, text: logger"></span><span class="logmonitor-message" data-bind="text: message"></span>
                 </div>
             </div>
-            <div class="logmonitor-pagination">
-                <button class="btn btn-small"
-                        data-bind="click: previousPage, enable: canGoPrevious">{{ _("Previous") }}</button>
-                <span data-bind="text: paginationInfo"></span>
-                <button class="btn btn-small" data-bind="click: nextPage, enable: canGoNext">{{ _("Next") }}</button>
+            <div class="logmonitor-status">
+                <span data-bind="text: statusText"></span>
+                <span data-bind="visible: lineCount() > 0">
+                    ({{ _("Lines:") }} <span data-bind="text: lineCount"></span>)
+                </span>
             </div>
         </div>
-        <div data-bind="visible: searchResults().length === 0 && hasSearched()">
-            <p class="text-muted">{{ _("No results found.") }}</p>
+        <!-- Search Panel -->
+        <div class="logmonitor-search-panel">
+            <h4>{{ _("Search Logs") }}</h4>
+            <div class="logmonitor-search-controls">
+                <input type="text"
+                       class="input-block-level"
+                       data-bind="value: searchQuery, valueUpdate: 'input'"
+                       placeholder="{{ _('Search query...') }}">
+                <div class="logmonitor-search-filters">
+                    <label class="checkbox inline">
+                        <input type="checkbox" data-bind="checked: searchDebug">
+                        DEBUG
+                    </label>
+                    <label class="checkbox inline">
+                        <input type="checkbox" data-bind="checked: searchInfo">
+                        INFO
+                    </label>
+                    <label class="checkbox inline">
+                        <input type="checkbox" data-bind="checked: searchWarning">
+                        WARNING
+                    </label>
+                    <label class="checkbox inline">
+                        <input type="checkbox" data-bind="checked: searchError">
+                        ERROR
+                    </label>
+                    <label class="checkbox inline">
+                        <input type="checkbox" data-bind="checked: searchCritical">
+                        CRITICAL
+                    </label>
+                </div>
+                <button class="btn btn-primary" data-bind="click: performSearch">{{ _("Search") }}</button>
+            </div>
+            <div class="logmonitor-search-results"
+                 data-bind="visible: searchResults().length > 0">
+                <div data-bind="foreach: searchResults">
+                    <div class="logmonitor-search-result"
+                         data-bind="css: 'logmonitor-level-' + level.toLowerCase()">
+                        <span class="logmonitor-timestamp"
+                              data-bind="visible: timestamp, text: timestamp"></span><span class="logmonitor-level" data-bind="text: level + ' '"></span><span class="logmonitor-logger" data-bind="visible: logger, text: logger"></span><span class="logmonitor-message" data-bind="text: message"></span>
+                    </div>
+                </div>
+                <div class="logmonitor-pagination">
+                    <button class="btn btn-small"
+                            data-bind="click: previousPage, enable: canGoPrevious">{{ _("Previous") }}</button>
+                    <span data-bind="text: paginationInfo"></span>
+                    <button class="btn btn-small" data-bind="click: nextPage, enable: canGoNext">{{ _("Next") }}</button>
+                </div>
+            </div>
+            <div data-bind="visible: searchResults().length === 0 && hasSearched()">
+                <p class="text-muted">{{ _("No results found.") }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="logmonitor-subtab-panel"
+         data-bind="visible: activeSubtab() === 'history'">
+        <h4>{{ _("History-Liste") }}</h4>
+        <div class="logmonitor-history-controls">
+            <button class="btn btn-small btn-default" data-bind="click: loadAlertHistory">{{ _("Refresh") }}</button>
+            <button class="btn btn-small btn-danger"
+                    data-bind="click: clearAlertHistory, enable: alertHistory().length > 0">
+                {{ _("Clear History") }}
+            </button>
+            <span class="text-muted" data-bind="text: historySummary"></span>
+        </div>
+        <div data-bind="visible: alertHistory().length === 0">
+            <p class="text-muted">{{ _("No alert history entries yet.") }}</p>
+        </div>
+        <div class="logmonitor-history-list"
+             data-bind="foreach: alertHistory, visible: alertHistory().length > 0">
+            <div class="logmonitor-history-entry"
+                 data-bind="css: 'logmonitor-level-' + level.toLowerCase()">
+                <span class="logmonitor-timestamp" data-bind="text: timestamp"></span>
+                <span class="logmonitor-level" data-bind="text: level + ' '"></span>
+                <span class="logmonitor-logger" data-bind="visible: logger, text: logger"></span>
+                <span class="logmonitor-message" data-bind="text: message"></span>
+                <span class="logmonitor-history-source text-muted"
+                      data-bind="visible: source_file, text: ' [' + source_file + ']'"></span>
+            </div>
         </div>
     </div>
 </div>

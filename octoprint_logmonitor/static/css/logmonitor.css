@@ -19,6 +19,15 @@
   padding-bottom: 5px;
 }
 
+.logmonitor-subtabs {
+  margin-top: 10px;
+  margin-bottom: 15px;
+}
+
+.logmonitor-subtab-panel {
+  margin-top: 10px;
+}
+
 /* Stream Panel */
 .logmonitor-stream-panel {
   margin-bottom: 30px;
@@ -189,6 +198,39 @@
   color: #666;
 }
 
+.logmonitor-history-controls {
+  margin-bottom: 12px;
+}
+
+.logmonitor-history-controls .btn {
+  margin-right: 6px;
+}
+
+.logmonitor-history-controls .text-muted {
+  margin-left: 6px;
+}
+
+.logmonitor-history-list {
+  max-height: 520px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #f9f9f9;
+}
+
+.logmonitor-history-entry {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+.logmonitor-history-entry:last-child {
+  border-bottom: 0;
+}
+
+.logmonitor-history-source {
+  margin-left: 6px;
+}
+
 /* Settings */
 .logmonitor-alert-settings-group {
   border: 0;
@@ -288,6 +330,15 @@ body[data-theme="dark"] .logmonitor-status {
 body[data-theme="dark"] .logmonitor-search-result {
   background: #2d2d2d;
   color: #d4d4d4;
+}
+
+body[data-theme="dark"] .logmonitor-history-list {
+  background: #2d2d2d;
+  border-color: #3a3a3a;
+}
+
+body[data-theme="dark"] .logmonitor-history-entry {
+  border-bottom-color: #3a3a3a;
 }
 
 body[data-theme="dark"] .logmonitor-search-result.logmonitor-level-warning {
