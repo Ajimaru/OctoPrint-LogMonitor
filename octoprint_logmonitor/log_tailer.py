@@ -38,6 +38,14 @@ class LogTailer:
         r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:,\d{3})?)\s+-\s+(.+)$"
     )
 
+    # Some environments log compact lines without the usual " - " separators:
+    # YYYY-MM-DD HH:MM:SS,msLEVEL LOGGER MESSAGE
+    COMPACT_LOG_PATTERN = re.compile(
+        r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:,\d{3})?)"
+        r"\s*(DEBUG|INFO|WARNING|ERROR|CRITICAL)\s+"
+        r"([A-Za-z0-9_.:-]+)\s+(.+)$"
+    )
+
     # Virtual printer serial lines often use: YYYY-MM-DD HH:MM:SS,ms >>> MESSAGE
     SERIAL_IO_PATTERN = re.compile(
         r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:,\d{3})?)\s+(>>>|<<<)\s+(.+)$"
@@ -277,6 +285,16 @@ class LogTailer:
                 "logger": "serial.log",
                 "level": level,
                 "message": message,
+                "raw": raw_line,
+            }
+
+        compact_match = self.COMPACT_LOG_PATTERN.match(raw_line)
+        if compact_match:
+            return {
+                "timestamp": compact_match.group(1),
+                "logger": compact_match.group(3).strip(),
+                "level": compact_match.group(2),
+                "message": compact_match.group(4),
                 "raw": raw_line,
             }
 

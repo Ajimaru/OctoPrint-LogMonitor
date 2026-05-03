@@ -5,9 +5,13 @@
             <a href="#"
                data-bind="click: function () { return switchSubtab('live'); }">{{ _("Live Log Stream") }}</a>
         </li>
+        <li data-bind="css: { active: activeSubtab() === 'search' }">
+            <a href="#"
+               data-bind="click: function () { return switchSubtab('search'); }">{{ _("Search Logs") }}</a>
+        </li>
         <li data-bind="css: { active: activeSubtab() === 'history' }">
             <a href="#"
-               data-bind="click: function () { return switchSubtab('history'); }">{{ _("History-Liste") }}</a>
+               data-bind="click: function () { return switchSubtab('history'); }">{{ _("History List") }}</a>
         </li>
     </ul>
     <div class="logmonitor-subtab-panel"
@@ -74,10 +78,15 @@
                 </span>
             </div>
         </div>
-        <!-- Search Panel -->
+    </div>
+    <div class="logmonitor-subtab-panel"
+         data-bind="visible: activeSubtab() === 'search'">
         <div class="logmonitor-search-panel">
             <h4>{{ _("Search Logs") }}</h4>
             <div class="logmonitor-search-controls">
+                <select class="logmonitor-file-select"
+                        data-bind="value: selectedLogFile, options: availableLogFiles, optionsCaption: 'Select log file...'">
+                </select>
                 <input type="text"
                        class="input-block-level"
                        data-bind="value: searchQuery, valueUpdate: 'input'"
@@ -129,7 +138,7 @@
     </div>
     <div class="logmonitor-subtab-panel"
          data-bind="visible: activeSubtab() === 'history'">
-        <h4>{{ _("History-Liste") }}</h4>
+        <h4>{{ _("History List") }}</h4>
         <div class="logmonitor-history-controls">
             <button class="btn btn-small btn-default" data-bind="click: loadAlertHistory">{{ _("Refresh") }}</button>
             <button class="btn btn-small btn-danger"

@@ -33,6 +33,14 @@ class LogSearcher:
         r"(.+)$"
     )
 
+    # Compact format seen in some environments:
+    # YYYY-MM-DD HH:MM:SS,msLEVEL LOGGER MESSAGE
+    COMPACT_LOG_PATTERN = re.compile(
+        r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})"
+        r"\s*(DEBUG|INFO|WARNING|ERROR|CRITICAL)\s+"
+        r"([A-Za-z0-9_.:-]+)\s+(.+)$"
+    )
+
     VALID_LEVELS: ClassVar[set[str]] = {
         "DEBUG",
         "INFO",
@@ -202,6 +210,16 @@ class LogSearcher:
                 "logger": match.group(2).strip(),
                 "level": match.group(3),
                 "message": match.group(4),
+                "raw": line,
+            }
+
+        compact_match = self.COMPACT_LOG_PATTERN.match(line)
+        if compact_match:
+            return {
+                "timestamp": compact_match.group(1),
+                "logger": compact_match.group(3).strip(),
+                "level": compact_match.group(2),
+                "message": compact_match.group(4),
                 "raw": line,
             }
         # Line doesn't match expected format

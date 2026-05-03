@@ -18,7 +18,11 @@ $(function () {
         self.activeSubtab = ko.observable("live");
 
         self.switchSubtab = function (tabName) {
-            if (tabName !== "live" && tabName !== "history") {
+            if (
+                tabName !== "live" &&
+                tabName !== "search" &&
+                tabName !== "history"
+            ) {
                 return false;
             }
 
@@ -777,6 +781,14 @@ $(function () {
             $('a[href="#tab_plugin_logmonitor"]').tab("show");
             self.activeSubtab("live");
             self.resetAlerts();
+            return false;
+        };
+
+        self.openHistoryTab = function () {
+            $('a[href="#tab_plugin_logmonitor"]').tab("show");
+            self.switchSubtab("history");
+            self.resetAlerts();
+            return false;
         };
 
         // WebSocket message handling
