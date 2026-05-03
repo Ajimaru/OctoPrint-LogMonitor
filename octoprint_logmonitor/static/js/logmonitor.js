@@ -260,6 +260,114 @@ $(function () {
             }
         };
 
+        self.updateSettingsAlertMonitoredLogsDropdown = function (fileNames) {
+            var select = $("#settings_plugin_logmonitor_alerts_monitored_logs");
+            if (!select.length) return;
+
+            var current = getPluginSetting("alerts_monitored_logs", []);
+            var selected = Array.isArray(current)
+                ? current
+                : typeof current === "string" && current
+                  ? [current]
+                  : [];
+
+            select.empty();
+
+            fileNames.forEach(function (name) {
+                var option = $("<option></option>").val(name).text(name);
+                if (selected.indexOf(name) !== -1) {
+                    option.prop("selected", true);
+                }
+                select.append(option);
+            });
+        };
+
+        self.renderAlertMonitorStatus = function (data, errorText) {
+            var target = $("#settings_plugin_logmonitor_alert_monitor_status");
+            var badge = $(
+                "#settings_plugin_logmonitor_alert_monitor_status_badge",
+            );
+            if (!target.length) return;
+
+            if (errorText) {
+                target.text("Failed to load status: " + errorText);
+                if (badge.length) {
+                    badge
+                        .text("Error")
+                        .removeClass("badge-success badge-warning badge-info")
+                        .addClass("badge-important");
+                }
+                return;
+            }
+
+            var mode = (data && data.mode) || "unknown";
+            var activeLogs = Array.isArray(data && data.active_logs)
+                ? data.active_logs
+                : [];
+            var configuredLogs = Array.isArray(data && data.configured_logs)
+                ? data.configured_logs
+                : [];
+
+            var activeText =
+                activeLogs.length > 0 ? activeLogs.join(", ") : "none";
+            var configuredText =
+                configuredLogs.length > 0 ? configuredLogs.join(", ") : "none";
+
+            if (badge.length) {
+                if (activeLogs.length > 0) {
+                    badge
+                        .text("Active")
+                        .removeClass("badge-warning badge-info badge-important")
+                        .addClass("badge-success");
+                } else {
+                    badge
+                        .text("Idle")
+                        .removeClass("badge-success badge-info badge-important")
+                        .addClass("badge-warning");
+                }
+            }
+
+            target.text(
+                "Mode: " +
+                    mode +
+                    " | Active: " +
+                    activeText +
+                    " | Configured: " +
+                    configuredText,
+            );
+        };
+
+        self.loadAlertMonitorStatus = function () {
+            var target = $("#settings_plugin_logmonitor_alert_monitor_status");
+            var badge = $(
+                "#settings_plugin_logmonitor_alert_monitor_status_badge",
+            );
+            if (target.length) {
+                target.text("Loading alert monitor status...");
+            }
+            if (badge.length) {
+                badge
+                    .text("Loading")
+                    .removeClass("badge-success badge-warning badge-important")
+                    .addClass("badge-info");
+            }
+
+            pluginAjax({
+                url: pluginBaseUrl + "/alerts/monitor/status",
+                method: "GET",
+                dataType: "json",
+            })
+                .done(function (response) {
+                    self.renderAlertMonitorStatus(response);
+                })
+                .fail(function (xhr) {
+                    self.renderAlertMonitorStatus(
+                        null,
+                        (xhr && xhr.statusText) || "request failed",
+                    );
+                });
+        };
+
         function selectPreferredLogFile(fileNames) {
             if (!Array.isArray(fileNames) || fileNames.length === 0) return;
 
@@ -311,6 +419,7 @@ $(function () {
 
                     self.availableLogFiles(fileNames);
                     self.updateSettingsDefaultLogFileDropdown(fileNames);
+                    self.updateSettingsAlertMonitoredLogsDropdown(fileNames);
                     selectPreferredLogFile(fileNames);
                 })
                 .fail(function (xhr) {
@@ -331,9 +440,23 @@ $(function () {
             var files = self.availableLogFiles();
             if (files.length > 0) {
                 self.updateSettingsDefaultLogFileDropdown(files);
+                self.updateSettingsAlertMonitoredLogsDropdown(files);
             } else {
                 self.loadAvailableFiles();
             }
+
+            $("#settings_plugin_logmonitor_alert_monitor_refresh")
+                .off("click.logmonitor")
+                .on("click.logmonitor", function () {
+                    self.loadAlertMonitorStatus();
+                });
+
+            self.loadAlertMonitorStatus();
+        };
+
+        self.onEventSettingsUpdated = function () {
+            // Backend alert monitor gets restarted after settings save; refresh shown status.
+            self.loadAlertMonitorStatus();
         };
 
         // Stream control

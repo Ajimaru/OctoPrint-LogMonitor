@@ -20,43 +20,6 @@
             <span class="help-block">{{ _("Display a widget in the sidebar showing log monitor status.") }}</span>
         </div>
     </div>
-    <h4>{{ _("Severity Triggers") }}</h4>
-    <div class="control-group">
-        <label class="control-label">{{ _("Trigger alerts for") }}</label>
-        <div class="controls">
-            <label class="checkbox">
-                <input type="checkbox"
-                       value="DEBUG"
-                       data-bind="checked: settings.plugins.logmonitor.severity_triggers">
-                DEBUG
-            </label>
-            <label class="checkbox">
-                <input type="checkbox"
-                       value="INFO"
-                       data-bind="checked: settings.plugins.logmonitor.severity_triggers">
-                INFO
-            </label>
-            <label class="checkbox">
-                <input type="checkbox"
-                       value="WARNING"
-                       data-bind="checked: settings.plugins.logmonitor.severity_triggers">
-                WARNING
-            </label>
-            <label class="checkbox">
-                <input type="checkbox"
-                       value="ERROR"
-                       data-bind="checked: settings.plugins.logmonitor.severity_triggers">
-                ERROR
-            </label>
-            <label class="checkbox">
-                <input type="checkbox"
-                       value="CRITICAL"
-                       data-bind="checked: settings.plugins.logmonitor.severity_triggers">
-                CRITICAL
-            </label>
-            <span class="help-block">{{ _("Select which severity levels should trigger navbar/sidebar alerts.") }}</span>
-        </div>
-    </div>
     <h4>{{ _("Streaming Settings") }}</h4>
     <div class="control-group">
         <label class="control-label">{{ _("Default log file") }}</label>
@@ -141,34 +104,127 @@
         <div class="controls">
             <label class="checkbox">
                 <input type="checkbox"
-                       data-bind="checked: settings.plugins.logmonitor.enable_notifications">
-                {{ _("Enable in-app toast notifications") }}
+                       data-bind="checked: settings.plugins.logmonitor.alerts_enabled">
+                {{ _("Enable alerts globally") }}
             </label>
-            <span class="help-block">{{ _("Show an OctoPrint-style toast notification in the web UI when a severity alert fires.") }}</span>
+            <span class="help-block">{{ _("Turns all severity alert monitoring and notifications on or off.") }}</span>
         </div>
     </div>
-    <div class="control-group">
-        <div class="controls">
-            <label class="checkbox">
-                <input type="checkbox"
-                       data-bind="checked: settings.plugins.logmonitor.alert_history_enabled">
-                {{ _("Keep alert history") }}
-            </label>
-            <span class="help-block">{{ _("Store triggered alerts in a history list.") }}</span>
+    <fieldset class="logmonitor-alert-settings-group"
+              data-bind="css: { 'logmonitor-settings-disabled': !settings.plugins.logmonitor.alerts_enabled() }, attr: { disabled: settings.plugins.logmonitor.alerts_enabled() ? null : 'disabled' }">
+        <div class="control-group">
+            <label class="control-label">{{ _("Trigger alerts for") }}</label>
+            <div class="controls">
+                <label class="checkbox">
+                    <input type="checkbox"
+                           value="DEBUG"
+                           data-bind="checked: settings.plugins.logmonitor.severity_triggers">
+                    DEBUG
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox"
+                           value="INFO"
+                           data-bind="checked: settings.plugins.logmonitor.severity_triggers">
+                    INFO
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox"
+                           value="WARNING"
+                           data-bind="checked: settings.plugins.logmonitor.severity_triggers">
+                    WARNING
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox"
+                           value="ERROR"
+                           data-bind="checked: settings.plugins.logmonitor.severity_triggers">
+                    ERROR
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox"
+                           value="CRITICAL"
+                           data-bind="checked: settings.plugins.logmonitor.severity_triggers">
+                    CRITICAL
+                </label>
+                <span class="help-block">{{ _("Select which severity levels should trigger navbar/sidebar alerts.") }}</span>
+            </div>
         </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label">{{ _("Max alert history entries") }}</label>
-        <div class="controls">
-            <input type="number"
-                   class="input-small"
-                   min="10"
-                   max="1000"
-                   step="10"
-                   data-bind="value: settings.plugins.logmonitor.max_alert_history">
-            <span class="help-block">{{ _("Maximum number of alert history entries to keep.") }}</span>
+        <div class="control-group">
+            <label class="control-label">{{ _("Alert source logs") }}</label>
+            <div class="controls">
+                <label class="radio">
+                    <input type="radio"
+                           value="selected"
+                           data-bind="checked: settings.plugins.logmonitor.alerts_monitor_mode">
+                    {{ _("Only selected logs") }}
+                </label>
+                <label class="radio">
+                    <input type="radio"
+                           value="all"
+                           data-bind="checked: settings.plugins.logmonitor.alerts_monitor_mode">
+                    {{ _("All available logs") }}
+                </label>
+                <span class="help-block">{{ _("Controls which log files are monitored for severity trigger alerts in the background.") }}</span>
+            </div>
         </div>
-    </div>
+        <div class="control-group"
+             data-bind="visible: settings.plugins.logmonitor.alerts_monitor_mode() === 'selected'">
+            <label class="control-label">{{ _("Logs for alert monitoring") }}</label>
+            <div class="controls">
+                <select id="settings_plugin_logmonitor_alerts_monitored_logs"
+                        class="input-large"
+                        multiple="multiple"
+                        size="6"
+                        data-bind="selectedOptions: settings.plugins.logmonitor.alerts_monitored_logs"></select>
+                <span class="help-block">{{ _("These logs are monitored for severity triggers even when no live stream is open.") }}</span>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label">{{ _("Alert monitor status") }}</label>
+            <div class="controls">
+                <p>
+                    <span id="settings_plugin_logmonitor_alert_monitor_status_badge"
+                          class="badge badge-info">{{ _("Unknown") }}</span>
+                    <span id="settings_plugin_logmonitor_alert_monitor_status" class="muted">{{ _("Status not loaded yet.") }}</span>
+                </p>
+                <button id="settings_plugin_logmonitor_alert_monitor_refresh"
+                        type="button"
+                        class="btn btn-mini">{{ _("Refresh status") }}</button>
+                <span class="help-block">{{ _("Shows which logs are currently monitored by the background alert worker.") }}</span>
+            </div>
+        </div>
+        <div class="control-group">
+            <div class="controls">
+                <label class="checkbox">
+                    <input type="checkbox"
+                           data-bind="checked: settings.plugins.logmonitor.enable_notifications">
+                    {{ _("Enable in-app toast notifications") }}
+                </label>
+                <span class="help-block">{{ _("Show an OctoPrint-style toast notification in the web UI when a severity alert fires.") }}</span>
+            </div>
+        </div>
+        <div class="control-group">
+            <div class="controls">
+                <label class="checkbox">
+                    <input type="checkbox"
+                           data-bind="checked: settings.plugins.logmonitor.alert_history_enabled">
+                    {{ _("Keep alert history") }}
+                </label>
+                <span class="help-block">{{ _("Store triggered alerts in a history list.") }}</span>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label">{{ _("Max alert history entries") }}</label>
+            <div class="controls">
+                <input type="number"
+                       class="input-small"
+                       min="10"
+                       max="1000"
+                       step="10"
+                       data-bind="value: settings.plugins.logmonitor.max_alert_history">
+                <span class="help-block">{{ _("Maximum number of alert history entries to keep.") }}</span>
+            </div>
+        </div>
+    </fieldset>
     <h4>{{ _("Privacy") }}</h4>
     <div class="control-group">
         <div class="controls">

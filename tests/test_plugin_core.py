@@ -124,6 +124,8 @@ class TestPluginCore(unittest.TestCase):
         self.assertTrue(defaults["show_navbar"])
         self.assertTrue(defaults["show_sidebar"])
         self.assertEqual(defaults["default_log_file"], "octoprint.log")
+        self.assertEqual(defaults["alerts_monitor_mode"], "selected")
+        self.assertEqual(defaults["alerts_monitored_logs"], ["octoprint.log"])
         self.assertFalse(defaults["auto_start_streaming"])
         self.assertFalse(defaults["mask_log_content"])
 
@@ -162,7 +164,38 @@ class TestPluginCore(unittest.TestCase):
         filenames = [entry["name"] for entry in payload["files"]]
         self.assertEqual(filenames, ["a.log", "b.log"])
 
-    def test_handle_log_line_triggers_alert_and_masks(self):
+    def test_handle_alert_line_triggers_alert(self):
+        values = dict(self.plugin.get_settings_defaults())
+        values.update(
+            {
+                "severity_triggers": ["ERROR"],
+                "alert_history_enabled": True,
+                "max_alert_history": 1,
+                "enable_notifications": True,
+                "mask_log_content": True,
+            }
+        )
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        parsed_line = {
+            "timestamp": "2026-02-19 10:00:02,000",
+            "logger": "plugin.test",
+            "level": "ERROR",
+            "message": "api_key=secret123",
+            "raw": "api_key=secret123",
+        }
+        self.plugin._handle_alert_line(parsed_line)
+
+        self.assertEqual(self.plugin._alert_counts["ERROR"], 1)
+        self.assertEqual(len(self.plugin._alert_history), 1)
+        self.assertEqual(self.plugin._alert_history[0]["source_file"], "")
+
+        # Alert message is still sent immediately via WebSocket
+        calls = self.plugin._plugin_manager.send_plugin_message.call_args_list
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0].args[1]["type"], "severity_alert")
+
+    def test_handle_log_line_masks_without_alert(self):
         values = dict(self.plugin.get_settings_defaults())
         values.update(
             {
@@ -184,13 +217,10 @@ class TestPluginCore(unittest.TestCase):
         }
         self.plugin._handle_log_line(parsed_line)
 
-        self.assertEqual(self.plugin._alert_counts["ERROR"], 1)
-        self.assertEqual(len(self.plugin._alert_history), 1)
-
-        # Alert message is still sent immediately via WebSocket
-        calls = self.plugin._plugin_manager.send_plugin_message.call_args_list
-        self.assertEqual(len(calls), 1)
-        self.assertEqual(calls[0].args[1]["type"], "severity_alert")
+        # Stream path is now view-only: no alert side effects
+        self.assertEqual(self.plugin._alert_counts["ERROR"], 0)
+        self.assertEqual(len(self.plugin._alert_history), 0)
+        self.plugin._plugin_manager.send_plugin_message.assert_not_called()
 
         # Log line goes into buffer (masked)
         self.assertEqual(len(self.plugin._line_buffer), 1)
@@ -392,6 +422,27 @@ class TestPluginCore(unittest.TestCase):
         self.assertEqual(payload["count"], 2)
         self.assertEqual(set(payload["active_streams"]), {"a.log", "b.log"})
 
+    def test_get_alert_monitor_status(self):
+        (Path(self.temp_dir) / "octoprint.log").write_text("line")
+        values = dict(self.plugin.get_settings_defaults())
+        values.update(
+            {
+                "alerts_monitor_mode": "selected",
+                "alerts_monitored_logs": ["octoprint.log"],
+            }
+        )
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+        self.plugin._alert_tailers = {"octoprint.log": MagicMock()}
+
+        with self.app.test_request_context("/alerts/monitor/status", method="GET"):
+            response = self.plugin.get_alert_monitor_status()
+
+        payload = self._resp(response).get_json()
+        self.assertEqual(payload["mode"], "selected")
+        self.assertEqual(payload["configured_logs"], ["octoprint.log"])
+        self.assertEqual(payload["active_logs"], ["octoprint.log"])
+        self.assertEqual(payload["active_count"], 1)
+
     def test_get_update_information(self):
         info = self.plugin.get_update_information()
         self.assertIn("logmonitor", info)
@@ -453,11 +504,58 @@ class TestPluginCore(unittest.TestCase):
             "a.log": MagicMock(),
             "b.log": MagicMock(),
         }
+        self.plugin._alert_tailers = {
+            "octoprint.log": MagicMock(),
+        }
+        self.plugin._alert_tailers["octoprint.log"].is_running.return_value = True
 
         self.plugin.on_shutdown()
 
         tailer.stop.assert_called_once()
         self.assertEqual(self.plugin._active_tailers, {})
+        self.assertEqual(self.plugin._alert_tailers, {})
+
+    def test_restart_alert_monitoring_selected_files(self):
+        (Path(self.temp_dir) / "octoprint.log").write_text("line")
+        values = dict(self.plugin.get_settings_defaults())
+        values.update(
+            {
+                "alerts_monitor_mode": "selected",
+                "alerts_monitored_logs": ["octoprint.log"],
+                "stream_poll_interval_ms": 200,
+            }
+        )
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        tailer = MagicMock()
+        tailer.start.return_value = True
+
+        with patch("octoprint_logmonitor.LogTailer", return_value=tailer):
+            self.plugin._restart_alert_monitoring()
+
+        self.assertIn("octoprint.log", self.plugin._alert_tailers)
+
+    def test_restart_alert_monitoring_all_files(self):
+        (Path(self.temp_dir) / "octoprint.log").write_text("line")
+        (Path(self.temp_dir) / "plugin.log").write_text("line")
+        values = dict(self.plugin.get_settings_defaults())
+        values.update(
+            {
+                "alerts_monitor_mode": "all",
+                "stream_poll_interval_ms": 200,
+            }
+        )
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        tailer = MagicMock()
+        tailer.start.return_value = True
+
+        with patch("octoprint_logmonitor.LogTailer", return_value=tailer):
+            self.plugin._restart_alert_monitoring()
+
+        self.assertEqual(
+            set(self.plugin._alert_tailers.keys()), {"octoprint.log", "plugin.log"}
+        )
 
     def test_on_after_startup_auto_start_success(self):
         log_path = Path(self.temp_dir) / "octoprint.log"
@@ -475,7 +573,9 @@ class TestPluginCore(unittest.TestCase):
         tailer = MagicMock()
         tailer.start.return_value = True
 
-        with patch("octoprint_logmonitor.LogTailer", return_value=tailer):
+        with patch.object(self.plugin, "_restart_alert_monitoring"), patch(
+            "octoprint_logmonitor.LogTailer", return_value=tailer
+        ):
             self.plugin.on_after_startup()
 
         tailer.start.assert_called_once()
@@ -493,6 +593,32 @@ class TestPluginCore(unittest.TestCase):
 
         self.plugin.on_after_startup()
         self.plugin._logger.warning.assert_called()
+
+    def test_on_settings_save_sanitizes_alert_monitor_settings(self):
+        data = {
+            "plugins": {
+                "logmonitor": {
+                    "alerts_monitor_mode": "invalid",
+                    "alerts_monitored_logs": [
+                        "octoprint.log",
+                        "../bad.log",
+                        "octoprint.log",
+                        123,
+                        " plugin.log ",
+                    ],
+                }
+            }
+        }
+
+        with patch.object(self.plugin, "_restart_alert_monitoring") as restart_mock:
+            self.plugin.on_settings_save(data)
+
+        plugin_data = data["plugins"]["logmonitor"]
+        self.assertEqual(plugin_data["alerts_monitor_mode"], "selected")
+        self.assertEqual(
+            plugin_data["alerts_monitored_logs"], ["octoprint.log", "plugin.log"]
+        )
+        restart_mock.assert_called_once()
 
     def test_get_log_files_missing_directory(self):
         missing_dir = Path(self.temp_dir) / "nope"

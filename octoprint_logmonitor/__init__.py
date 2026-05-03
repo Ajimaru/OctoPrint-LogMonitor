@@ -63,6 +63,7 @@ class LogmonitorPlugin(
         self._alert_counts = {}
         self._alert_lock = threading.Lock()
         self._alert_history = []  # Store alert history
+        self._alert_tailers = {}  # Alert monitor tailers (independent from UI stream)
         self._active_tailers = {}  # Support multi-file streaming
         # Rate-limit search API: max 10 requests per minute per client
         self._search_rate_limiter = RateLimiter(max_calls=10, period=60.0)
@@ -89,6 +90,9 @@ class LogmonitorPlugin(
                 "ERROR": 0,
                 "CRITICAL": 0,
             }
+
+        # Start independent alert monitoring (not tied to UI live streaming)
+        self._restart_alert_monitoring()
 
         # Auto-start streaming if enabled
         if self._settings.get(["auto_start_streaming"]):
@@ -136,6 +140,53 @@ class LogmonitorPlugin(
                 self._logger.error(f"Error stopping tailer for {filename}: {e}")
 
         self._active_tailers.clear()
+        self._stop_alert_monitoring()
+
+    def on_settings_save(self, data):
+        """Persist settings and refresh background alert monitoring."""
+        if isinstance(data, dict):
+            plugins_data = data.get("plugins")
+            if isinstance(plugins_data, dict):
+                plugin_data = plugins_data.get("logmonitor")
+                if isinstance(plugin_data, dict):
+                    alerts_enabled = plugin_data.get("alerts_enabled")
+                    if isinstance(alerts_enabled, str):
+                        plugin_data["alerts_enabled"] = alerts_enabled.lower() in {
+                            "1",
+                            "true",
+                            "yes",
+                            "on",
+                        }
+                    elif isinstance(alerts_enabled, bool):
+                        plugin_data["alerts_enabled"] = alerts_enabled
+
+                    monitor_mode = plugin_data.get("alerts_monitor_mode")
+                    if monitor_mode not in {"all", "selected"}:
+                        plugin_data["alerts_monitor_mode"] = "selected"
+
+                    raw_logs = plugin_data.get("alerts_monitored_logs")
+                    if isinstance(raw_logs, str):
+                        raw_logs = [raw_logs]
+                    elif not isinstance(raw_logs, list):
+                        raw_logs = []
+
+                    cleaned_logs = []
+                    seen = set()
+                    for item in raw_logs:
+                        if not isinstance(item, str):
+                            continue
+                        name = item.strip()
+                        if not name or name in seen:
+                            continue
+                        if not validate_filename(name):
+                            continue
+                        cleaned_logs.append(name)
+                        seen.add(name)
+
+                    plugin_data["alerts_monitored_logs"] = cleaned_logs
+
+        octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
+        self._restart_alert_monitoring()
 
     # ~~ SettingsPlugin mixin
 
@@ -144,6 +195,7 @@ class LogmonitorPlugin(
         return {
             "show_navbar": True,
             "show_sidebar": True,
+            "alerts_enabled": True,
             "severity_triggers": ["WARNING", "ERROR", "CRITICAL"],
             "default_log_file": "octoprint.log",
             "stream_poll_interval_ms": 1000,
@@ -155,6 +207,8 @@ class LogmonitorPlugin(
             "regex_search_enabled": False,  # NEW
             "alert_history_enabled": True,  # NEW
             "max_alert_history": 100,  # NEW
+            "alerts_monitor_mode": "selected",  # all|selected
+            "alerts_monitored_logs": ["octoprint.log"],
             # Mask sensitive data (API keys, passwords, emails) in streamed log lines
             "mask_log_content": False,
             "debug_mode": False,
@@ -777,6 +831,27 @@ class LogmonitorPlugin(
             self._logger.error(f"Error clearing alert history: {e}")
             return flask.jsonify({"error": "Failed to clear alert history"}), 500
 
+    @octoprint.plugin.BlueprintPlugin.route("/alerts/monitor/status", methods=["GET"])
+    def get_alert_monitor_status(self):
+        """Return current alert-monitor configuration and active files."""
+        try:
+            configured = self._get_alert_monitor_files()
+            return flask.jsonify(
+                {
+                    "enabled": bool(self._settings.get(["alerts_enabled"])),
+                    "mode": self._settings.get(["alerts_monitor_mode"]),
+                    "configured_logs": configured,
+                    "active_logs": sorted(list(self._alert_tailers.keys())),
+                    "active_count": len(self._alert_tailers),
+                }
+            )
+        except Exception as e:
+            self._logger.error(f"Error getting alert monitor status: {e}")
+            return (
+                flask.jsonify({"error": "Failed to retrieve alert monitor status"}),
+                500,
+            )
+
     @octoprint.plugin.BlueprintPlugin.route("/multi-stream", methods=["GET"])
     def get_active_streams(self):
         """Get list of active streaming files (multi-file support)."""
@@ -836,52 +911,150 @@ class LogmonitorPlugin(
         if self._tailer and self._tailer.is_running() or self._active_tailers:
             self._start_flush_timer()
 
+    def _get_alert_monitor_files(self):
+        """Resolve list of log files that should drive severity alerts."""
+        log_dir = self._settings.getBaseFolder("logs")
+        mode = (self._settings.get(["alerts_monitor_mode"]) or "selected").lower()
+
+        if mode == "all":
+            configured = self._get_available_log_filenames()
+        else:
+            raw = self._settings.get(["alerts_monitored_logs"])
+            configured = []
+            if isinstance(raw, list):
+                configured = [f for f in raw if isinstance(f, str) and f]
+            elif isinstance(raw, str) and raw:
+                configured = [raw]
+
+            if not configured:
+                default_file = self._settings.get(["default_log_file"])
+                if isinstance(default_file, str) and default_file:
+                    configured = [default_file]
+
+        unique_files = []
+        seen = set()
+        for filename in configured:
+            if filename in seen:
+                continue
+            seen.add(filename)
+
+            if not validate_filename(filename):
+                continue
+            if not is_safe_path(log_dir, filename):
+                continue
+
+            filepath = os.path.join(log_dir, filename)
+            if os.path.isfile(filepath):
+                unique_files.append(filename)
+
+        return unique_files
+
+    def _stop_alert_monitoring(self):
+        """Stop all dedicated alert-monitor tailers."""
+        for filename, tailer in list(self._alert_tailers.items()):
+            try:
+                if tailer.is_running():
+                    tailer.stop()
+            except Exception as e:
+                self._logger.error(f"Error stopping alert monitor for {filename}: {e}")
+        self._alert_tailers.clear()
+
+    def _restart_alert_monitoring(self):
+        """Restart dedicated alert-monitor tailers from current settings."""
+        self._stop_alert_monitoring()
+
+        if not self._settings.get(["alerts_enabled"]):
+            self._logger.info("Alert monitor disabled: alerts are globally disabled")
+            return
+
+        files = self._get_alert_monitor_files()
+        if not files:
+            self._logger.info("Alert monitor disabled: no valid log files configured")
+            return
+
+        log_dir = self._settings.getBaseFolder("logs")
+        poll_interval = self._settings.get(["stream_poll_interval_ms"]) / 1000.0
+
+        for filename in files:
+            filepath = os.path.join(log_dir, filename)
+
+            def make_callback(source_file):
+                def callback(line):
+                    line["_source_file"] = source_file
+                    self._handle_alert_line(line)
+
+                return callback
+
+            tailer = LogTailer(
+                filepath=filepath,
+                callback=make_callback(filename),
+                poll_interval=poll_interval,
+                logger=self._logger,
+            )
+            if tailer.start():
+                self._alert_tailers[filename] = tailer
+            else:
+                self._logger.warning(f"Failed to start alert monitor for {filename}")
+
+        self._logger.info(
+            f"Alert monitor active for {len(self._alert_tailers)} log file(s)"
+        )
+
+    def _handle_alert_line(self, parsed_line):
+        """Handle a log line for alert generation only (independent from stream)."""
+        try:
+            if not self._settings.get(["alerts_enabled"]):
+                return
+
+            severity_triggers = self._settings.get(["severity_triggers"])
+            level = parsed_line.get("level", "UNKNOWN")
+
+            if level not in severity_triggers:
+                return
+
+            with self._alert_lock:
+                self._alert_counts[level] = self._alert_counts.get(level, 0) + 1
+
+                if self._settings.get(["alert_history_enabled"]):
+                    alert_entry = {
+                        "timestamp": datetime.now().isoformat(),
+                        "level": level,
+                        "logger": parsed_line.get("logger", ""),
+                        "message": parsed_line.get("message", ""),
+                        "source_file": parsed_line.get("_source_file", ""),
+                    }
+                    self._alert_history.append(alert_entry)
+
+                    max_history = self._settings.get(["max_alert_history"])
+                    if len(self._alert_history) > max_history:
+                        self._alert_history = self._alert_history[-max_history:]
+
+            self._plugin_manager.send_plugin_message(
+                self._identifier,
+                {
+                    "type": "severity_alert",
+                    "level": level,
+                    "count": self._alert_counts[level],
+                    "message": parsed_line.get("message", ""),
+                    "notification_enabled": self._settings.get(
+                        ["enable_notifications"]
+                    ),
+                    "source_file": parsed_line.get("_source_file", ""),
+                },
+            )
+
+        except Exception as e:
+            self._logger.error(f"Error handling alert line: {e}")
+
     def _handle_log_line(self, parsed_line):
         """
         Handle a new log line from the tailer.
-        Buffers it for batched WebSocket delivery; checks severity alerts immediately.
+        Buffers it for batched WebSocket delivery only.
 
         Args:
             parsed_line: Parsed log line dictionary
         """
         try:
-            # Check if this severity should trigger an alert
-            severity_triggers = self._settings.get(["severity_triggers"])
-            level = parsed_line.get("level", "UNKNOWN")
-
-            if level in severity_triggers:
-                with self._alert_lock:
-                    self._alert_counts[level] = self._alert_counts.get(level, 0) + 1
-
-                    # Add to alert history (NEW)
-                    if self._settings.get(["alert_history_enabled"]):
-                        alert_entry = {
-                            "timestamp": datetime.now().isoformat(),
-                            "level": level,
-                            "logger": parsed_line.get("logger", ""),
-                            "message": parsed_line.get("message", ""),
-                        }
-                        self._alert_history.append(alert_entry)
-
-                        # Trim history if exceeds max
-                        max_history = self._settings.get(["max_alert_history"])
-                        if len(self._alert_history) > max_history:
-                            self._alert_history = self._alert_history[-max_history:]
-
-                # Send alert message
-                self._plugin_manager.send_plugin_message(
-                    self._identifier,
-                    {
-                        "type": "severity_alert",
-                        "level": level,
-                        "count": self._alert_counts[level],
-                        "message": parsed_line.get("message", ""),
-                        "notification_enabled": self._settings.get(
-                            ["enable_notifications"]
-                        ),
-                    },
-                )
-
             # Optionally mask sensitive data before sending to frontend
             if self._settings.get(["mask_log_content"]):
                 masked = dict(parsed_line)
