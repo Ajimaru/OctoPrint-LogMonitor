@@ -58,7 +58,7 @@ def _install_fake_octoprint():
 
 _install_fake_octoprint()
 
-import octoprint_logmonitor as plugin_module  # noqa: E402  pylint: disable=wrong-import-position
+import octoprint_logmonitor as plugin_module  # noqa: E402
 
 
 class FakeSettings:
@@ -136,6 +136,10 @@ class TestPluginCore(unittest.TestCase):
         configs = self.plugin.get_template_configs()
         config_types = {cfg["type"] for cfg in configs}
         self.assertTrue({"tab", "navbar", "sidebar", "settings"}.issubset(config_types))
+
+    def test_security_flags_are_explicitly_enabled(self):
+        self.assertTrue(self.plugin.is_template_autoescaped())
+        self.assertTrue(self.plugin.is_blueprint_csrf_protected())
 
     def test_get_template_configs_hide_widgets_when_disabled(self):
         values = dict(self.plugin.get_settings_defaults())

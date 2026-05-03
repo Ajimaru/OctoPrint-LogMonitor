@@ -260,6 +260,10 @@ class LogmonitorPlugin(
             "log_files": self._get_available_log_filenames(),
         }
 
+    def is_template_autoescaped(self):
+        """Enable Jinja autoescaping for all plugin templates."""
+        return True
+
     def _get_available_log_filenames(self):
         """Return sorted list of available .log filenames from OctoPrint log folder."""
         try:
@@ -864,6 +868,10 @@ class LogmonitorPlugin(
         except Exception as e:
             self._logger.error(f"Error getting active streams: {e}")
             return flask.jsonify({"error": "Failed to retrieve active streams"}), 500
+
+    def is_blueprint_csrf_protected(self):
+        """Explicitly require CSRF protection for blueprint routes."""
+        return True
 
     # ~~ Helper methods
 
