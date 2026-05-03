@@ -7,6 +7,7 @@ Provides live log streaming and searching capabilities with severity-based alert
 # pylint: disable=broad-except,global-statement
 # intentional: plugin handlers must not crash OctoPrint
 
+import json
 import logging
 import os
 import threading
@@ -625,6 +626,45 @@ class LogmonitorPlugin(
         except Exception as e:
             self._logger.error(f"Error resetting alerts: {e}")
             return flask.jsonify({"error": "Failed to reset alerts"}), 500
+
+    @octoprint.plugin.BlueprintPlugin.route("/debug/frontend", methods=["POST"])
+    def frontend_debug_log(self):
+        """Write frontend debug events into OctoPrint server logs."""
+        try:
+            if not self._settings.get(["debug_mode"]):
+                return flask.jsonify({"status": "debug_disabled"})
+
+            data = flask.request.get_json(silent=True) or {}
+
+            message = data.get("message", "")
+            if not isinstance(message, str):
+                message = str(message)
+            message = message.strip()[:300]
+            if not message:
+                message = "Frontend debug event"
+
+            payload = data.get("payload")
+            payload_text = ""
+            if payload is not None:
+                try:
+                    payload_text = json.dumps(payload, ensure_ascii=True, default=str)
+                except TypeError:
+                    payload_text = str(payload)
+                payload_text = payload_text[:2000]
+
+            client_ip = flask.request.remote_addr or "unknown"
+            if payload_text:
+                self._logger.debug(
+                    f"[Frontend Debug] {message} | ip={client_ip} | payload={payload_text}"
+                )
+            else:
+                self._logger.debug(f"[Frontend Debug] {message} | ip={client_ip}")
+
+            return flask.jsonify({"status": "logged"})
+
+        except Exception as e:
+            self._logger.error(f"Error writing frontend debug log: {e}")
+            return flask.jsonify({"error": "Failed to write debug log"}), 500
 
     @octoprint.plugin.BlueprintPlugin.route("/export", methods=["POST"])
     def export_results(self):

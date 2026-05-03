@@ -186,11 +186,9 @@
             <label class="checkbox">
                 <input type="checkbox"
                        data-bind="checked: settings.plugins.logmonitor.debug_mode">
-                {{ _("Enable debug mode in browser console") }}
+                {{ _("Enable debug mode in OctoPrint log") }}
             </label>
-            <span class="help-block">
-                {{ _("Writes Log Monitor frontend state changes into the browser developer console.") }}
-            </span>
+            <span class="help-block">{{ _("Writes Log Monitor frontend debug events into the OctoPrint server log.") }}</span>
         </div>
     </div>
     <div class="alert alert-info">

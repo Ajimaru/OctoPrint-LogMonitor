@@ -36,11 +36,21 @@ $(function () {
 
         self.debugLog = function (message, payload) {
             if (!self.isDebugMode()) return;
-            if (typeof payload === "undefined") {
-                console.log("[LogMonitor Debug] " + message);
-            } else {
-                console.log("[LogMonitor Debug] " + message, payload);
+
+            var body = { message: String(message || "") };
+            if (typeof payload !== "undefined") {
+                body.payload = payload;
             }
+
+            pluginAjax({
+                url: pluginBaseUrl + "/debug/frontend",
+                method: "POST",
+                data: JSON.stringify(body),
+                contentType: "application/json",
+                dataType: "json",
+            }).fail(function () {
+                // Intentionally silent: never spam browser console for debug logging.
+            });
         };
 
         // Line buffer for batching DOM updates
@@ -228,10 +238,28 @@ $(function () {
             if (current && fileNames.indexOf(current) !== -1) {
                 select.val(current);
             }
-
-            // Trigger change so settings observable picks up selection.
-            select.trigger("change");
         };
+
+        function selectPreferredLogFile(fileNames) {
+            if (!Array.isArray(fileNames) || fileNames.length === 0) return;
+
+            var defaultFile = getPluginSetting("default_log_file", "");
+            var currentSelection = self.selectedLogFile();
+
+            if (defaultFile && fileNames.indexOf(defaultFile) !== -1) {
+                self.selectedLogFile(defaultFile);
+                return;
+            }
+
+            if (
+                currentSelection &&
+                fileNames.indexOf(currentSelection) !== -1
+            ) {
+                return;
+            }
+
+            self.selectedLogFile(fileNames[0]);
+        }
 
         // Initialize
         self.onBeforeBinding = function () {
@@ -263,18 +291,7 @@ $(function () {
 
                     self.availableLogFiles(fileNames);
                     self.updateSettingsDefaultLogFileDropdown(fileNames);
-
-                    if (fileNames.length > 0) {
-                        var defaultFile = getPluginSetting(
-                            "default_log_file",
-                            "",
-                        );
-                        if (fileNames.indexOf(defaultFile) !== -1) {
-                            self.selectedLogFile(defaultFile);
-                        } else {
-                            self.selectedLogFile(fileNames[0]);
-                        }
-                    }
+                    selectPreferredLogFile(fileNames);
                 })
                 .fail(function (xhr) {
                     self.debugLog("Failed to load log file list", {
@@ -405,7 +422,10 @@ $(function () {
                     self.hasSearched(true);
                 })
                 .fail(function (error) {
-                    console.error("Search failed:", error);
+                    self.debugLog("Search failed", {
+                        status: error && error.status,
+                        responseText: error && error.responseText,
+                    });
                     new PNotify({
                         title: "Search Failed",
                         text: "Error performing search",
@@ -516,6 +536,22 @@ $(function () {
         self.onAfterBinding = function () {
             bindVisibilityToSetting("show_navbar", self.showNavbar);
             bindVisibilityToSetting("show_sidebar", self.showSidebar);
+
+            var pluginSettings = getPluginSettings();
+            var defaultLogFileObs =
+                pluginSettings && pluginSettings.default_log_file;
+            if (typeof defaultLogFileObs === "function") {
+                defaultLogFileObs.subscribe(function (newValue) {
+                    var files = self.availableLogFiles();
+                    if (
+                        !self.isStreaming() &&
+                        typeof newValue === "string" &&
+                        files.indexOf(newValue) !== -1
+                    ) {
+                        self.selectedLogFile(newValue);
+                    }
+                });
+            }
 
             if (
                 self.settings.settings.plugins.logmonitor.auto_start_streaming()
