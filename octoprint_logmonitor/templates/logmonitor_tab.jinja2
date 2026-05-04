@@ -18,7 +18,6 @@
          data-bind="visible: activeSubtab() === 'live'">
         <!-- Stream Panel -->
         <div class="logmonitor-stream-panel">
-            <h4>{{ _("Live Log Stream") }}</h4>
             <div class="logmonitor-controls">
                 <div class="logmonitor-controls-row">
                     <select data-bind="value: selectedLogFile, options: availableLogFiles, enable: !streamControlsDisabled()"
@@ -86,7 +85,6 @@
     <div class="logmonitor-subtab-panel"
          data-bind="visible: activeSubtab() === 'search'">
         <div class="logmonitor-search-panel">
-            <h4>{{ _("Search Logs") }}</h4>
             <div class="logmonitor-search-controls">
                 <select class="logmonitor-file-select"
                         data-bind="value: selectedLogFile, options: availableLogFiles, optionsCaption: 'Select log file...'">
@@ -124,15 +122,46 @@
                 <button class="btn btn-primary"
                         data-bind="click: performSearch, enable: !isSearching(), text: searchButtonText"></button>
             </div>
+            <div class="logmonitor-search-status" data-bind="visible: isSearching">
+                <span class="logmonitor-search-spinner"></span>
+                <span>{{ _("Searching logs...") }}</span>
+            </div>
             <div class="logmonitor-search-results"
                  data-bind="visible: searchResults().length > 0">
-                <div data-bind="foreach: searchResults">
-                    <div class="logmonitor-search-result"
-                         data-bind="css: 'logmonitor-level-' + level.toLowerCase()">
-                        <span class="logmonitor-timestamp"
-                              data-bind="visible: timestamp, text: timestamp"></span><span class="logmonitor-level" data-bind="text: level + ' '"></span><span class="logmonitor-logger" data-bind="visible: logger, text: logger"></span><span class="logmonitor-message" data-bind="text: message"></span>
-                    </div>
+                <div class="logmonitor-search-summary">
+                    <strong data-bind="text: totalResults"></strong>
+                    <span>{{ _("results") }}</span>
                 </div>
+                <table class="table table-striped table-condensed logmonitor-search-table">
+                    <colgroup>
+                        <col class="logmonitor-search-width-timestamp">
+                        <col class="logmonitor-search-width-logger">
+                        <col class="logmonitor-search-width-level">
+                        <col class="logmonitor-search-width-message">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>{{ _("Timestamp") }}</th>
+                            <th>{{ _("Logger") }}</th>
+                            <th>{{ _("Level") }}</th>
+                            <th>{{ _("Message") }}</th>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: searchResults">
+                        <tr data-bind="css: 'logmonitor-level-' + level.toLowerCase()">
+                            <td class="logmonitor-search-col-timestamp"
+                                data-bind="text: timestamp || '—'"></td>
+                            <td class="logmonitor-search-col-logger" data-bind="text: logger || '—'"></td>
+                            <td class="logmonitor-search-col-level">
+                                <span class="logmonitor-level" data-bind="text: level"></span>
+                            </td>
+                            <td class="logmonitor-search-col-message">
+                                <span class="logmonitor-message"
+                                      data-bind="html: $root.highlightSearchText(message)"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
                 <div class="logmonitor-pagination">
                     <button class="btn btn-small"
                             data-bind="click: previousPage, enable: canGoPrevious">{{ _("Previous") }}</button>
@@ -147,7 +176,6 @@
     </div>
     <div class="logmonitor-subtab-panel"
          data-bind="visible: activeSubtab() === 'history'">
-        <h4>{{ _("History List") }}</h4>
         <div class="logmonitor-history-controls">
             <button class="btn btn-small btn-default" data-bind="click: loadAlertHistory">{{ _("Refresh") }}</button>
             <button class="btn btn-small btn-danger"

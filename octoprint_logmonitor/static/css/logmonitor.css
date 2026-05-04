@@ -33,7 +33,9 @@
   margin-bottom: 30px;
 }
 
-.logmonitor-controls {
+.logmonitor-controls,
+.logmonitor-search-controls,
+.logmonitor-history-controls {
   margin-bottom: 15px;
   background: #f5f5f5;
   padding: 10px;
@@ -51,6 +53,17 @@
 .logmonitor-file-select {
   margin-right: 10px;
   max-width: 250px;
+}
+
+.logmonitor-controls .btn,
+.logmonitor-search-controls .btn,
+.logmonitor-history-controls .btn,
+.logmonitor-pagination .btn {
+  min-height: 34px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 20px;
 }
 
 /* Log Output */
@@ -140,57 +153,140 @@
 
 /* Search Panel */
 .logmonitor-search-panel {
-  margin-top: 30px;
+  margin-top: 10px;
 }
 
 .logmonitor-search-controls {
-  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .logmonitor-search-filters {
-  margin: 10px 0;
+  margin: 0;
 }
 
 .logmonitor-search-results {
   margin-top: 15px;
 }
 
-.logmonitor-search-result {
-  padding: 8px;
-  margin-bottom: 5px;
-  border-left: 3px solid #ddd;
-  background: #f9f9f9;
+.logmonitor-search-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  color: #666;
+}
+
+.logmonitor-search-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #ccc;
+  border-top-color: #333;
+  border-radius: 50%;
+  animation: logmonitor-spin 0.8s linear infinite;
+}
+
+.logmonitor-search-summary {
+  margin-bottom: 8px;
+  color: #666;
+}
+
+.logmonitor-search-table {
+  width: 100%;
+  table-layout: fixed;
   font-family:
     "Monaco", "Menlo", "Ubuntu Mono", "Consolas", "source-code-pro", monospace;
   font-size: 12px;
 }
 
-.logmonitor-search-result.logmonitor-level-debug {
-  border-left-color: #c586c0;
+.logmonitor-search-table .logmonitor-search-width-timestamp {
+  width: 112px;
 }
 
-.logmonitor-search-result.logmonitor-level-unknown {
-  border-left-color: #9e9e9e;
+.logmonitor-search-table .logmonitor-search-width-logger {
+  width: 150px;
+}
+
+.logmonitor-search-table .logmonitor-search-width-level {
+  width: 64px;
+}
+
+.logmonitor-search-table .logmonitor-search-width-message {
+  width: auto;
+}
+
+.logmonitor-search-table th,
+.logmonitor-search-table td {
+  vertical-align: top;
+  word-break: break-word;
+}
+
+.logmonitor-search-col-timestamp {
+  color: #666;
+}
+
+.logmonitor-search-col-logger {
+  color: #0b5f8a;
+}
+
+.logmonitor-search-col-level {
+  white-space: nowrap;
+  word-break: normal;
+}
+
+.logmonitor-search-table th:nth-child(3),
+.logmonitor-search-table td:nth-child(3) {
+  white-space: nowrap;
+  word-break: normal;
+}
+
+.logmonitor-search-col-level .logmonitor-level {
+  white-space: nowrap;
+}
+
+.logmonitor-search-highlight {
+  background: #fff2a8;
+  color: inherit;
+  padding: 0 1px;
+}
+
+.logmonitor-search-table tr.logmonitor-level-debug {
+  border-left: 3px solid #c586c0;
+}
+
+.logmonitor-search-table tr.logmonitor-level-unknown {
+  border-left: 3px solid #9e9e9e;
   background: #f4f4f4;
 }
 
-.logmonitor-search-result.logmonitor-level-info {
-  border-left-color: #4ec9b0;
+.logmonitor-search-table tr.logmonitor-level-info {
+  border-left: 3px solid #4ec9b0;
 }
 
-.logmonitor-search-result.logmonitor-level-warning {
-  border-left-color: #dcdcaa;
+.logmonitor-search-table tr.logmonitor-level-warning {
+  border-left: 3px solid #dcdcaa;
   background: #fffbf0;
 }
 
-.logmonitor-search-result.logmonitor-level-error {
-  border-left-color: #f48771;
+.logmonitor-search-table tr.logmonitor-level-error {
+  border-left: 3px solid #f48771;
   background: #fff5f5;
 }
 
-.logmonitor-search-result.logmonitor-level-critical {
-  border-left-color: #ff0000;
+.logmonitor-search-table tr.logmonitor-level-critical {
+  border-left: 3px solid #ff0000;
   background: #ffebeb;
+}
+
+.logmonitor-search-col-message .logmonitor-message {
+  white-space: pre-wrap;
+}
+
+@keyframes logmonitor-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .logmonitor-pagination {
@@ -208,15 +304,18 @@
 }
 
 .logmonitor-history-controls {
-  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .logmonitor-history-controls .btn {
-  margin-right: 6px;
+  margin-right: 0;
 }
 
 .logmonitor-history-controls .text-muted {
-  margin-left: 6px;
+  margin-left: 0;
 }
 
 .logmonitor-history-list {
@@ -368,37 +467,45 @@
 
 /* Dark theme support */
 body[data-theme="dark"] .logmonitor-controls,
+body[data-theme="dark"] .logmonitor-search-controls,
+body[data-theme="dark"] .logmonitor-history-controls,
 body[data-theme="dark"] .logmonitor-status {
   background: #2d2d2d;
   color: #d4d4d4;
 }
 
-body[data-theme="dark"] .logmonitor-search-result {
+body[data-theme="dark"] .logmonitor-search-table {
   background: #2d2d2d;
   color: #d4d4d4;
 }
 
-body[data-theme="dark"] .logmonitor-history-list {
+body[data-theme="dark"] .logmonitor-search-table th {
+  background: #2a2a2a;
+  color: #eee;
+}
+
+body[data-theme="dark"] .logmonitor-search-table tr.logmonitor-level-warning {
   background: #2d2d2d;
   border-color: #3a3a3a;
+}
+
+body[data-theme="dark"] .logmonitor-search-table tr.logmonitor-level-error {
+  background: rgba(244, 135, 113, 0.08);
 }
 
 body[data-theme="dark"] .logmonitor-history-entry {
   border-bottom-color: #3a3a3a;
 }
 
-body[data-theme="dark"] .logmonitor-search-result.logmonitor-level-warning {
-  background: #3d3520;
+body[data-theme="dark"] .logmonitor-search-table tr.logmonitor-level-critical {
+  background: rgba(255, 0, 0, 0.12);
 }
 
-body[data-theme="dark"] .logmonitor-search-result.logmonitor-level-error {
-  background: #3d2520;
+body[data-theme="dark"] .logmonitor-search-table tr.logmonitor-level-unknown {
+  background: rgba(160, 160, 160, 0.08);
 }
 
-body[data-theme="dark"] .logmonitor-search-result.logmonitor-level-critical {
-  background: #3d1515;
-}
-
-body[data-theme="dark"] .logmonitor-search-result.logmonitor-level-unknown {
-  background: #303030;
+body[data-theme="dark"] .logmonitor-search-highlight {
+  background: #6e5a00;
+  color: #fff7c7;
 }

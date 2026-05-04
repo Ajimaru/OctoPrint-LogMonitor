@@ -16,6 +16,7 @@ from typing import Any
 
 import flask
 import octoprint.plugin
+from octoprint.server.util.flask import no_firstrun_access
 
 from .log_searcher import LogSearcher
 from .log_tailer import LogTailer
@@ -258,11 +259,11 @@ class LogmonitorPlugin(
             "max_stream_lines": 500,
             "search_page_size": 50,
             "auto_scroll": True,
-            "auto_start_streaming": False,  # NEW
-            "enable_notifications": True,  # NEW
-            "regex_search_enabled": False,  # NEW
-            "alert_history_enabled": True,  # NEW
-            "max_alert_history": 100,  # NEW
+            "auto_start_streaming": False,
+            "enable_notifications": False,
+            "regex_search_enabled": False,
+            "alert_history_enabled": True,
+            "max_alert_history": 100,
             "alerts_monitor_mode": "selected",  # all|selected
             "alerts_monitored_logs": ["octoprint.log"],
             # Mask sensitive data (API keys, passwords, emails) in streamed log lines
@@ -360,6 +361,7 @@ class LogmonitorPlugin(
     # ~~ BlueprintPlugin mixin
 
     @octoprint.plugin.BlueprintPlugin.route("/files", methods=["GET"])
+    @no_firstrun_access
     def get_log_files(self):
         """Get list of available log files."""
         try:
@@ -392,6 +394,7 @@ class LogmonitorPlugin(
             return flask.jsonify({"files": [], "error": str(e)}), 500
 
     @octoprint.plugin.BlueprintPlugin.route("/search", methods=["GET"])
+    @no_firstrun_access
     def search_logs(self):
         """Search logs with pagination and severity filtering."""
         try:
@@ -495,6 +498,7 @@ class LogmonitorPlugin(
             )
 
     @octoprint.plugin.BlueprintPlugin.route("/stream/start", methods=["POST"])
+    @no_firstrun_access
     def start_stream(self):
         """Start or switch log streaming."""
         try:
@@ -568,6 +572,7 @@ class LogmonitorPlugin(
             return flask.jsonify({"error": str(e)}), 500
 
     @octoprint.plugin.BlueprintPlugin.route("/stream/stop", methods=["POST"])
+    @no_firstrun_access
     def stop_stream(self):
         """Stop log streaming."""
         try:
@@ -588,6 +593,7 @@ class LogmonitorPlugin(
             return flask.jsonify({"error": "Failed to stop stream"}), 500
 
     @octoprint.plugin.BlueprintPlugin.route("/stream/multi/start", methods=["POST"])
+    @no_firstrun_access
     def start_multi_stream(self):
         """Start streaming multiple log files simultaneously (NEW)."""
         try:
@@ -693,6 +699,7 @@ class LogmonitorPlugin(
             return flask.jsonify({"error": "Failed to start multi-stream"}), 500
 
     @octoprint.plugin.BlueprintPlugin.route("/stream/multi/stop", methods=["POST"])
+    @no_firstrun_access
     def stop_multi_stream(self):
         """Stop streaming specific log files (NEW)."""
         try:
@@ -742,6 +749,7 @@ class LogmonitorPlugin(
             return flask.jsonify({"error": "Failed to stop multi-stream"}), 500
 
     @octoprint.plugin.BlueprintPlugin.route("/alerts/reset", methods=["POST"])
+    @no_firstrun_access
     def reset_alerts(self):
         """Reset severity alert counters."""
         try:
@@ -761,6 +769,7 @@ class LogmonitorPlugin(
             return flask.jsonify({"error": "Failed to reset alerts"}), 500
 
     @octoprint.plugin.BlueprintPlugin.route("/debug/frontend", methods=["POST"])
+    @no_firstrun_access
     def frontend_debug_log(self):
         """Write frontend debug events into OctoPrint server logs."""
         try:
@@ -800,6 +809,7 @@ class LogmonitorPlugin(
             return flask.jsonify({"error": "Failed to write debug log"}), 500
 
     @octoprint.plugin.BlueprintPlugin.route("/debug/test-entries", methods=["POST"])
+    @no_firstrun_access
     def write_debug_test_entries(self):
         """Write one test entry per severity category into OctoPrint logs."""
         try:
@@ -849,6 +859,7 @@ class LogmonitorPlugin(
             return flask.jsonify({"error": "Failed to write debug test entries"}), 500
 
     @octoprint.plugin.BlueprintPlugin.route("/export", methods=["POST"])
+    @no_firstrun_access
     def export_results(self):
         """Export search results to CSV or TXT format."""
         try:
@@ -895,6 +906,7 @@ class LogmonitorPlugin(
     @octoprint.plugin.BlueprintPlugin.route(
         "/download/<path:filename>", methods=["GET"]
     )
+    @no_firstrun_access
     def download_log_file(self, filename):
         """Download a log file directly."""
         try:
@@ -925,6 +937,7 @@ class LogmonitorPlugin(
             return flask.jsonify({"error": "Download failed"}), 500
 
     @octoprint.plugin.BlueprintPlugin.route("/alert-history", methods=["GET"])
+    @no_firstrun_access
     def get_alert_history(self):
         """Get alert history."""
         try:
@@ -947,6 +960,7 @@ class LogmonitorPlugin(
             return flask.jsonify({"error": "Failed to retrieve alert history"}), 500
 
     @octoprint.plugin.BlueprintPlugin.route("/alert-history/clear", methods=["POST"])
+    @no_firstrun_access
     def clear_alert_history(self):
         """Clear alert history."""
         try:
@@ -960,6 +974,7 @@ class LogmonitorPlugin(
             return flask.jsonify({"error": "Failed to clear alert history"}), 500
 
     @octoprint.plugin.BlueprintPlugin.route("/alerts/monitor/status", methods=["GET"])
+    @no_firstrun_access
     def get_alert_monitor_status(self):
         """Return current alert-monitor configuration and active files."""
         try:
@@ -981,6 +996,7 @@ class LogmonitorPlugin(
             )
 
     @octoprint.plugin.BlueprintPlugin.route("/multi-stream", methods=["GET"])
+    @no_firstrun_access
     def get_active_streams(self):
         """Get list of active streaming files (multi-file support)."""
         try:

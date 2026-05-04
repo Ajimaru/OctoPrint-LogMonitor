@@ -572,6 +572,10 @@ $(function () {
         // Initialize
         self.onBeforeBinding = function () {
             self.autoScroll(!!getPluginSetting("auto_scroll", true));
+            var defaultFile = getPluginSetting("default_log_file", "");
+            if (defaultFile) {
+                setSelectedLogFile(defaultFile);
+            }
             self.loadAvailableFiles();
         };
 
@@ -750,6 +754,61 @@ $(function () {
         self.searchButtonText = ko.pureComputed(function () {
             return self.isSearching() ? "Searching..." : "Search";
         });
+
+        function escapeHtml(value) {
+            return String(value == null ? "" : value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        self.highlightSearchText = function (text) {
+            var rawText = String(text == null ? "" : text);
+            var query = String(self.searchQuery() || "");
+
+            if (!query) {
+                return escapeHtml(rawText);
+            }
+
+            try {
+                var flags = self.caseSensitive() ? "g" : "gi";
+                var pattern = self.useRegex()
+                    ? new RegExp(query, flags)
+                    : new RegExp(
+                          query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                          flags,
+                      );
+
+                var lastIndex = 0;
+                var pieces = [];
+                var match;
+
+                while ((match = pattern.exec(rawText)) !== null) {
+                    var matchedText = match[0];
+                    if (!matchedText) {
+                        pattern.lastIndex += 1;
+                        continue;
+                    }
+
+                    pieces.push(
+                        escapeHtml(rawText.slice(lastIndex, match.index)),
+                    );
+                    pieces.push(
+                        '<mark class="logmonitor-search-highlight">' +
+                            escapeHtml(matchedText) +
+                            "</mark>",
+                    );
+                    lastIndex = match.index + matchedText.length;
+                }
+
+                pieces.push(escapeHtml(rawText.slice(lastIndex)));
+                return pieces.join("");
+            } catch (_error) {
+                return escapeHtml(rawText);
+            }
+        };
 
         self.performSearch = function (options) {
             var opts = options || {};

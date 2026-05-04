@@ -94,7 +94,46 @@ class FakeSettings:
             self._values[key] = value
 
 
-class TestPluginCore(unittest.TestCase):
+class _FakeOctoPrintGlobalSettings:
+    """Minimal global settings stub for OctoPrint access decorators."""
+
+    @staticmethod
+    def getBoolean(_keys):  # pylint: disable=invalid-name
+        """Pretend first-run setup is already complete in unit tests."""
+        return False
+
+
+class _FakeUserManager:
+    """Minimal user manager stub for OctoPrint access decorators."""
+
+    @staticmethod
+    def has_been_customized():
+        """Pretend access control has already been configured."""
+        return True
+
+
+class OctoPrintAccessPatchedTestCase(unittest.TestCase):
+    """Base test case that patches OctoPrint globals used by route decorators."""
+
+    def setUp(self):
+        super().setUp()
+        self._settings_patcher = patch(
+            "octoprint.server.util.flask.settings",
+            return_value=_FakeOctoPrintGlobalSettings(),
+        )
+        self._user_manager_patcher = patch(
+            "octoprint.server.userManager", new=_FakeUserManager()
+        )
+        self._settings_patcher.start()
+        self._user_manager_patcher.start()
+
+    def tearDown(self):
+        self._user_manager_patcher.stop()
+        self._settings_patcher.stop()
+        super().tearDown()
+
+
+class TestPluginCore(OctoPrintAccessPatchedTestCase):
     """Unit tests for core plugin behaviors."""
 
     @staticmethod
@@ -108,6 +147,7 @@ class TestPluginCore(unittest.TestCase):
         return result[1] if isinstance(result, tuple) else result.status_code
 
     def setUp(self):
+        super().setUp()
         self.app = flask.Flask(__name__)
         self.temp_dir = tempfile.mkdtemp()
         # Annotated as Any so MagicMock assignments to typed attributes
@@ -133,6 +173,7 @@ class TestPluginCore(unittest.TestCase):
         for child in Path(self.temp_dir).glob("*"):
             child.unlink(missing_ok=True)
         Path(self.temp_dir).rmdir()
+        super().tearDown()
 
     def test_get_settings_defaults_contains_expected_keys(self):
         defaults = self.plugin.get_settings_defaults()
@@ -349,7 +390,7 @@ class TestPluginCore(unittest.TestCase):
         self.assertEqual(self.plugin._alert_history, [])
 
 
-class TestPluginHelpers(unittest.TestCase):
+class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
     """Targeted helper tests for uncovered branches in plugin core."""
 
     @staticmethod
@@ -363,6 +404,7 @@ class TestPluginHelpers(unittest.TestCase):
         return result[1] if isinstance(result, tuple) else result.status_code
 
     def setUp(self):
+        super().setUp()
         self.app = flask.Flask(__name__)
         self.temp_dir = tempfile.mkdtemp()
         self.plugin: Any = plugin_module.LogmonitorPlugin()
@@ -387,6 +429,7 @@ class TestPluginHelpers(unittest.TestCase):
         for child in Path(self.temp_dir).glob("*"):
             child.unlink(missing_ok=True)
         Path(self.temp_dir).rmdir()
+        super().tearDown()
 
     def test_get_template_vars_uses_available_filenames(self):
         with patch.object(
