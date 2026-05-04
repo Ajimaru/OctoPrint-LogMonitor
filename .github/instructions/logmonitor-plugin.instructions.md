@@ -1,10 +1,11 @@
 description: Development guidelines for implementing the OctoPrint Log Monitor plugin
-applyTo: 
-  - '**/*.py'
-  - '**/*.js'
-  - '**/*.jinja2'
-  - '**/*.css'
-  - 'setup.py'
+applyTo:
+
+- '\*_/_.py'
+- '\*_/_.js'
+- '\*_/_.jinja2'
+- '\*_/_.css'
+- 'setup.py'
 
 # OctoPrint Log Monitor Plugin - Development Instructions
 
@@ -17,6 +18,7 @@ This plugin provides live log streaming and searching capabilities for OctoPrint
 ## Core Principles
 
 ### Architecture
+
 - Use OctoPrint's plugin system with proper mixin inheritance
 - Implement background threading for log tailing
 - Use WebSocket for real-time log streaming
@@ -24,6 +26,7 @@ This plugin provides live log streaming and searching capabilities for OctoPrint
 - Follow OctoPrint's conventions for templates, assets, and settings
 
 ### Code Organization
+
 ```
 octoprint_logmonitor/
 ├── __init__.py           # Main plugin class with all mixins
@@ -42,6 +45,7 @@ octoprint_logmonitor/
 ## Implementation Guidelines
 
 ### When working on Python backend code:
+
 1. **Always use type hints** for function parameters and return values
 2. **Implement proper thread safety** using `threading.Lock()` for shared state
 3. **Handle file operations safely:**
@@ -62,6 +66,7 @@ octoprint_logmonitor/
 6. **Log all errors** but never let background threads crash silently
 
 ### When working on frontend (JavaScript/KnockoutJS):
+
 1. **Use KnockoutJS observables** for reactive state management
 2. **Register ViewModel** with OctoPrint using `OCTOPRINT_VIEWMODELS`
 3. **Handle WebSocket messages** via `OctoPrint.onDataUpdaterPluginMessage`
@@ -75,12 +80,14 @@ octoprint_logmonitor/
 6. **Throttle UI updates** when receiving high-frequency log streams
 
 ### When working on templates (Jinja2):
+
 1. **Use OctoPrint's template hooks** for Navbar and Sidebar integration
 2. **Make Navbar/Sidebar visibility** configurable via settings
 3. **Implement clickable badges** that navigate to the plugin tab
 4. **Support both light and dark themes**
 
 ### API Endpoints Design:
+
 ```python
 GET  /api/plugin/logmonitor/files          # List available log files
 GET  /api/plugin/logmonitor/search         # Search with pagination
@@ -90,6 +97,7 @@ POST /api/plugin/logmonitor/alerts/reset   # Reset alert counters
 ```
 
 ### Settings Schema:
+
 ```python
 {
     "show_navbar": True,
@@ -122,6 +130,7 @@ POST /api/plugin/logmonitor/alerts/reset   # Reset alert counters
 ## Testing Requirements
 
 Before committing code, ensure:
+
 1. **Unit tests** exist for LogTailer, LogSearcher, and severity parsing
 2. **Integration tests** cover all API endpoints
 3. **Security tests** verify path traversal is blocked
@@ -135,6 +144,7 @@ Before committing code, ensure:
 ## Common Patterns
 
 ### Log Tailing Pattern:
+
 ```python
 class LogTailer:
     def __init__(self, filepath, callback, poll_interval=0.5):
@@ -142,7 +152,7 @@ class LogTailer:
         self._file.seek(0, 2)  # Seek to EOF
         self._callback = callback
         self._stop_flag = threading.Event()
-        
+
     def run(self):
         while not self._stop_flag.is_set():
             line = self._file.readline()
@@ -153,6 +163,7 @@ class LogTailer:
 ```
 
 ### Severity Parsing Pattern:
+
 ```python
 import re
 
@@ -186,7 +197,7 @@ def parse_log_line(line: str) -> dict:
 ## Notes
 
 - This plugin requires OctoPrint >= 1.10.0+
-- Python >= 3.8 required
+- Python >= 3.9 required
 - License: AGPLv3
 - Follow OctoPrint's coding standards and conventions
 - Use semantic versioning for releases

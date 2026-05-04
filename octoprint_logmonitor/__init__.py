@@ -1353,7 +1353,7 @@ class LogmonitorPlugin(
 # ~~ Plugin metadata
 
 __plugin_name__ = "Log Monitor"
-__plugin_pythoncompat__ = ">=3.7,<4"
+__plugin_pythoncompat__ = ">=3.9,<4"
 __plugin_version__ = "0.1.0"
 __plugin_description__ = (
     "Live log streaming and searching for OctoPrint with severity alerting"

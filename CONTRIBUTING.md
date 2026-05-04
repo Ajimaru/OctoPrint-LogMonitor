@@ -59,7 +59,7 @@ We love pull requests! Here's how to contribute code:
 
 ### Prerequisites
 
-- Python 3.7 or higher
+- Python 3.9 or higher
 - OctoPrint development environment
 - Git
 

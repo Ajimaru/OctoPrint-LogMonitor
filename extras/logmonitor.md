@@ -5,7 +5,7 @@ id: logmonitor
 title: OctoPrint-LogMonitor
 description: Live log streaming and searching for OctoPrint with severity alerting
 authors:
-- Ajimaru
+  - Ajimaru
 license: AGPL-3.0-or-later
 
 # TODO
@@ -22,22 +22,22 @@ archive: https://github.com/Ajimaru/OctoPrint-LogMonitor/archive/main.zip
 
 # TODO
 tags:
-- a list
-- of tags
-- that apply
-- to your plugin
-- (take a look at the existing plugins for what makes sense here)
+  - a list
+  - of tags
+  - that apply
+  - to your plugin
+  - (take a look at the existing plugins for what makes sense here)
 
 # TODO
 # When registering a plugin on plugins.octoprint.org, all screenshots should be uploaded not linked from external sites.
 screenshots:
-- url: url of a screenshot, /assets/img/...
-  alt: alt-text of a screenshot
-  caption: caption of a screenshot
-- url: url of another screenshot, /assets/img/...
-  alt: alt-text of another screenshot
-  caption: caption of another screenshot
-- ...
+  - url: url of a screenshot, /assets/img/...
+    alt: alt-text of a screenshot
+    caption: caption of a screenshot
+  - url: url of another screenshot, /assets/img/...
+    alt: alt-text of another screenshot
+    caption: caption of another screenshot
+  - ...
 
 # TODO
 featuredimage: url of a featured image for your plugin, /assets/img/...
@@ -48,10 +48,9 @@ featuredimage: url of a featured image for your plugin, /assets/img/...
 # "compatibility" block if this is not the case.
 
 compatibility:
-
   # List of compatible versions
   #
-  # A single version number will be interpretated as a minimum version requirement,
+  # A single version number will be interpreted as a minimum version requirement,
   # e.g. "1.3.1" will show the plugin as compatible to OctoPrint versions 1.3.1 and up.
   # More sophisticated version requirements can be modelled too by using PEP440
   # compatible version specifiers.
@@ -60,7 +59,7 @@ compatibility:
   # OctoPrint versions being supported.
 
   octoprint:
-  - 1.10.0
+    - 1.10.0
 
   # List of compatible operating systems
   #
@@ -80,10 +79,10 @@ compatibility:
   # operating systems being supported.
 
   os:
-  - linux
-  - windows
-  - macos
-  - freebsd
+    - linux
+    - windows
+    - macos
+    - freebsd
 
   # Compatible Python version
   #
@@ -93,7 +92,7 @@ compatibility:
   #
   # Plugins that only support Python 2 will not be accepted into the plugin repository.
 
-  python: ">=3.8,<3.14"
+  python: ">=3.9,<4"
 
 # TODO
 # If any of the below attributes apply to your project, uncomment the corresponding lines. This is MANDATORY!
@@ -102,7 +101,6 @@ attributes:
 #  - cloud  # if your plugin requires access to a cloud to function
 #  - commercial  # if your plugin has a commercial aspect to it
 #  - free-tier  # if your plugin has a free tier
-
 ---
 
 **TODO**: Longer description of your plugin, configuration examples etc. This part will be visible on the page at

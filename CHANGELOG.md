@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Severity Filtering**: Filter logs by DEBUG, INFO, WARNING, ERROR, CRITICAL levels
 - **Free-Text Filtering**: Real-time client-side filtering of streamed logs
 - **Syntax Highlighting**: Color-coded severity levels for easy visual scanning
-- **Multiple Log Files**: Support for all OctoPrint log files (octoprint.log, plugin_*.log)
+- **Multiple Log Files**: Support for all OctoPrint log files (octoprint.log, plugin\_\*.log)
 - **Multi-File Streaming**: Stream multiple log files simultaneously with merged view
 - **Regex Search Mode**: Optional regex search toggle in the UI
 - **Export Results**: Export search results to CSV or TXT
@@ -75,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical Details
 
-- **Language**: Python 3.7+
+- **Language**: Python 3.9+
 - **Framework**: OctoPrint Plugin API
 - **Frontend**: KnockoutJS + jQuery + Bootstrap
 - **Threading**: Python threading for background log tailing
