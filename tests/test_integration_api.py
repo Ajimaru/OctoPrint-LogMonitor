@@ -426,7 +426,7 @@ class TestAPIIntegrationWithPlugin(unittest.TestCase):
         self.mock_settings = {
             "default_log_file": "octoprint.log",
             "search_page_size": 50,
-            "stream_poll_interval_ms": 500,
+            "stream_poll_interval_s": 5,
             "severity_triggers": ["WARNING", "ERROR", "CRITICAL"],
         }
 
@@ -442,7 +442,7 @@ class TestAPIIntegrationWithPlugin(unittest.TestCase):
         # Verify settings structure
         self.assertIn("default_log_file", self.mock_settings)
         self.assertIn("search_page_size", self.mock_settings)
-        self.assertIn("stream_poll_interval_ms", self.mock_settings)
+        self.assertIn("stream_poll_interval_s", self.mock_settings)
 
     def test_concurrent_requests(self):
         """

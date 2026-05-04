@@ -100,7 +100,7 @@ msgid "Changes take effect immediately after saving."
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_sidebar.jinja2:18
-msgid "Open Log Monitor"
+msgid "Open History List"
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_sidebar.jinja2:23

@@ -526,7 +526,7 @@ class TestPluginCore(unittest.TestCase):
             {
                 "alerts_monitor_mode": "selected",
                 "alerts_monitored_logs": ["octoprint.log"],
-                "stream_poll_interval_ms": 200,
+                "stream_poll_interval_s": 2,
             }
         )
         self.plugin._settings = FakeSettings(self.temp_dir, values)
@@ -546,7 +546,7 @@ class TestPluginCore(unittest.TestCase):
         values.update(
             {
                 "alerts_monitor_mode": "all",
-                "stream_poll_interval_ms": 200,
+                "stream_poll_interval_s": 2,
             }
         )
         self.plugin._settings = FakeSettings(self.temp_dir, values)
@@ -569,7 +569,7 @@ class TestPluginCore(unittest.TestCase):
             {
                 "auto_start_streaming": True,
                 "default_log_file": "octoprint.log",
-                "stream_poll_interval_ms": 100,
+                "stream_poll_interval_s": 1,
             }
         )
         self.plugin._settings = FakeSettings(self.temp_dir, values)
@@ -602,6 +602,10 @@ class TestPluginCore(unittest.TestCase):
         data = {
             "plugins": {
                 "logmonitor": {
+                    "stream_poll_interval_s": "0",
+                    "max_stream_lines": "20000",
+                    "search_page_size": "9",
+                    "max_alert_history": "abc",
                     "alerts_monitor_mode": "invalid",
                     "alerts_monitored_logs": [
                         "octoprint.log",
@@ -618,6 +622,10 @@ class TestPluginCore(unittest.TestCase):
             self.plugin.on_settings_save(data)
 
         plugin_data = data["plugins"]["logmonitor"]
+        self.assertEqual(plugin_data["stream_poll_interval_s"], 1)
+        self.assertEqual(plugin_data["max_stream_lines"], 10000)
+        self.assertEqual(plugin_data["search_page_size"], 10)
+        self.assertEqual(plugin_data["max_alert_history"], 100)
         self.assertEqual(plugin_data["alerts_monitor_mode"], "selected")
         self.assertEqual(
             plugin_data["alerts_monitored_logs"], ["octoprint.log", "plugin.log"]

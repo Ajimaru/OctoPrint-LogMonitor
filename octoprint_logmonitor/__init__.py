@@ -102,9 +102,7 @@ class LogmonitorPlugin(
                 filepath = os.path.join(log_dir, default_log_file)
 
                 if os.path.exists(filepath):
-                    poll_interval = (
-                        self._settings.get(["stream_poll_interval_ms"]) / 1000.0
-                    )
+                    poll_interval = self._get_stream_poll_interval_seconds()
                     self._tailer = LogTailer(
                         filepath=filepath,
                         callback=self._handle_log_line,
@@ -149,6 +147,45 @@ class LogmonitorPlugin(
             if isinstance(plugins_data, dict):
                 plugin_data = plugins_data.get("logmonitor")
                 if isinstance(plugin_data, dict):
+
+                    def clamp_int_setting(key, default, minimum, maximum):
+                        raw_value = plugin_data.get(key)
+                        if raw_value is None:
+                            parsed = default
+                        else:
+                            try:
+                                parsed = int(raw_value)
+                            except (TypeError, ValueError):
+                                parsed = default
+                        plugin_data[key] = min(maximum, max(minimum, parsed))
+
+                    raw_interval_seconds = plugin_data.get("stream_poll_interval_s")
+                    raw_interval_ms = plugin_data.get("stream_poll_interval_ms")
+
+                    # Backward compatibility: convert legacy milliseconds setting.
+                    if raw_interval_seconds is None and raw_interval_ms is not None:
+                        try:
+                            raw_interval_seconds = float(raw_interval_ms) / 1000.0
+                        except (TypeError, ValueError):
+                            raw_interval_seconds = 5.0
+
+                    if raw_interval_seconds is None:
+                        interval_seconds = 5
+                    else:
+                        try:
+                            interval_seconds = int(float(raw_interval_seconds))
+                        except (TypeError, ValueError):
+                            interval_seconds = 5
+
+                    plugin_data["stream_poll_interval_s"] = min(
+                        60, max(1, interval_seconds)
+                    )
+                    plugin_data.pop("stream_poll_interval_ms", None)
+
+                    clamp_int_setting("max_stream_lines", 500, 100, 10000)
+                    clamp_int_setting("search_page_size", 50, 10, 500)
+                    clamp_int_setting("max_alert_history", 100, 10, 1000)
+
                     alerts_enabled = plugin_data.get("alerts_enabled")
                     if isinstance(alerts_enabled, str):
                         plugin_data["alerts_enabled"] = alerts_enabled.lower() in {
@@ -198,7 +235,7 @@ class LogmonitorPlugin(
             "alerts_enabled": True,
             "severity_triggers": ["WARNING", "ERROR", "CRITICAL"],
             "default_log_file": "octoprint.log",
-            "stream_poll_interval_ms": 1000,
+            "stream_poll_interval_s": 5,
             "max_stream_lines": 500,
             "search_page_size": 50,
             "auto_scroll": True,
@@ -281,6 +318,23 @@ class LogmonitorPlugin(
         except Exception as e:
             self._logger.error(f"Error listing log filenames for template vars: {e}")
             return []
+
+    def _get_stream_poll_interval_seconds(self) -> float:
+        """Return stream polling interval in seconds with legacy fallback."""
+        value_seconds = self._settings.get(["stream_poll_interval_s"])
+        if value_seconds is None:
+            value_ms = self._settings.get(["stream_poll_interval_ms"])
+            if value_ms is not None:
+                try:
+                    return min(60.0, max(1.0, float(value_ms) / 1000.0))
+                except (TypeError, ValueError):
+                    return 5.0
+            return 5.0
+
+        try:
+            return min(60.0, max(1.0, float(value_seconds)))
+        except (TypeError, ValueError):
+            return 5.0
 
     # ~~ BlueprintPlugin mixin
 
@@ -457,7 +511,7 @@ class LogmonitorPlugin(
                 self._tailer.stop()
 
             # Create new tailer
-            poll_interval = self._settings.get(["stream_poll_interval_ms"]) / 1000.0
+            poll_interval = self._get_stream_poll_interval_seconds()
             self._tailer = LogTailer(
                 filepath=filepath,
                 callback=self._handle_log_line,
@@ -581,7 +635,7 @@ class LogmonitorPlugin(
                         pass
 
                 # Create new tailer
-                poll_interval = self._settings.get(["stream_poll_interval_ms"]) / 1000.0
+                poll_interval = self._get_stream_poll_interval_seconds()
 
                 # Wrap callback to add file context
                 def make_callback(fname):
@@ -891,7 +945,7 @@ class LogmonitorPlugin(
 
     def _start_flush_timer(self):
         """Start the periodic line-buffer flush timer."""
-        interval = max(0.5, self._settings.get(["stream_poll_interval_ms"]) / 1000.0)
+        interval = self._get_stream_poll_interval_seconds()
         self._flush_timer = threading.Timer(interval, self._flush_line_buffer)
         self._flush_timer.daemon = True
         self._flush_timer.start()
@@ -981,7 +1035,7 @@ class LogmonitorPlugin(
             return
 
         log_dir = self._settings.getBaseFolder("logs")
-        poll_interval = self._settings.get(["stream_poll_interval_ms"]) / 1000.0
+        poll_interval = self._get_stream_poll_interval_seconds()
 
         for filename in files:
             filepath = os.path.join(log_dir, filename)
