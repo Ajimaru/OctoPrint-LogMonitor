@@ -269,18 +269,21 @@
 /* Navbar */
 .logmonitor-navbar-link {
   position: relative;
+  display: inline-block;
 }
 
 .logmonitor-badge {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   padding: 2px 5px;
   font-size: 10px;
   font-weight: bold;
   border-radius: 3px;
   background: #d9534f;
   color: white;
+  z-index: 2;
 }
 
 .logmonitor-badge.badge-warning {
@@ -325,6 +328,25 @@
 .logmonitor-sidebar-alerts .alert {
   margin-bottom: 5px;
   padding: 8px;
+}
+
+.logmonitor-sidebar-alerts .alert.badge-warning,
+.logmonitor-sidebar-alerts .alert.alert-warning,
+.logmonitor-sidebar-alerts .alert.badge-info,
+.logmonitor-sidebar-alerts .alert.alert-info {
+  color: #111;
+}
+
+.logmonitor-sidebar-alerts .alert.badge-important,
+.logmonitor-sidebar-alerts .alert.alert-important,
+.logmonitor-sidebar-alerts .alert.alert-error,
+.logmonitor-sidebar-alerts .alert.alert-danger {
+  color: #fff;
+}
+
+.logmonitor-sidebar-alerts .alert .muted {
+  color: inherit !important;
+  opacity: 1;
 }
 
 .logmonitor-sidebar-actions button {
