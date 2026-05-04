@@ -121,7 +121,8 @@
                         UNKNOWN
                     </label>
                 </div>
-                <button class="btn btn-primary" data-bind="click: performSearch">{{ _("Search") }}</button>
+                <button class="btn btn-primary"
+                        data-bind="click: performSearch, enable: !isSearching(), text: searchButtonText"></button>
             </div>
             <div class="logmonitor-search-results"
                  data-bind="visible: searchResults().length > 0">

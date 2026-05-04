@@ -270,6 +270,9 @@ $(function () {
         self.hasSearched = ko.observable(false);
         self.currentPage = ko.observable(0);
         self.totalResults = ko.observable(0);
+        self.isSearching = ko.observable(false);
+        self.lastSearchAt = 0;
+        self.pendingSearchRequest = null;
 
         // NEW: Advanced search and export features
         self.useRegex = ko.observable(false);
@@ -715,7 +718,18 @@ $(function () {
         };
 
         // Search functions
-        self.performSearch = function () {
+        self.searchButtonText = ko.pureComputed(function () {
+            return self.isSearching() ? "Searching..." : "Search";
+        });
+
+        self.performSearch = function (options) {
+            var opts = options || {};
+            var keepPage = !!opts.keepPage;
+
+            if (!keepPage && self.currentPage() !== 0) {
+                self.currentPage(0);
+            }
+
             var levels = [];
             if (self.searchDebug()) levels.push("DEBUG");
             if (self.searchInfo()) levels.push("INFO");
@@ -724,11 +738,25 @@ $(function () {
             if (self.searchCritical()) levels.push("CRITICAL");
             if (self.searchUnknown()) levels.push("UNKNOWN");
 
+            var now = Date.now();
+            if (self.isSearching() || now - self.lastSearchAt < 300) {
+                return;
+            }
+            self.lastSearchAt = now;
+
             var pageSize =
                 self.settings.settings.plugins.logmonitor.search_page_size();
             var offset = self.currentPage() * pageSize;
 
-            pluginAjax({
+            if (
+                self.pendingSearchRequest &&
+                typeof self.pendingSearchRequest.abort === "function"
+            ) {
+                self.pendingSearchRequest.abort();
+            }
+
+            self.isSearching(true);
+            self.pendingSearchRequest = pluginAjax({
                 url: pluginBaseUrl + "/search",
                 method: "GET",
                 dataType: "json",
@@ -749,29 +777,43 @@ $(function () {
                     self.hasSearched(true);
                 })
                 .fail(function (error) {
+                    if (error && error.statusText === "abort") {
+                        return;
+                    }
+
+                    var message = "Error performing search";
+                    if (error && error.status === 429) {
+                        message =
+                            "Too many search requests. Please wait a moment.";
+                    }
+
                     self.debugLog("Search failed", {
                         status: error && error.status,
                         responseText: error && error.responseText,
                     });
                     new PNotify({
                         title: "Search Failed",
-                        text: "Error performing search",
+                        text: message,
                         type: "error",
                     });
+                })
+                .always(function () {
+                    self.isSearching(false);
+                    self.pendingSearchRequest = null;
                 });
         };
 
         self.previousPage = function () {
             if (self.canGoPrevious()) {
                 self.currentPage(self.currentPage() - 1);
-                self.performSearch();
+                self.performSearch({ keepPage: true });
             }
         };
 
         self.nextPage = function () {
             if (self.canGoNext()) {
                 self.currentPage(self.currentPage() + 1);
-                self.performSearch();
+                self.performSearch({ keepPage: true });
             }
         };
 
