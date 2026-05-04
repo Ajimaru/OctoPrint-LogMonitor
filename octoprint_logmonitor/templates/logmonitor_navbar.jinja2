@@ -1,8 +1,7 @@
 <a href="#"
-   data-bind="click: openHistoryTab"
-   class="logmonitor-navbar-link"
-   title="{{ _('Log Monitor') }}">
+   data-bind="click: openHistoryTab, attr: { title: navbarTooltip }"
+   class="logmonitor-navbar-link">
     <i class="fa fa-list-alt"></i>
     <span class="logmonitor-badge"
-          data-bind="visible: hasAlerts(), text: alertText, css: alertClass, attr: { title: alertDetails }"></span>
+          data-bind="visible: hasAlerts(), text: alertText, css: alertClass"></span>
 </a>

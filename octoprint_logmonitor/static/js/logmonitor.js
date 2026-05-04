@@ -221,6 +221,30 @@ $(function () {
             return parts.join(" | ");
         });
 
+        self.navbarTooltip = ko.pureComputed(function () {
+            if (!self.hasAlerts()) {
+                return "Log Monitor";
+            }
+
+            var counts = self.alertCounts();
+            var lines = [];
+            [
+                "CRITICAL",
+                "ERROR",
+                "WARNING",
+                "UNKNOWN",
+                "INFO",
+                "DEBUG",
+            ].forEach(function (level) {
+                var count = counts[level] || 0;
+                if (count > 0) {
+                    lines.push(level + ": " + count);
+                }
+            });
+
+            return "Alerts\n" + lines.join("\n");
+        });
+
         self.alertText = ko.computed(function () {
             return String(self.alertCount());
         });
