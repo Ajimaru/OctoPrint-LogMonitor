@@ -4,5 +4,5 @@
    title="{{ _('Log Monitor') }}">
     <i class="fa fa-list-alt"></i>
     <span class="logmonitor-badge"
-          data-bind="visible: hasAlerts(), text: alertText, css: alertClass"></span>
+          data-bind="visible: hasAlerts(), text: alertText, css: alertClass, attr: { title: alertDetails }"></span>
 </a>

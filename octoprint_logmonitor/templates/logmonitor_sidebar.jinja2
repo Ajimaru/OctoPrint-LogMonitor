@@ -6,7 +6,8 @@
         </div>
         <div class="logmonitor-sidebar-alerts" data-bind="visible: hasAlerts()">
             <div class="alert" data-bind="css: alertClass">
-                <strong data-bind="text: alertText"></strong>
+                <strong data-bind="text: alertCount() + ' alerts' "></strong>
+                <div class="muted" data-bind="text: alertDetails"></div>
             </div>
         </div>
         <div class="logmonitor-sidebar-actions">

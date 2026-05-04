@@ -158,13 +158,71 @@ $(function () {
         self.showUnknown = ko.observable(false);
 
         // Observable: Alerts
-        self.alertCount = ko.observable(0);
-        self.alertLevel = ko.observable("");
+        self.alertCounts = ko.observable({
+            DEBUG: 0,
+            INFO: 0,
+            WARNING: 0,
+            ERROR: 0,
+            CRITICAL: 0,
+            UNKNOWN: 0,
+        });
+
+        function totalAlerts() {
+            var counts = self.alertCounts();
+            return (
+                (counts.DEBUG || 0) +
+                (counts.INFO || 0) +
+                (counts.WARNING || 0) +
+                (counts.ERROR || 0) +
+                (counts.CRITICAL || 0) +
+                (counts.UNKNOWN || 0)
+            );
+        }
+
+        function highestAlertLevel() {
+            var counts = self.alertCounts();
+            if ((counts.CRITICAL || 0) > 0) return "CRITICAL";
+            if ((counts.ERROR || 0) > 0) return "ERROR";
+            if ((counts.WARNING || 0) > 0) return "WARNING";
+            if ((counts.UNKNOWN || 0) > 0) return "UNKNOWN";
+            if ((counts.INFO || 0) > 0) return "INFO";
+            if ((counts.DEBUG || 0) > 0) return "DEBUG";
+            return "";
+        }
+
+        self.alertCount = ko.pureComputed(function () {
+            return totalAlerts();
+        });
+
+        self.alertLevel = ko.pureComputed(function () {
+            return highestAlertLevel();
+        });
+
         self.hasAlerts = ko.computed(function () {
             return self.alertCount() > 0;
         });
+
+        self.alertDetails = ko.pureComputed(function () {
+            var counts = self.alertCounts();
+            var parts = [];
+            [
+                "CRITICAL",
+                "ERROR",
+                "WARNING",
+                "UNKNOWN",
+                "INFO",
+                "DEBUG",
+            ].forEach(function (level) {
+                var count = counts[level] || 0;
+                if (count > 0) {
+                    parts.push(level + ": " + count);
+                }
+            });
+            return parts.join(" | ");
+        });
+
         self.alertText = ko.computed(function () {
-            return self.alertLevel() + ": " + self.alertCount();
+            return String(self.alertCount());
         });
         self.alertClass = ko.computed(function () {
             var level = self.alertLevel().toLowerCase();
@@ -264,9 +322,7 @@ $(function () {
 
         self.statusSummary = ko.computed(function () {
             if (self.hasAlerts()) {
-                return (
-                    self.alertCount() + " " + self.alertLevel() + " alert(s)"
-                );
+                return self.alertCount() + " alert(s)";
             }
             return "No alerts";
         });
@@ -703,8 +759,14 @@ $(function () {
                 contentType: "application/json",
                 dataType: "json",
             }).done(function () {
-                self.alertCount(0);
-                self.alertLevel("");
+                self.alertCounts({
+                    DEBUG: 0,
+                    INFO: 0,
+                    WARNING: 0,
+                    ERROR: 0,
+                    CRITICAL: 0,
+                    UNKNOWN: 0,
+                });
             });
         };
 
@@ -863,8 +925,22 @@ $(function () {
         };
 
         self.handleAlert = function (alert) {
-            self.alertCount(alert.count);
-            self.alertLevel(alert.level);
+            var level = String((alert && alert.level) || "").toUpperCase();
+            if (!level) {
+                return;
+            }
+
+            var count = parseInt(alert && alert.count, 10);
+            if (isNaN(count) || count < 0) {
+                count = 0;
+            }
+
+            var next = Object.assign({}, self.alertCounts());
+            if (!(level in next)) {
+                next[level] = 0;
+            }
+            next[level] = count;
+            self.alertCounts(next);
 
             // In-app OctoPrint-style toast notification (PNotify)
             if (alert.notification_enabled) {
