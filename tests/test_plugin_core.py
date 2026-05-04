@@ -78,6 +78,21 @@ class FakeSettings:
         """Return the configured base folder (OctoPrint-style camelCase API)."""
         return self._base_dir
 
+    def get_all_data(self):
+        """Return all settings data (used by OctoPrint's on_settings_save)."""
+        return {"plugins": {"logmonitor": self._values}}
+
+    def set(self, keys, value):
+        """Set a setting value (stub for OctoPrint's API)."""
+        if isinstance(keys, list) and len(keys) == 0:
+            # Setting all data
+            if "plugins" in value and "logmonitor" in value["plugins"]:
+                self._values.update(value["plugins"]["logmonitor"])
+        else:
+            # Setting a specific key
+            key = keys[0] if isinstance(keys, list) else keys
+            self._values[key] = value
+
 
 class TestPluginCore(unittest.TestCase):
     """Unit tests for core plugin behaviors."""
@@ -247,6 +262,22 @@ class TestPluginCore(unittest.TestCase):
 
         self.assertEqual(self._status(response), 400)
 
+    def test_search_logs_missing_file_parameter(self):
+        """Search endpoint should require file parameter."""
+        with self.app.test_request_context("/search", method="GET"):
+            response = self.plugin.search_logs()
+
+        self.assertEqual(self._status(response), 404)
+
+    def test_search_logs_invalid_limit_type(self):
+        """Search endpoint should reject non-integer limit values."""
+        with self.app.test_request_context(
+            "/search?file=octoprint.log&limit=abc", method="GET"
+        ):
+            response = self.plugin.search_logs()
+
+        self.assertEqual(self._status(response), 400)
+
     def test_search_logs_invalid_severity(self):
         with self.app.test_request_context("/search?levels=NOPE", method="GET"):
             response = self.plugin.search_logs()
@@ -269,9 +300,10 @@ class TestPluginCore(unittest.TestCase):
         log_path = Path(self.temp_dir) / "octoprint.log"
         log_path.write_text("line")
 
-        with patch(
-            "octoprint_logmonitor.check_file_size", return_value=False
-        ), self.app.test_request_context("/search?file=octoprint.log", method="GET"):
+        with (
+            patch("octoprint_logmonitor.check_file_size", return_value=False),
+            self.app.test_request_context("/search?file=octoprint.log", method="GET"),
+        ):
             response = self.plugin.search_logs()
 
         self.assertEqual(self._status(response), 413)
@@ -316,6 +348,285 @@ class TestPluginCore(unittest.TestCase):
         self.assertEqual(self._resp(response).get_json()["status"], "cleared")
         self.assertEqual(self.plugin._alert_history, [])
 
+
+class TestPluginHelpers(unittest.TestCase):
+    """Targeted helper tests for uncovered branches in plugin core."""
+
+    @staticmethod
+    def _resp(result):
+        """Return Flask Response, unwrapping (response, status) tuples."""
+        return result[0] if isinstance(result, tuple) else result
+
+    @staticmethod
+    def _status(result) -> int:
+        """Return the HTTP status code regardless of tuple/Response form."""
+        return result[1] if isinstance(result, tuple) else result.status_code
+
+    def setUp(self):
+        self.app = flask.Flask(__name__)
+        self.temp_dir = tempfile.mkdtemp()
+        self.plugin: Any = plugin_module.LogmonitorPlugin()
+        self.plugin._logger = MagicMock()
+        self.plugin._plugin_manager = MagicMock()
+        self.plugin._identifier = "logmonitor"
+        self.plugin._plugin_version = "0.1.0"
+        self.plugin._settings = FakeSettings(
+            self.temp_dir, self.plugin.get_settings_defaults()
+        )
+        self.plugin._alert_counts = {
+            "DEBUG": 0,
+            "INFO": 0,
+            "WARNING": 0,
+            "ERROR": 0,
+            "CRITICAL": 0,
+        }
+        self.plugin._alert_history = []
+        self.plugin._active_tailers = {}
+
+    def tearDown(self):
+        for child in Path(self.temp_dir).glob("*"):
+            child.unlink(missing_ok=True)
+        Path(self.temp_dir).rmdir()
+
+    def test_get_template_vars_uses_available_filenames(self):
+        with patch.object(
+            self.plugin, "_get_available_log_filenames", return_value=["a.log", "b.log"]
+        ):
+            vars_payload = self.plugin.get_template_vars()
+
+        self.assertEqual(vars_payload["log_files"], ["a.log", "b.log"])
+
+    def test_get_available_log_filenames_handles_list_error(self):
+        with patch("octoprint_logmonitor.os.listdir", side_effect=OSError("boom")):
+            result = self.plugin._get_available_log_filenames()
+
+        self.assertEqual(result, [])
+        self.plugin._logger.error.assert_called()
+
+    def test_get_stream_poll_interval_legacy_ms_fallback(self):
+        values = dict(self.plugin.get_settings_defaults())
+        values["stream_poll_interval_s"] = None
+        values["stream_poll_interval_ms"] = 2500
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        self.assertEqual(self.plugin._get_stream_poll_interval_seconds(), 2.5)
+
+    def test_get_stream_poll_interval_invalid_value_returns_default(self):
+        values = dict(self.plugin.get_settings_defaults())
+        values["stream_poll_interval_s"] = "invalid"
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        self.assertEqual(self.plugin._get_stream_poll_interval_seconds(), 5.0)
+
+    def test_frontend_debug_log_disabled(self):
+        values = dict(self.plugin.get_settings_defaults())
+        values["debug_mode"] = False
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        with self.app.test_request_context("/debug/frontend", method="POST", json={}):
+            response = self.plugin.frontend_debug_log()
+
+        self.assertEqual(response.get_json()["status"], "debug_disabled")
+
+    def test_frontend_debug_log_enabled_with_payload(self):
+        values = dict(self.plugin.get_settings_defaults())
+        values["debug_mode"] = True
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        payload = {"x": 1, "y": ["a", "b"]}
+        with self.app.test_request_context(
+            "/debug/frontend",
+            method="POST",
+            json={"message": "hello", "payload": payload},
+        ):
+            response = self.plugin.frontend_debug_log()
+
+        self.assertEqual(response.get_json()["status"], "logged")
+        self.plugin._logger.debug.assert_called()
+
+    def test_write_unknown_debug_test_log_writes_line(self):
+        log_file = Path(self.temp_dir) / "octoprint.log"
+        values = dict(self.plugin.get_settings_defaults())
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        self.plugin._write_unknown_debug_test_log("test unknown")
+
+        self.assertTrue(log_file.exists())
+        self.assertIn("UNKNOWN", log_file.read_text())
+        self.assertIn("test unknown", log_file.read_text())
+
+    def test_write_unknown_debug_test_log_handles_oserror(self):
+        with patch("builtins.open", side_effect=OSError("nope")):
+            self.plugin._write_unknown_debug_test_log("test unknown")
+
+        self.plugin._logger.error.assert_called()
+
+    def test_flush_line_buffer_sends_and_reschedules(self):
+        tailer = MagicMock()
+        tailer.is_running.return_value = True
+        self.plugin._tailer = tailer
+        self.plugin._settings._values["max_stream_lines"] = 2
+        self.plugin._line_buffer = [
+            {"message": "l1"},
+            {"message": "l2"},
+            {"message": "l3"},
+        ]
+
+        with patch.object(self.plugin, "_start_flush_timer") as restart:
+            self.plugin._flush_line_buffer()
+
+        self.plugin._plugin_manager.send_plugin_message.assert_called_once()
+        args = self.plugin._plugin_manager.send_plugin_message.call_args.args
+        self.assertEqual(args[0], "logmonitor")
+        self.assertEqual(len(args[1]["data"]), 2)
+        restart.assert_called_once()
+
+    def test_flush_line_buffer_empty_reschedules_when_active_tailers(self):
+        self.plugin._line_buffer = []
+        self.plugin._active_tailers = {"a.log": MagicMock()}
+
+        with patch.object(self.plugin, "_start_flush_timer") as restart:
+            self.plugin._flush_line_buffer()
+
+        restart.assert_called_once()
+
+    def test_get_alert_monitor_files_falls_back_to_default_file(self):
+        (Path(self.temp_dir) / "octoprint.log").write_text("line")
+        values = dict(self.plugin.get_settings_defaults())
+        values.update(
+            {
+                "alerts_monitor_mode": "selected",
+                "alerts_monitored_logs": [],
+                "default_log_file": "octoprint.log",
+            }
+        )
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        files = self.plugin._get_alert_monitor_files()
+
+        self.assertEqual(files, ["octoprint.log"])
+
+    def test_refresh_runtime_alert_settings_normalizes_values(self):
+        values = dict(self.plugin.get_settings_defaults())
+        values.update(
+            {
+                "severity_triggers": [" warning ", "ERROR", "error", 1],
+                "max_alert_history": "99999",
+                "alerts_enabled": True,
+                "alert_history_enabled": True,
+                "enable_notifications": False,
+            }
+        )
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        self.plugin._refresh_runtime_alert_settings()
+        snapshot = self.plugin._get_runtime_alert_settings()
+
+        self.assertEqual(snapshot["severity_triggers"], ["WARNING", "ERROR"])
+        self.assertEqual(snapshot["max_alert_history"], MAX_HISTORY_LIMIT)
+        self.assertFalse(snapshot["enable_notifications"])
+
+    def test_log_settings_snapshot_logs_non_dict_message(self):
+        values = dict(self.plugin.get_settings_defaults())
+        values["debug_mode"] = True
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        def fake_get(keys):
+            if keys == ["debug_mode"]:
+                return True
+            if keys == []:
+                return "not-dict"
+            return values.get(keys[0] if isinstance(keys, list) else keys)
+
+        self.plugin._settings.get = fake_get
+        self.plugin._logger.isEnabledFor.return_value = False
+
+        self.plugin._log_settings_snapshot_if_debug_enabled("Test")
+
+        self.plugin._logger.info.assert_called()
+
+    def test_restart_alert_monitoring_disabled_exits_early(self):
+        values = dict(self.plugin.get_settings_defaults())
+        values["alerts_enabled"] = False
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        with patch.object(self.plugin, "_stop_alert_monitoring") as stop_monitoring:
+            self.plugin._restart_alert_monitoring()
+
+        stop_monitoring.assert_called_once()
+        self.assertEqual(self.plugin._alert_tailers, {})
+
+    def test_restart_alert_monitoring_logs_failed_tailer_start(self):
+        (Path(self.temp_dir) / "octoprint.log").write_text("line")
+        values = dict(self.plugin.get_settings_defaults())
+        values.update(
+            {
+                "alerts_enabled": True,
+                "alerts_monitor_mode": "selected",
+                "alerts_monitored_logs": ["octoprint.log"],
+            }
+        )
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        tailer = MagicMock()
+        tailer.start.return_value = False
+
+        with patch("octoprint_logmonitor.LogTailer", return_value=tailer):
+            self.plugin._restart_alert_monitoring()
+
+        self.plugin._logger.warning.assert_called()
+
+    def test_log_settings_snapshot_logs_and_masks_sensitive_values(self):
+        values = dict(self.plugin.get_settings_defaults())
+        values["debug_mode"] = True
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        snapshot = {
+            "api_key": "secret",
+            "nested": {"password": "pw", "keep": "ok"},
+            "items": [{"token": "abc"}, "x"],
+        }
+
+        def fake_get(keys):
+            if keys == ["debug_mode"]:
+                return True
+            if keys == []:
+                return snapshot
+            return values.get(keys[0] if isinstance(keys, list) else keys)
+
+        self.plugin._settings.get = fake_get
+        self.plugin._logger.isEnabledFor.return_value = True
+
+        self.plugin._log_settings_snapshot_if_debug_enabled("Snapshot")
+
+        self.plugin._logger.debug.assert_called()
+
+    def test_log_settings_snapshot_handles_settings_exception(self):
+        values = dict(self.plugin.get_settings_defaults())
+        values["debug_mode"] = True
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        def fake_get(keys):
+            if keys == ["debug_mode"]:
+                return True
+            raise RuntimeError("settings unavailable")
+
+        self.plugin._settings.get = fake_get
+        self.plugin._log_settings_snapshot_if_debug_enabled("Snapshot")
+
+        self.plugin._logger.error.assert_called()
+
+    def test_stop_alert_monitoring_logs_tailer_stop_exceptions(self):
+        bad_tailer = MagicMock()
+        bad_tailer.is_running.return_value = True
+        bad_tailer.stop.side_effect = RuntimeError("stop failed")
+        self.plugin._alert_tailers = {"octoprint.log": bad_tailer}
+
+        self.plugin._stop_alert_monitoring()
+
+        self.plugin._logger.error.assert_called()
+        self.assertEqual(self.plugin._alert_tailers, {})
+
     def test_alert_history_invalid_limit(self):
         with self.app.test_request_context("/alert-history?limit=bad", method="GET"):
             result = self.plugin.get_alert_history()
@@ -344,10 +655,11 @@ class TestPluginCore(unittest.TestCase):
         tailer.start.return_value = True
         tailer.get_last_n_lines.return_value = [{"raw": "line 2"}]
 
-        with patch(
-            "octoprint_logmonitor.LogTailer", return_value=tailer
-        ), self.app.test_request_context(
-            "/stream/start", method="POST", json={"file": "octoprint.log"}
+        with (
+            patch("octoprint_logmonitor.LogTailer", return_value=tailer),
+            self.app.test_request_context(
+                "/stream/start", method="POST", json={"file": "octoprint.log"}
+            ),
         ):
             response = self.plugin.start_stream()
 
@@ -473,10 +785,11 @@ class TestPluginCore(unittest.TestCase):
         tailer = MagicMock()
         tailer.start.return_value = True
 
-        with patch(
-            "octoprint_logmonitor.LogTailer", return_value=tailer
-        ), self.app.test_request_context(
-            "/stream/multi/start", method="POST", json={"files": ["a.log", "b.log"]}
+        with (
+            patch("octoprint_logmonitor.LogTailer", return_value=tailer),
+            self.app.test_request_context(
+                "/stream/multi/start", method="POST", json={"files": ["a.log", "b.log"]}
+            ),
         ):
             response = self.plugin.start_multi_stream()
 
@@ -577,8 +890,9 @@ class TestPluginCore(unittest.TestCase):
         tailer = MagicMock()
         tailer.start.return_value = True
 
-        with patch.object(self.plugin, "_restart_alert_monitoring"), patch(
-            "octoprint_logmonitor.LogTailer", return_value=tailer
+        with (
+            patch.object(self.plugin, "_restart_alert_monitoring"),
+            patch("octoprint_logmonitor.LogTailer", return_value=tailer),
         ):
             self.plugin.on_after_startup()
 
@@ -697,10 +1011,11 @@ class TestPluginCore(unittest.TestCase):
         log_path = Path(self.temp_dir) / "octoprint.log"
         log_path.write_text("line")
 
-        with patch(
-            "octoprint_logmonitor.check_file_size", return_value=False
-        ), self.app.test_request_context(
-            "/stream/start", method="POST", json={"file": "octoprint.log"}
+        with (
+            patch("octoprint_logmonitor.check_file_size", return_value=False),
+            self.app.test_request_context(
+                "/stream/start", method="POST", json={"file": "octoprint.log"}
+            ),
         ):
             response = self.plugin.start_stream()
 
@@ -752,10 +1067,11 @@ class TestPluginCore(unittest.TestCase):
         values.update({"debug_mode": True})
         self.plugin._settings = FakeSettings(self.temp_dir, values)
 
-        with patch.object(
-            self.plugin, "_write_unknown_debug_test_log"
-        ) as write_unknown_mock, self.app.test_request_context(
-            "/debug/test-entries", method="POST"
+        with (
+            patch.object(
+                self.plugin, "_write_unknown_debug_test_log"
+            ) as write_unknown_mock,
+            self.app.test_request_context("/debug/test-entries", method="POST"),
         ):
             response = self.plugin.write_debug_test_entries()
 

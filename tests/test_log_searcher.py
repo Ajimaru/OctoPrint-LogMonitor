@@ -262,6 +262,95 @@ class TestLogSearcher(unittest.TestCase):
 
         empty_file.unlink()
 
+    def test_search_with_context_lines(self):
+        """Context lines should include neighboring entries around a match."""
+        context_file = Path(self.temp_dir) / "context.log"
+        context_file.write_text(
+            "line 1\n"
+            "line 2\n"
+            "2024-01-01 10:00:03,000 - plugin.test - ERROR - target\n"
+            "line 4\n"
+            "line 5\n"
+        )
+
+        result = self.searcher.search(
+            filepath=str(context_file),
+            query="target",
+            levels=None,
+            offset=0,
+            limit=10,
+            context_lines=1,
+        )
+
+        self.assertEqual(result["total"], 1)
+        self.assertGreaterEqual(len(result["results"]), 1)
+        context_file.unlink()
+
+    def test_search_with_large_offset_returns_empty_page(self):
+        """Offset above match count should return an empty result page."""
+        result = self.searcher.search(
+            filepath=str(self.log_file),
+            query="",
+            levels=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+            offset=1000,
+            limit=10,
+        )
+
+        self.assertEqual(result["total"], 8)
+        self.assertEqual(len(result["results"]), 0)
+
+    def test_search_special_chars_are_literal_in_plain_mode(self):
+        """Literal search should handle regex metacharacters safely."""
+        special_file = Path(self.temp_dir) / "special.log"
+        special_file.write_text("price: $100 (50% off)\n")
+
+        result = self.searcher.search(
+            filepath=str(special_file),
+            query="$100",
+            levels=None,
+            offset=0,
+            limit=10,
+            use_regex=False,
+        )
+
+        self.assertEqual(result["total"], 1)
+        special_file.unlink()
+
+    def test_search_case_sensitive(self):
+        """Case-sensitive mode should not match different casing."""
+        case_file = Path(self.temp_dir) / "case.log"
+        case_file.write_text("Error\nerror\nERROR\n")
+
+        result = self.searcher.search(
+            filepath=str(case_file),
+            query="Error",
+            levels=None,
+            offset=0,
+            limit=10,
+            case_sensitive=True,
+        )
+
+        self.assertEqual(result["total"], 1)
+        case_file.unlink()
+
+    def test_search_binary_file_uses_replace_error_handler(self):
+        """Binary content should not crash search due to UTF-8 decode errors."""
+        binary_file = Path(self.temp_dir) / "binary.log"
+        with open(binary_file, "wb") as f:
+            f.write(b"line 1\nline\xff2\n")
+
+        result = self.searcher.search(
+            filepath=str(binary_file),
+            query="line",
+            levels=None,
+            offset=0,
+            limit=10,
+        )
+
+        self.assertIn("total", result)
+        self.assertIsInstance(result["results"], list)
+        binary_file.unlink()
+
 
 if __name__ == "__main__":
     unittest.main()

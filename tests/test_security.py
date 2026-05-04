@@ -245,8 +245,8 @@ class TestSeverityLevelValidation(unittest.TestCase):
     """Test validate_severity_levels() severity filter validation."""
 
     def test_all_valid_levels(self):
-        """Test all valid severity levels."""
-        levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        """Test all valid severity levels (including UNKNOWN)."""
+        levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "UNKNOWN"]
         valid, invalid = validate_severity_levels(levels)
         self.assertEqual(set(valid), VALID_SEVERITY_LEVELS)
         self.assertEqual(invalid, [])

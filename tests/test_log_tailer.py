@@ -97,6 +97,14 @@ class TestLogTailer(unittest.TestCase):
         all_lines = tailer.get_last_n_lines(10)
         self.assertEqual(len(all_lines), 4)
 
+    def test_get_last_lines_empty_file(self):
+        """Empty file should return an empty list."""
+        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
+
+        last_lines = tailer.get_last_n_lines(5)
+
+        self.assertEqual(last_lines, [])
+
     def test_file_rotation(self):
         """Test handling of log file rotation."""
         tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
