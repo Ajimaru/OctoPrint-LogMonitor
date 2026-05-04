@@ -71,12 +71,22 @@ class LogmonitorPlugin(
         self._line_buffer = []
         self._line_buffer_lock = threading.Lock()
         self._flush_timer = None
+        self._runtime_settings_lock = threading.Lock()
+        self._runtime_alert_settings = {
+            "alerts_enabled": True,
+            "severity_triggers": ["WARNING", "ERROR", "CRITICAL"],
+            "alert_history_enabled": True,
+            "max_alert_history": 100,
+            "enable_notifications": True,
+        }
 
     # ~~ StartupPlugin mixin
 
     def on_after_startup(self):
         """Initialize plugin after OctoPrint startup."""
         self._logger.info("Log Monitor Plugin started")
+
+        self._refresh_runtime_alert_settings()
 
         # Initialize searcher
         self._searcher = LogSearcher(logger=self._logger)
@@ -223,6 +233,8 @@ class LogmonitorPlugin(
                     plugin_data["alerts_monitored_logs"] = cleaned_logs
 
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
+        self._refresh_runtime_alert_settings()
+        self._log_saved_settings_if_debug_enabled()
         self._restart_alert_monitoring()
 
     # ~~ SettingsPlugin mixin
@@ -1073,6 +1085,104 @@ class LogmonitorPlugin(
 
         return unique_files
 
+    def _refresh_runtime_alert_settings(self):
+        """Cache alert-related settings used in hot paths to avoid per-line lookups."""
+        severity_triggers = self._settings.get(["severity_triggers"])
+        if not isinstance(severity_triggers, list):
+            severity_triggers = ["WARNING", "ERROR", "CRITICAL"]
+
+        normalized_triggers = []
+        for level in severity_triggers:
+            if not isinstance(level, str):
+                continue
+            normalized = level.strip().upper()
+            if normalized and normalized not in normalized_triggers:
+                normalized_triggers.append(normalized)
+
+        if not normalized_triggers:
+            normalized_triggers = ["WARNING", "ERROR", "CRITICAL"]
+
+        max_alert_history = self._settings.get(["max_alert_history"])
+        try:
+            max_alert_history = int(max_alert_history)
+        except (TypeError, ValueError):
+            max_alert_history = 100
+        max_alert_history = min(max(10, max_alert_history), MAX_HISTORY_LIMIT)
+
+        settings_snapshot = {
+            "alerts_enabled": bool(self._settings.get(["alerts_enabled"])),
+            "severity_triggers": normalized_triggers,
+            "alert_history_enabled": bool(
+                self._settings.get(["alert_history_enabled"])
+            ),
+            "max_alert_history": max_alert_history,
+            "enable_notifications": bool(self._settings.get(["enable_notifications"])),
+        }
+
+        with self._runtime_settings_lock:
+            self._runtime_alert_settings = settings_snapshot
+
+    def _get_runtime_alert_settings(self):
+        """Return a thread-safe snapshot of cached runtime alert settings."""
+        with self._runtime_settings_lock:
+            return dict(self._runtime_alert_settings)
+
+    def _log_saved_settings_if_debug_enabled(self):
+        """Write current plugin settings to DEBUG log after a settings save."""
+        if not self._settings.get(["debug_mode"]):
+            return
+
+        def is_sensitive_key(name):
+            key = str(name or "").lower()
+            markers = ["password", "token", "secret", "apikey", "api_key"]
+            return any(marker in key for marker in markers)
+
+        def normalize_value(value, parent_key=""):
+            if is_sensitive_key(parent_key):
+                return "***"
+
+            if isinstance(value, dict):
+                result = {}
+                for key, inner_value in value.items():
+                    key_text = str(key)
+                    result[key_text] = normalize_value(inner_value, key_text)
+                return result
+
+            if isinstance(value, list):
+                return [normalize_value(item, parent_key) for item in value]
+
+            if isinstance(value, (str, int, float, bool)) or value is None:
+                return value
+
+            return str(value)
+
+        try:
+            plugin_settings = self._settings.get([])
+            if not isinstance(plugin_settings, dict):
+                self._logger.debug(
+                    "[Debug Settings] Save triggered, but plugin settings "
+                    "snapshot is not a dict: %s",
+                    type(plugin_settings).__name__,
+                )
+                return
+
+            self._logger.debug(
+                "[Debug Settings] Save triggered, current plugin settings:"
+            )
+            for key in sorted(plugin_settings.keys()):
+                normalized = normalize_value(plugin_settings[key], key)
+                serialized = json.dumps(
+                    normalized,
+                    ensure_ascii=True,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    default=str,
+                )
+                self._logger.debug("[Debug Settings] %s=%s", key, serialized)
+
+        except Exception as e:
+            self._logger.error(f"Failed to log debug settings snapshot: {e}")
+
     def _stop_alert_monitoring(self):
         """Stop all dedicated alert-monitor tailers."""
         for filename, tailer in list(self._alert_tailers.items()):
@@ -1127,10 +1237,12 @@ class LogmonitorPlugin(
     def _record_alert_line(self, parsed_line, force=False):
         """Record an alert event, optionally bypassing configured triggers."""
         try:
-            if not force and not self._settings.get(["alerts_enabled"]):
+            runtime_settings = self._get_runtime_alert_settings()
+
+            if not force and not runtime_settings["alerts_enabled"]:
                 return
 
-            severity_triggers = self._settings.get(["severity_triggers"])
+            severity_triggers = runtime_settings["severity_triggers"]
             level = parsed_line.get("level", "UNKNOWN")
 
             if not force and level not in severity_triggers:
@@ -1139,7 +1251,7 @@ class LogmonitorPlugin(
             with self._alert_lock:
                 self._alert_counts[level] = self._alert_counts.get(level, 0) + 1
 
-                if self._settings.get(["alert_history_enabled"]):
+                if runtime_settings["alert_history_enabled"]:
                     alert_entry = {
                         "timestamp": datetime.now().isoformat(),
                         "level": level,
@@ -1149,7 +1261,7 @@ class LogmonitorPlugin(
                     }
                     self._alert_history.append(alert_entry)
 
-                    max_history = self._settings.get(["max_alert_history"])
+                    max_history = runtime_settings["max_alert_history"]
                     if len(self._alert_history) > max_history:
                         self._alert_history = self._alert_history[-max_history:]
 
@@ -1160,9 +1272,7 @@ class LogmonitorPlugin(
                     "level": level,
                     "count": self._alert_counts[level],
                     "message": parsed_line.get("message", ""),
-                    "notification_enabled": self._settings.get(
-                        ["enable_notifications"]
-                    ),
+                    "notification_enabled": runtime_settings["enable_notifications"],
                     "source_file": parsed_line.get("_source_file", ""),
                 },
             )
