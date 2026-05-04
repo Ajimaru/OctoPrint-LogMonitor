@@ -791,7 +791,6 @@ class LogmonitorPlugin(
                 ("WARNING", "Warning test entry"),
                 ("ERROR", "Error test entry"),
                 ("CRITICAL", "Critical test entry"),
-                # UNKNOWN is not a native logger level, so log it as WARNING marker.
                 ("UNKNOWN", "Unknown test entry"),
             ]
 
@@ -808,7 +807,19 @@ class LogmonitorPlugin(
                 elif level == "CRITICAL":
                     self._logger.critical(prefix + message)
                 else:
-                    self._logger.warning(prefix + message)
+                    self._write_unknown_debug_test_log(prefix + message)
+
+                self._record_alert_line(
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "logger": self._logger.name,
+                        "level": level,
+                        "message": prefix + message,
+                        "raw": prefix + message,
+                        "_source_file": "octoprint.log",
+                    },
+                    force=True,
+                )
 
             return flask.jsonify({"status": "logged", "entries": len(entries)})
 
@@ -981,6 +992,19 @@ class LogmonitorPlugin(
         """
         self._logger.warning(f"[SECURITY] {event_type}: {detail}")
 
+    def _write_unknown_debug_test_log(self, message: str) -> None:
+        """Append an UNKNOWN test line directly to octoprint.log."""
+        try:
+            log_dir = self._settings.getBaseFolder("logs")
+            filepath = os.path.join(log_dir, "octoprint.log")
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
+            with open(filepath, "a", encoding="utf-8", errors="replace") as handle:
+                handle.write(
+                    f"{timestamp} - {self._logger.name} - UNKNOWN - {message}\n"
+                )
+        except OSError as e:
+            self._logger.error(f"Failed to write UNKNOWN debug test log entry: {e}")
+
     def _start_flush_timer(self):
         """Start the periodic line-buffer flush timer."""
         interval = self._get_stream_poll_interval_seconds()
@@ -1100,16 +1124,16 @@ class LogmonitorPlugin(
             f"Alert monitor active for {len(self._alert_tailers)} log file(s)"
         )
 
-    def _handle_alert_line(self, parsed_line):
-        """Handle a log line for alert generation only (independent from stream)."""
+    def _record_alert_line(self, parsed_line, force=False):
+        """Record an alert event, optionally bypassing configured triggers."""
         try:
-            if not self._settings.get(["alerts_enabled"]):
+            if not force and not self._settings.get(["alerts_enabled"]):
                 return
 
             severity_triggers = self._settings.get(["severity_triggers"])
             level = parsed_line.get("level", "UNKNOWN")
 
-            if level not in severity_triggers:
+            if not force and level not in severity_triggers:
                 return
 
             with self._alert_lock:
@@ -1144,7 +1168,15 @@ class LogmonitorPlugin(
             )
 
         except Exception as e:
-            self._logger.error(f"Error handling alert line: {e}")
+            self._logger.error(f"Error recording alert line: {e}")
+
+    def _handle_alert_line(self, parsed_line):
+        """Handle a log line for alert generation only (independent from stream)."""
+        message = parsed_line.get("message", "")
+        if isinstance(message, str) and "[LogMonitor Debug Test]" in message:
+            return
+
+        self._record_alert_line(parsed_line, force=False)
 
     def _handle_log_line(self, parsed_line):
         """

@@ -752,17 +752,39 @@ class TestPluginCore(unittest.TestCase):
         values.update({"debug_mode": True})
         self.plugin._settings = FakeSettings(self.temp_dir, values)
 
-        with self.app.test_request_context("/debug/test-entries", method="POST"):
+        with patch.object(
+            self.plugin, "_write_unknown_debug_test_log"
+        ) as write_unknown_mock, self.app.test_request_context(
+            "/debug/test-entries", method="POST"
+        ):
             response = self.plugin.write_debug_test_entries()
 
         payload = self._resp(response).get_json()
         self.assertEqual(payload["status"], "logged")
         self.assertEqual(payload["entries"], 6)
+        write_unknown_mock.assert_called_once()
         self.plugin._logger.debug.assert_called()
         self.plugin._logger.info.assert_called()
         self.plugin._logger.warning.assert_called()
         self.plugin._logger.error.assert_called()
         self.plugin._logger.critical.assert_called()
+        self.assertEqual(len(self.plugin._alert_history), 6)
+        self.assertEqual(self.plugin._alert_history[-1]["level"], "UNKNOWN")
+
+    def test_handle_alert_line_ignores_debug_test_marker(self):
+        values = dict(self.plugin.get_settings_defaults())
+        values.update({"alerts_enabled": True, "alert_history_enabled": True})
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        self.plugin._handle_alert_line(
+            {
+                "level": "WARNING",
+                "message": "[LogMonitor Debug Test] [WARNING] Warning test entry",
+                "logger": "octoprint.plugins.logmonitor",
+            }
+        )
+
+        self.assertEqual(self.plugin._alert_history, [])
 
 
 if __name__ == "__main__":

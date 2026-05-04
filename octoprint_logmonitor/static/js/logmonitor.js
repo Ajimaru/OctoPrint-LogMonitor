@@ -519,6 +519,12 @@ $(function () {
                     self.loadAlertMonitorStatus();
                 });
 
+            $("#settings_plugin_logmonitor_debug_test_button")
+                .off("click.logmonitor")
+                .on("click.logmonitor", function () {
+                    self.writeDebugTestEntries();
+                });
+
             self.loadAlertMonitorStatus();
         };
 
