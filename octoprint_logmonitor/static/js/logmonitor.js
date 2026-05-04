@@ -281,10 +281,11 @@ $(function () {
         self.autoStartEnabled = ko.observable(false);
         self.historySummary = ko.pureComputed(function () {
             var count = self.alertHistory().length;
-            if (count === 1) {
-                return "1 history entry";
-            }
-            return count + " history entries";
+            return ngettext(
+                "%(count)s history entry",
+                "%(count)s history entries",
+                count,
+            ).replace("%(count)s", count);
         });
 
         // Computed: Displayed lines (filtered)
@@ -321,13 +322,13 @@ $(function () {
             if (self.isStreaming()) {
                 var activeFile =
                     self.activeStreamFile() || self.selectedLogFile();
-                var text = "Streaming: " + activeFile;
+                var text = gettext("Streaming: ") + activeFile;
                 if (self.isSwitchingStream()) {
-                    text += " (switching...)";
+                    text += gettext(" (switching...)");
                 }
                 return text;
             }
-            return "Not streaming";
+            return gettext("Not streaming");
         });
 
         // Computed: Stream button text
@@ -349,9 +350,14 @@ $(function () {
 
         self.statusSummary = ko.computed(function () {
             if (self.hasAlerts()) {
-                return self.alertCount() + " alert(s)";
+                var count = self.alertCount();
+                return ngettext(
+                    "%(count)s alert",
+                    "%(count)s alerts",
+                    count,
+                ).replace("%(count)s", count);
             }
-            return "No alerts";
+            return gettext("No alerts");
         });
 
         self.showNavbar = ko.observable(
@@ -400,7 +406,13 @@ $(function () {
             var current = getPluginSetting("default_log_file", "");
 
             select.empty();
-            select.append($('<option value="">Select log file...</option>'));
+            select.append(
+                $(
+                    '<option value="">' +
+                        gettext("Select log file...") +
+                        "</option>",
+                ),
+            );
 
             fileNames.forEach(function (name) {
                 select.append($("<option></option>").val(name).text(name));
@@ -744,7 +756,9 @@ $(function () {
 
         // Search functions
         self.searchButtonText = ko.pureComputed(function () {
-            return self.isSearching() ? "Searching..." : "Search";
+            return self.isSearching()
+                ? gettext("Searching...")
+                : gettext("Search");
         });
 
         function escapeHtml(value) {
