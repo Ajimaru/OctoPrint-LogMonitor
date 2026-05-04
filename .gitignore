@@ -3,7 +3,7 @@
 .claude/
 
 # VSCode AI rules
-.github/instructions/codacy.instructions.md
+.github/instructions/
 
 # Tasks & Ideas
 .ideas/
