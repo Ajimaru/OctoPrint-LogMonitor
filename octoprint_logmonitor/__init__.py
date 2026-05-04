@@ -300,6 +300,8 @@ class LogmonitorPlugin(
             },
             {
                 "type": "sidebar",
+                "name": "Log Monitor",
+                "icon": "list-alt",
                 "custom_bindings": True,
                 "data_bind": "visible: showSidebar",
                 "styles_wrapper": [] if show_sidebar else ["display: none"],
