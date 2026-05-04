@@ -480,9 +480,6 @@ $(function () {
             var activeLogs = Array.isArray(data && data.active_logs)
                 ? data.active_logs
                 : [];
-            var configuredLogs = Array.isArray(data && data.configured_logs)
-                ? data.configured_logs
-                : [];
 
             if (badge.length) {
                 if (activeLogs.length > 0) {
@@ -507,11 +504,6 @@ $(function () {
                     activeLogs.length +
                     "):</strong>" +
                     renderLogList(activeLogs) +
-                    "</div>" +
-                    "<div><strong>Configured Logs (" +
-                    configuredLogs.length +
-                    "):</strong>" +
-                    renderLogList(configuredLogs) +
                     "</div>" +
                     "</div>",
             );
