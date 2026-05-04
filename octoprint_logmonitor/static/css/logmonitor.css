@@ -251,6 +251,21 @@
   opacity: 0.5;
 }
 
+.logmonitor-monitor-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.logmonitor-monitor-status-grid > div {
+  margin-bottom: 6px;
+}
+
+.logmonitor-monitor-status-list {
+  margin: 4px 0 0 16px;
+}
+
 /* Navbar */
 .logmonitor-navbar-link {
   position: relative;

@@ -185,11 +185,11 @@
         <div class="control-group">
             <label class="control-label">{{ _("Alert monitor status") }}</label>
             <div class="controls">
-                <p>
+                <div class="logmonitor-monitor-status">
                     <span id="settings_plugin_logmonitor_alert_monitor_status_badge"
                           class="badge badge-info">{{ _("Unknown") }}</span>
-                    <span id="settings_plugin_logmonitor_alert_monitor_status" class="muted">{{ _("Status not loaded yet.") }}</span>
-                </p>
+                    <div id="settings_plugin_logmonitor_alert_monitor_status" class="muted">{{ _("Status not loaded yet.") }}</div>
+                </div>
                 <button id="settings_plugin_logmonitor_alert_monitor_refresh"
                         type="button"
                         class="btn btn-mini">{{ _("Refresh status") }}</button>

@@ -84,9 +84,16 @@ class LogmonitorPlugin(
 
     def on_after_startup(self):
         """Initialize plugin after OctoPrint startup."""
-        self._logger.info("Log Monitor Plugin started")
+        plugin_version = getattr(self, "_plugin_version", "unknown")
+        plugin_id = getattr(self, "_identifier", "logmonitor")
+        self._logger.info(
+            "Loaded plugin %s: Log Monitor Plugin started (version %s)",
+            plugin_id,
+            plugin_version,
+        )
 
         self._refresh_runtime_alert_settings()
+        self._log_settings_snapshot_if_debug_enabled("Startup")
 
         # Initialize searcher
         self._searcher = LogSearcher(logger=self._logger)
@@ -234,7 +241,7 @@ class LogmonitorPlugin(
 
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
         self._refresh_runtime_alert_settings()
-        self._log_saved_settings_if_debug_enabled()
+        self._log_settings_snapshot_if_debug_enabled("Save")
         self._restart_alert_monitoring()
 
     # ~~ SettingsPlugin mixin
@@ -1127,10 +1134,16 @@ class LogmonitorPlugin(
         with self._runtime_settings_lock:
             return dict(self._runtime_alert_settings)
 
-    def _log_saved_settings_if_debug_enabled(self):
-        """Write current plugin settings to DEBUG log after a settings save."""
+    def _log_settings_snapshot_if_debug_enabled(self, context: str):
+        """Write current plugin settings to log when debug mode is enabled."""
         if not self._settings.get(["debug_mode"]):
             return
+
+        log_method = self._logger.debug
+        if not self._logger.isEnabledFor(logging.DEBUG):
+            # When OctoPrint runs without global --debug, DEBUG logs are filtered.
+            # Fall back to INFO so users still see the debug settings snapshot.
+            log_method = self._logger.info
 
         def is_sensitive_key(name):
             key = str(name or "").lower()
@@ -1159,15 +1172,17 @@ class LogmonitorPlugin(
         try:
             plugin_settings = self._settings.get([])
             if not isinstance(plugin_settings, dict):
-                self._logger.debug(
-                    "[Debug Settings] Save triggered, but plugin settings "
+                log_method(
+                    "[Debug Settings] %s triggered, but plugin settings "
                     "snapshot is not a dict: %s",
+                    context,
                     type(plugin_settings).__name__,
                 )
                 return
 
-            self._logger.debug(
-                "[Debug Settings] Save triggered, current plugin settings:"
+            log_method(
+                "[Debug Settings] %s triggered, current plugin settings:",
+                context,
             )
             for key in sorted(plugin_settings.keys()):
                 normalized = normalize_value(plugin_settings[key], key)
@@ -1178,7 +1193,7 @@ class LogmonitorPlugin(
                     separators=(",", ":"),
                     default=str,
                 )
-                self._logger.debug("[Debug Settings] %s=%s", key, serialized)
+                log_method("[Debug Settings] %s=%s", key, serialized)
 
         except Exception as e:
             self._logger.error(f"Failed to log debug settings snapshot: {e}")

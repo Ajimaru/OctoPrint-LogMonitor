@@ -440,6 +440,31 @@ $(function () {
             );
             if (!target.length) return;
 
+            function escapeHtml(value) {
+                return String(value)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#39;");
+            }
+
+            function renderLogList(logs) {
+                if (!logs || logs.length === 0) {
+                    return '<span class="muted">none</span>';
+                }
+
+                var items = logs.map(function (name) {
+                    return "<li>" + escapeHtml(name) + "</li>";
+                });
+
+                return (
+                    '<ul class="logmonitor-monitor-status-list">' +
+                    items.join("") +
+                    "</ul>"
+                );
+            }
+
             if (errorText) {
                 target.text("Failed to load status: " + errorText);
                 if (badge.length) {
@@ -459,11 +484,6 @@ $(function () {
                 ? data.configured_logs
                 : [];
 
-            var activeText =
-                activeLogs.length > 0 ? activeLogs.join(", ") : "none";
-            var configuredText =
-                configuredLogs.length > 0 ? configuredLogs.join(", ") : "none";
-
             if (badge.length) {
                 if (activeLogs.length > 0) {
                     badge
@@ -478,13 +498,22 @@ $(function () {
                 }
             }
 
-            target.text(
-                "Mode: " +
-                    mode +
-                    " | Active: " +
-                    activeText +
-                    " | Configured: " +
-                    configuredText,
+            target.html(
+                '<div class="logmonitor-monitor-status-grid">' +
+                    "<div><strong>Mode:</strong> " +
+                    escapeHtml(mode) +
+                    "</div>" +
+                    "<div><strong>Active Logs (" +
+                    activeLogs.length +
+                    "):</strong>" +
+                    renderLogList(activeLogs) +
+                    "</div>" +
+                    "<div><strong>Configured Logs (" +
+                    configuredLogs.length +
+                    "):</strong>" +
+                    renderLogList(configuredLogs) +
+                    "</div>" +
+                    "</div>",
             );
         };
 
