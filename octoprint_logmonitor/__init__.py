@@ -778,6 +778,44 @@ class LogmonitorPlugin(
             self._logger.error(f"Error writing frontend debug log: {e}")
             return flask.jsonify({"error": "Failed to write debug log"}), 500
 
+    @octoprint.plugin.BlueprintPlugin.route("/debug/test-entries", methods=["POST"])
+    def write_debug_test_entries(self):
+        """Write one test entry per severity category into OctoPrint logs."""
+        try:
+            if not self._settings.get(["debug_mode"]):
+                return flask.jsonify({"status": "debug_disabled"})
+
+            entries = [
+                ("DEBUG", "Debug test entry"),
+                ("INFO", "Info test entry"),
+                ("WARNING", "Warning test entry"),
+                ("ERROR", "Error test entry"),
+                ("CRITICAL", "Critical test entry"),
+                # UNKNOWN is not a native logger level, so log it as WARNING marker.
+                ("UNKNOWN", "Unknown test entry"),
+            ]
+
+            for level, message in entries:
+                prefix = f"[LogMonitor Debug Test] [{level}] "
+                if level == "DEBUG":
+                    self._logger.debug(prefix + message)
+                elif level == "INFO":
+                    self._logger.info(prefix + message)
+                elif level == "WARNING":
+                    self._logger.warning(prefix + message)
+                elif level == "ERROR":
+                    self._logger.error(prefix + message)
+                elif level == "CRITICAL":
+                    self._logger.critical(prefix + message)
+                else:
+                    self._logger.warning(prefix + message)
+
+            return flask.jsonify({"status": "logged", "entries": len(entries)})
+
+        except Exception as e:
+            self._logger.error(f"Error writing debug test entries: {e}")
+            return flask.jsonify({"error": "Failed to write debug test entries"}), 500
+
     @octoprint.plugin.BlueprintPlugin.route("/export", methods=["POST"])
     def export_results(self):
         """Export search results to CSV or TXT format."""

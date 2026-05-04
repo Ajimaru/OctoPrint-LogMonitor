@@ -249,6 +249,15 @@
                 {{ _("Enable debug mode in OctoPrint log") }}
             </label>
             <span class="help-block">{{ _("Writes Log Monitor frontend debug events into the OctoPrint server log.") }}</span>
+            <button type="button"
+                    class="btn btn-small btn-warning"
+                    data-bind="click: writeDebugTestEntries, visible: settings.plugins.logmonitor.debug_mode">
+                {{ _("Write Debug Test Entries") }}
+            </button>
+            <span class="help-block"
+                  data-bind="visible: settings.plugins.logmonitor.debug_mode">
+                {{ _("Writes one test log entry for DEBUG, INFO, WARNING, ERROR, CRITICAL and UNKNOWN categories.") }}
+            </span>
         </div>
     </div>
     <div class="alert alert-info">

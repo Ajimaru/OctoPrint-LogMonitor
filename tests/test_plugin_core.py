@@ -736,6 +736,34 @@ class TestPluginCore(unittest.TestCase):
         self.assertIn("a.log", payload["stopped"])
         self.assertEqual(set(self.plugin._active_tailers.keys()), {"b.log"})
 
+    def test_write_debug_test_entries_disabled(self):
+        values = dict(self.plugin.get_settings_defaults())
+        values.update({"debug_mode": False})
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        with self.app.test_request_context("/debug/test-entries", method="POST"):
+            response = self.plugin.write_debug_test_entries()
+
+        payload = self._resp(response).get_json()
+        self.assertEqual(payload["status"], "debug_disabled")
+
+    def test_write_debug_test_entries_success(self):
+        values = dict(self.plugin.get_settings_defaults())
+        values.update({"debug_mode": True})
+        self.plugin._settings = FakeSettings(self.temp_dir, values)
+
+        with self.app.test_request_context("/debug/test-entries", method="POST"):
+            response = self.plugin.write_debug_test_entries()
+
+        payload = self._resp(response).get_json()
+        self.assertEqual(payload["status"], "logged")
+        self.assertEqual(payload["entries"], 6)
+        self.plugin._logger.debug.assert_called()
+        self.plugin._logger.info.assert_called()
+        self.plugin._logger.warning.assert_called()
+        self.plugin._logger.error.assert_called()
+        self.plugin._logger.critical.assert_called()
+
 
 if __name__ == "__main__":
     unittest.main()

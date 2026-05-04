@@ -71,6 +71,45 @@ $(function () {
             });
         };
 
+        self.writeDebugTestEntries = function () {
+            if (!self.isDebugMode()) {
+                new PNotify({
+                    title: "Log Monitor",
+                    text: "Enable debug mode first.",
+                    type: "notice",
+                });
+                return;
+            }
+
+            pluginAjax({
+                url: pluginBaseUrl + "/debug/test-entries",
+                method: "POST",
+                contentType: "application/json",
+                dataType: "json",
+            })
+                .done(function (response) {
+                    var count =
+                        response && typeof response.entries === "number"
+                            ? response.entries
+                            : 0;
+                    new PNotify({
+                        title: "Log Monitor",
+                        text:
+                            "Wrote " +
+                            count +
+                            " debug test entries to OctoPrint log.",
+                        type: "success",
+                    });
+                })
+                .fail(function () {
+                    new PNotify({
+                        title: "Log Monitor",
+                        text: "Failed to write debug test entries.",
+                        type: "error",
+                    });
+                });
+        };
+
         // Line buffer for batching DOM updates
         var lineBuffer = [];
         var flushIntervalId = null;
