@@ -240,10 +240,11 @@ class LogmonitorPlugin(
 
                     plugin_data["alerts_monitored_logs"] = cleaned_logs
 
-        octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
+        result = octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
         self._refresh_runtime_alert_settings()
         self._log_settings_snapshot_if_debug_enabled("Save")
         self._restart_alert_monitoring()
+        return result
 
     # ~~ SettingsPlugin mixin
 
@@ -319,7 +320,7 @@ class LogmonitorPlugin(
             "log_files": self._get_available_log_filenames(),
         }
 
-    def is_template_autoescaped(self):
+    def is_template_autoescaped(self):  # type: ignore[override]
         """Enable Jinja autoescaping for all plugin templates."""
         return True
 
@@ -1009,7 +1010,7 @@ class LogmonitorPlugin(
             self._logger.error(f"Error getting active streams: {e}")
             return flask.jsonify({"error": "Failed to retrieve active streams"}), 500
 
-    def is_blueprint_csrf_protected(self):
+    def is_blueprint_csrf_protected(self):  # type: ignore[override]
         """Explicitly require CSRF protection for blueprint routes."""
         return True
 
