@@ -18,6 +18,7 @@ import flask
 import octoprint.plugin
 from octoprint.server.util.flask import no_firstrun_access
 
+from ._version import VERSION as PLUGIN_VERSION
 from .log_searcher import LogSearcher
 from .log_tailer import LogTailer
 from .security import (
@@ -1371,7 +1372,7 @@ class LogmonitorPlugin(
 
 __plugin_name__ = "Log Monitor"
 __plugin_pythoncompat__ = ">=3.9,<4"
-__plugin_version__ = "0.1.0"
+__plugin_version__ = PLUGIN_VERSION
 __plugin_description__ = (
     "Live log streaming and searching for OctoPrint with severity alerting"
 )
