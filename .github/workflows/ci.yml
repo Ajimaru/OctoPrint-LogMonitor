@@ -173,8 +173,17 @@ jobs:
           python -m build
 
   octoprint-smoke:
-    name: Smoke (OctoPrint install + plugin install)
+    name: Smoke (OctoPrint ${{ matrix.octoprint-label }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - octoprint-label: "1.10.0 (minimum)"
+            octoprint-source: pypi
+            octoprint-spec: "OctoPrint==1.10.0"
+          - octoprint-label: "devel (git dev branch)"
+            octoprint-source: git
 
     steps:
       - name: Checkout
@@ -186,10 +195,17 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      - name: Install OctoPrint
+      - name: Install OctoPrint (PyPI)
+        if: matrix.octoprint-source == 'pypi'
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "OctoPrint>=1.10.0,<2"
+          python -m pip install "${{ matrix.octoprint-spec }}"
+
+      - name: Install OctoPrint (git dev branch)
+        if: matrix.octoprint-source == 'git'
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install "git+https://github.com/OctoPrint/OctoPrint@dev#egg=OctoPrint"
 
       - name: Install plugin
         run: |
