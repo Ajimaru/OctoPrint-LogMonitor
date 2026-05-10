@@ -75,7 +75,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install "OctoPrint>=1.10.0,<2"
           python -m pip install "Babel==${{ env.BABEL_VERSION }}" "polib==${{ env.POLIB_VERSION }}"
-          python -m pip install -e ".[develop]" build
+          python -m pip install -e ".[develop]" build pytest pytest-cov
 
       - # Run unit tests (no coverage)
         name: Run tests
@@ -199,7 +199,7 @@ jobs:
         if: matrix.octoprint-source == 'pypi'
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "${{ matrix.octoprint-spec }}"
+          python -m pip install setuptools "${{ matrix.octoprint-spec }}"
 
       - name: Install OctoPrint (git dev branch)
         if: matrix.octoprint-source == 'git'

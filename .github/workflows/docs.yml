@@ -37,7 +37,13 @@ jobs:
         name: Install docs dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install mkdocs mkdocs-material
+          python -m pip install \
+            mkdocs \
+            mkdocs-material \
+            mkdocstrings \
+            mkdocstrings-python \
+            "OctoPrint>=1.10.0,<2" \
+            setuptools
 
       - # Build site from repository root docs
         name: Build MkDocs site
@@ -48,7 +54,7 @@ jobs:
         name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: /tmp/mkdocs-site
+          path: site
 
   deploy:
     name: Deploy to GitHub Pages
