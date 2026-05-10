@@ -35,5 +35,7 @@ Homepage = "https://github.com/Ajimaru/OctoPrint-LogMonitor"
 [project.optional-dependencies]
 develop = [
     "build",
+    "pytest",
+    "pytest-cov",
     "go-task-bin"
 ]

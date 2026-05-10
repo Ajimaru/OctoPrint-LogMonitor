@@ -1,8 +1,7 @@
 site_name: OctoPrint Log Monitor
 site_description: Live log streaming and searching for OctoPrint with severity alerting.
 site_url: https://Ajimaru.github.io/OctoPrint-LogMonitor/
-docs_dir: .
-site_dir: /tmp/mkdocs-site
+docs_dir: docs
 
 theme:
   name: material
@@ -10,12 +9,12 @@ theme:
 nav:
   - Home: docs/index.md
   - Plugin:
-      - Overview: README.md
+      - Overview: overview.md
   - Project:
-      - Contributing: CONTRIBUTING.md
-      - Security: SECURITY.md
-      - Changelog: CHANGELOG.md
-      - Authors: AUTHORS.md
+      - Contributing: contributing.md
+      - Security: security.md
+      - Changelog: changelog.md
+      - Authors: authors.md
 
 markdown_extensions:
   - admonition
