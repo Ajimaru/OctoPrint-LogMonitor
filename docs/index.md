@@ -11,10 +11,10 @@ Live log streaming and search for OctoPrint, with severity alerts in the navbar 
 
 ## Links
 
-- [Plugin Overview](../README.md)
-- [Contributing](../CONTRIBUTING.md)
-- [Security](../SECURITY.md)
-- [Changelog](../CHANGELOG.md)
-- [Authors](../AUTHORS.md)
+- [Plugin Overview](overview.md)
+- [Contributing](contributing.md)
+- [Security](security.md)
+- [Changelog](changelog.md)
+- [Authors](authors.md)
 
-GitHub Pages is built from the repository root with MkDocs.
+GitHub Pages is built from the `docs/` tree with MkDocs.

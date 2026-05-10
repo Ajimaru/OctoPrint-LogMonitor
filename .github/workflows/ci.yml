@@ -75,7 +75,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install "OctoPrint>=1.10.0,<2"
           python -m pip install "Babel==${{ env.BABEL_VERSION }}" "polib==${{ env.POLIB_VERSION }}"
-          python -m pip install -e ".[develop]" build
+          python -m pip install -e ".[develop]" build pytest pytest-cov pre-commit
 
       - # Run unit tests (no coverage)
         name: Run tests
@@ -114,7 +114,7 @@ jobs:
 
       - # Setup Node.js for pre-commit hooks (ESLint/Prettier)
         name: Set up Node.js for hooks
-        if: ${{ matrix.run-precommit }}
+        if: ${{ matrix.run-precommit && hashFiles('.pre-commit-config.yaml') != '' }}
         uses: actions/setup-node@v6
         with:
           node-version: "20.19.0"
@@ -123,9 +123,9 @@ jobs:
 
       - # Install npm dependencies required by hooks
         name: Install Node.js dependencies for hooks
-        if: ${{ matrix.run-precommit }}
+        if: ${{ matrix.run-precommit && hashFiles('.pre-commit-config.yaml') != '' }}
         run: |
-          if [ -f package-lock.json ]; then
+          if [ -f package.json ] && [ -f package-lock.json ]; then
             npm ci --no-audit --no-fund
           elif [ -f package.json ]; then
             npm install --no-audit --no-fund
@@ -133,7 +133,7 @@ jobs:
 
       - # Install ShellCheck >= 0.11.0 required by custom shellcheck-hook.sh
         name: Install ShellCheck
-        if: ${{ matrix.run-precommit }}
+        if: ${{ matrix.run-precommit && hashFiles('.pre-commit-config.yaml') != '' }}
         run: |
           set -e
           SHELLCHECK_VERSION="0.11.0"
@@ -155,7 +155,7 @@ jobs:
 
       - # Execute pre-commit hooks across repository
         name: Run pre-commit
-        if: ${{ matrix.run-precommit }}
+        if: ${{ matrix.run-precommit && hashFiles('.pre-commit-config.yaml') != '' }}
         run: |
           if [ -d .venv ]; then . .venv/bin/activate; fi
           pre-commit run --all-files
@@ -182,8 +182,10 @@ jobs:
           - octoprint-label: "1.10.0 (minimum)"
             octoprint-source: pypi
             octoprint-spec: "OctoPrint==1.10.0"
+            python-version: "3.10"
           - octoprint-label: "devel (git dev branch)"
             octoprint-source: git
+            python-version: "3.12"
 
     steps:
       - name: Checkout
@@ -192,14 +194,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
           cache: pip
 
       - name: Install OctoPrint (PyPI)
         if: matrix.octoprint-source == 'pypi'
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "${{ matrix.octoprint-spec }}"
+          python -m pip install "setuptools<81" "${{ matrix.octoprint-spec }}"
 
       - name: Install OctoPrint (git dev branch)
         if: matrix.octoprint-source == 'git'
@@ -213,6 +215,7 @@ jobs:
 
       - name: Smoke test plugin import
         run: |
+          python -m pip install --upgrade "setuptools<81"
           mkdir ../smoketest
           cd ../smoketest
           python -c "import octoprint_logmonitor; print(getattr(octoprint_logmonitor, '__version__', 'unknown'))"

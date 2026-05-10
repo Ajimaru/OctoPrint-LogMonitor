@@ -36,12 +36,13 @@ jobs:
           python -m venv .venv
           . .venv/bin/activate
           python -m pip install --upgrade pip
-          python -m pip install 'Babel==2.18.0' 'polib==1.2.0'
+          python -m pip install setuptools 'polib==1.2.0' 'Babel>=2.16,<2.17' 'OctoPrint>=1.11.0,<2'
 
       - # Extract and validate translation catalog
         name: Verify messages.pot is up to date
         run: |
-          pybabel extract --sort-output -F babel.cfg -o /tmp/messages.pot .
+          . .venv/bin/activate
+          ./.venv/bin/pybabel extract --sort-output -F babel.cfg -o /tmp/messages.pot .
           python - <<'PY'
           import pathlib
           import sys
@@ -78,7 +79,7 @@ jobs:
         name: Compile catalogs
         run: |
           . .venv/bin/activate
-          pybabel compile -d translations
+          ./.venv/bin/pybabel compile -d translations
           mkdir -p octoprint_logmonitor/translations
           if [ -n "$(find translations -maxdepth 2 -type f -print -quit 2>/dev/null)" ]; then
             cp -a translations/* octoprint_logmonitor/translations/
