@@ -75,7 +75,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install "OctoPrint>=1.10.0,<2"
           python -m pip install "Babel==${{ env.BABEL_VERSION }}" "polib==${{ env.POLIB_VERSION }}"
-          python -m pip install -e ".[develop]" build pytest pytest-cov
+          python -m pip install -e ".[develop]" build pytest pytest-cov pre-commit
 
       - # Run unit tests (no coverage)
         name: Run tests
@@ -182,8 +182,10 @@ jobs:
           - octoprint-label: "1.10.0 (minimum)"
             octoprint-source: pypi
             octoprint-spec: "OctoPrint==1.10.0"
+            python-version: "3.10"
           - octoprint-label: "devel (git dev branch)"
             octoprint-source: git
+            python-version: "3.12"
 
     steps:
       - name: Checkout
@@ -192,7 +194,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
           cache: pip
 
       - name: Install OctoPrint (PyPI)
