@@ -1,5 +1,51 @@
+# Editors
 .qodo/
+.codacy/
+.claude/
 
-#Ignore vscode AI rules
+# VSCode AI rules
 .github/instructions/codacy.instructions.md
+.github/instructions/
 .vscode/
+*.code-workspace
+
+# Tasks & Ideas
+.ideas/
+
+# Python
+*.pyc
+*.swp
+*.pyo
+__pycache__/
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+.pytest_cache/
+.ruff_cache/
+
+# IDEs
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Development
+*.zip
+*.tar.gz
+*.log
+.env
+.venv/
+venv/
+env/
+.logs/
+.coverage
+.venv-octoprint-*/
+.development/
+.cache/
+.githooks/
+.pre-commit-config.yaml
+.octoprint-*/

@@ -1,0 +1,268 @@
+<form class="form-horizontal">
+    <h4>{{ _("Display Settings") }}</h4>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.show_navbar">
+                {{ _("Show indicator in Navbar") }}
+            </label>
+            <span class="help-block">{{ _("Display a badge in the navbar when severity alerts occur.") }}</span>
+        </div>
+    </div>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.show_sidebar">
+                {{ _("Show widget in Sidebar") }}
+            </label>
+            <span class="help-block">{{ _("Display a widget in the sidebar showing log monitor status.") }}</span>
+        </div>
+    </div>
+    <h4>{{ _("Streaming Settings") }}</h4>
+    <div class="control-group">
+        <label class="control-label">{{ _("Default log file") }}</label>
+        <div class="controls">
+            <select id="settings_plugin_logmonitor_default_log_file"
+                    class="input-medium"
+                    data-bind="value: settings.plugins.logmonitor.default_log_file">
+                <option value="">{{ _("Select log file...") }}</option>
+            </select>
+            <span class="help-block">{{ _("Log file pre-selected in the stream dropdown on page load.") }}</span>
+        </div>
+    </div>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.auto_start_streaming">
+                {{ _("Auto-start streaming on page load") }}
+            </label>
+            <span class="help-block">{{ _("Automatically start streaming the default log file when OctoPrint loads.") }}</span>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">{{ _("Poll interval (s)") }}</label>
+        <div class="controls">
+            <input type="number"
+                   class="input-small"
+                   min="1"
+                   max="60"
+                   step="1"
+                   data-bind="value: settings.plugins.logmonitor.stream_poll_interval_s">
+            <span class="help-block">{{ _("How often to check for new log entries (in seconds).") }}</span>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">{{ _("Max stream lines") }}</label>
+        <div class="controls">
+            <input type="number"
+                   class="input-small"
+                   min="100"
+                   max="10000"
+                   step="1"
+                   data-bind="value: settings.plugins.logmonitor.max_stream_lines">
+            <span class="help-block">{{ _("Maximum number of lines to keep in the stream view buffer.") }}</span>
+        </div>
+    </div>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.auto_scroll">
+                {{ _("Auto-scroll enabled by default") }}
+            </label>
+            <span class="help-block">{{ _("Sets the initial auto-scroll state when the page loads. Can be toggled at any time directly in the stream view.") }}</span>
+        </div>
+    </div>
+    <h4>{{ _("Search Settings") }}</h4>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.regex_search_enabled">
+                {{ _("Enable regex search by default") }}
+            </label>
+            <span class="help-block">{{ _("Pre-enable the regex search option in the search form.") }}</span>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">{{ _("Results per page") }}</label>
+        <div class="controls">
+            <input type="number"
+                   class="input-small"
+                   min="10"
+                   max="500"
+                   step="1"
+                   data-bind="value: settings.plugins.logmonitor.search_page_size">
+            <span class="help-block">{{ _("Number of search results to display per page.") }}</span>
+        </div>
+    </div>
+    <h4>{{ _("Alerts &amp; Notifications") }}</h4>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.alerts_enabled">
+                {{ _("Enable alerts globally") }}
+            </label>
+            <span class="help-block">{{ _("Turns all severity alert monitoring and notifications on or off.") }}</span>
+        </div>
+    </div>
+    <fieldset class="logmonitor-alert-settings-group"
+              data-bind="css: { 'logmonitor-settings-disabled': !settings.plugins.logmonitor.alerts_enabled() }, attr: { disabled: settings.plugins.logmonitor.alerts_enabled() ? null : 'disabled' }">
+        <div class="control-group">
+            <label class="control-label">{{ _("Trigger alerts for") }}</label>
+            <div class="controls">
+                <label class="checkbox">
+                    <input type="checkbox"
+                           value="DEBUG"
+                           data-bind="checked: settings.plugins.logmonitor.severity_triggers">
+                    DEBUG
+                    <span class="label label-warning">{{ _("Spam risk") }}</span>
+                    <span class="muted">{{ _("Very high alert volume when OctoPrint debug mode is enabled.") }}</span>
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox"
+                           value="INFO"
+                           data-bind="checked: settings.plugins.logmonitor.severity_triggers">
+                    INFO
+                    <span class="label label-warning">{{ _("Spam risk") }}</span>
+                    <span class="muted">{{ _("Can generate many alerts because log files usually contain frequent INFO entries.") }}</span>
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox"
+                           value="WARNING"
+                           data-bind="checked: settings.plugins.logmonitor.severity_triggers">
+                    WARNING
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox"
+                           value="ERROR"
+                           data-bind="checked: settings.plugins.logmonitor.severity_triggers">
+                    ERROR
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox"
+                           value="CRITICAL"
+                           data-bind="checked: settings.plugins.logmonitor.severity_triggers">
+                    CRITICAL
+                </label>
+                <span class="help-block">{{ _("Select which severity levels should trigger navbar/sidebar alerts.") }}</span>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label">{{ _("Alert source logs") }}</label>
+            <div class="controls">
+                <label class="radio">
+                    <input type="radio"
+                           value="selected"
+                           data-bind="checked: settings.plugins.logmonitor.alerts_monitor_mode">
+                    {{ _("Only selected logs") }}
+                </label>
+                <label class="radio">
+                    <input type="radio"
+                           value="all"
+                           data-bind="checked: settings.plugins.logmonitor.alerts_monitor_mode">
+                    {{ _("All available logs") }}
+                </label>
+                <span class="help-block">{{ _("Controls which log files are monitored for severity trigger alerts in the background.") }}</span>
+            </div>
+        </div>
+        <div class="control-group"
+             data-bind="visible: settings.plugins.logmonitor.alerts_monitor_mode() === 'selected'">
+            <label class="control-label">{{ _("Logs for alert monitoring") }}</label>
+            <div class="controls">
+                <select id="settings_plugin_logmonitor_alerts_monitored_logs"
+                        class="input-large"
+                        multiple="multiple"
+                        size="6"
+                        data-bind="selectedOptions: settings.plugins.logmonitor.alerts_monitored_logs"></select>
+                <span class="help-block">{{ _("These logs are monitored for severity triggers even when no live stream is open.") }}</span>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label">{{ _("Alert monitor status") }}</label>
+            <div class="controls">
+                <div class="logmonitor-monitor-status">
+                    <span id="settings_plugin_logmonitor_alert_monitor_status_badge"
+                          class="badge badge-info">{{ _("Unknown") }}</span>
+                    <div id="settings_plugin_logmonitor_alert_monitor_status" class="muted">{{ _("Status not loaded yet.") }}</div>
+                </div>
+                <button id="settings_plugin_logmonitor_alert_monitor_refresh"
+                        type="button"
+                        class="btn btn-mini">{{ _("Refresh status") }}</button>
+                <span class="help-block">{{ _("Shows which logs are currently monitored by the background alert worker.") }}</span>
+            </div>
+        </div>
+        <div class="control-group">
+            <div class="controls">
+                <label class="checkbox">
+                    <input type="checkbox"
+                           data-bind="checked: settings.plugins.logmonitor.enable_notifications">
+                    {{ _("Enable in-app toast notifications") }}
+                </label>
+                <span class="help-block">{{ _("Show an OctoPrint-style toast notification in the web UI when a severity alert fires.") }}</span>
+            </div>
+        </div>
+        <div class="control-group">
+            <div class="controls">
+                <label class="checkbox">
+                    <input type="checkbox"
+                           data-bind="checked: settings.plugins.logmonitor.alert_history_enabled">
+                    {{ _("Keep alert history") }}
+                </label>
+                <span class="help-block">{{ _("Store triggered alerts in a history list.") }}</span>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label">{{ _("Max alert history entries") }}</label>
+            <div class="controls">
+                <input type="number"
+                       class="input-small"
+                       min="10"
+                       max="1000"
+                       step="1"
+                       data-bind="value: settings.plugins.logmonitor.max_alert_history">
+                <span class="help-block">{{ _("Maximum number of alert history entries to keep.") }}</span>
+            </div>
+        </div>
+    </fieldset>
+    <h4>{{ _("Privacy") }}</h4>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.mask_log_content">
+                {{ _("Mask sensitive data in stream") }}
+            </label>
+            <span class="help-block">{{ _("Redact API keys, passwords and e-mail addresses from streamed log lines.") }}</span>
+        </div>
+    </div>
+    <h4>{{ _("Debug") }}</h4>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox"
+                       data-bind="checked: settings.plugins.logmonitor.debug_mode">
+                {{ _("Enable debug mode in OctoPrint log") }}
+            </label>
+            <span class="help-block">{{ _("Writes Log Monitor frontend debug events into the OctoPrint server log.") }}</span>
+            <button type="button"
+                    id="settings_plugin_logmonitor_debug_test_button"
+                    class="btn btn-small btn-warning"
+                    data-bind="visible: settings.plugins.logmonitor.debug_mode()">
+                {{ _("Write Debug Test Entries") }}
+            </button>
+            <span class="help-block"
+                  data-bind="visible: settings.plugins.logmonitor.debug_mode()">
+                {{ _("Writes one test log entry for DEBUG, INFO, WARNING, ERROR, CRITICAL and UNKNOWN categories.") }}
+            </span>
+        </div>
+    </div>
+    <div class="alert alert-info">
+        <i class="fa fa-info-circle"></i>
+        {{ _("Changes take effect immediately after saving.") }}
+    </div>
+</form>

@@ -1,0 +1,430 @@
+# German translations for PROJECT.
+# Copyright (C) 2026 The OctoPrint Project
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: i18n@octoprint.org\n"
+"POT-Creation-Date: 2026-05-04 22:00+0200\n"
+"PO-Revision-Date: 2026-05-04 21:46+0200\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: de\n"
+"Language-Team: de <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: octoprint_logmonitor/static/js/logmonitor.js:327
+msgid " (switching...)"
+msgstr " (wird gewechselt...)"
+
+#: octoprint_logmonitor/static/js/logmonitor.js:354
+#, fuzzy, python-format
+msgid "%(count)s alert"
+msgid_plural "%(count)s alerts"
+msgstr[0] "%(count)s Alarm"
+msgstr[1] "%(count)s Alarme"
+
+#: octoprint_logmonitor/static/js/logmonitor.js:284
+#, fuzzy, python-format
+msgid "%(count)s history entry"
+msgid_plural "%(count)s history entries"
+msgstr[0] "%(count)s Verlaufseintrag"
+msgstr[1] "%(count)s Verlaufseintraege"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:186
+msgid "Alert monitor status"
+msgstr "Status der Alarmueberwachung"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:156
+msgid "Alert source logs"
+msgstr "Alarmquellen-Protokolle"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:102
+msgid "Alerts &amp; Notifications"
+msgstr "Alarme & Benachrichtigungen"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:168
+msgid "All available logs"
+msgstr "Alle verfuegbaren Protokolle"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:36
+msgid "Auto-scroll"
+msgstr "Auto-Scroll"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:74
+msgid "Auto-scroll enabled by default"
+msgstr "Auto-Scroll standardmaessig aktiv"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:40
+msgid "Auto-start streaming on page load"
+msgstr "Streaming beim Laden der Seite automatisch starten"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:42
+msgid "Automatically start streaming the default log file when OctoPrint loads."
+msgstr ""
+"Startet beim Laden von OctoPrint automatisch das Streaming der Standard-"
+"Logdatei."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:132
+msgid ""
+"Can generate many alerts because log files usually contain frequent INFO "
+"entries."
+msgstr ""
+"Kann viele Alarme ausloesen, weil Logdateien normalerweise haeufige INFO-"
+"Eintraege enthalten."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:266
+msgid "Changes take effect immediately after saving."
+msgstr "Aenderungen werden direkt nach dem Speichern wirksam."
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:31
+msgid "Clear"
+msgstr "Leeren"
+
+#: octoprint_logmonitor/templates/logmonitor_sidebar.jinja2:19
+msgid "Clear Alerts"
+msgstr "Alarme loeschen"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:183
+msgid "Clear History"
+msgstr "Verlauf loeschen"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:170
+msgid ""
+"Controls which log files are monitored for severity trigger alerts in the"
+" background."
+msgstr ""
+"Legt fest, welche Logdateien im Hintergrund auf Schweregrad-Trigger fuer "
+"Alarme ueberwacht werden."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:243
+msgid "Debug"
+msgstr "Debug"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:25
+msgid "Default log file"
+msgstr "Standard-Logdatei"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:2
+msgid "Display Settings"
+msgstr "Anzeigeeinstellungen"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:10
+msgid "Display a badge in the navbar when severity alerts occur."
+msgstr "Zeigt ein Badge in der Navbar, wenn Schweregrad-Alarme auftreten."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:20
+msgid "Display a widget in the sidebar showing log monitor status."
+msgstr "Zeigt ein Widget in der Sidebar mit dem Status der Logueberwachung."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:108
+msgid "Enable alerts globally"
+msgstr "Alarme global aktivieren"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:249
+msgid "Enable debug mode in OctoPrint log"
+msgstr "Debug-Modus im OctoPrint-Log aktivieren"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:204
+msgid "Enable in-app toast notifications"
+msgstr "In-App-Toast-Benachrichtigungen aktivieren"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:85
+msgid "Enable regex search by default"
+msgstr "Regex-Suche standardmaessig aktivieren"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:67
+msgid "Filter logs..."
+msgstr "Protokolle filtern..."
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:14
+msgid "History List"
+msgstr "Verlaufsliste"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:54
+msgid "How often to check for new log entries (in seconds)."
+msgstr "Wie oft auf neue Logeintraege geprueft wird (in Sekunden)."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:214
+msgid "Keep alert history"
+msgstr "Alarmverlauf speichern"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:146
+msgid "Level"
+msgstr "Stufe"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:80
+msgid "Lines:"
+msgstr "Zeilen:"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:6
+msgid "Live Log Stream"
+msgstr "Live-Log-Stream"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:2
+msgid "Log Monitor"
+msgstr "Log-Monitor"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:32
+msgid "Log file pre-selected in the stream dropdown on page load."
+msgstr "Beim Laden der Seite im Stream-Dropdown vorausgewaehlte Logdatei."
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:145
+msgid "Logger"
+msgstr "Logger"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:175
+msgid "Logs for alert monitoring"
+msgstr "Protokolle fuer Alarmueberwachung"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:238
+msgid "Mask sensitive data in stream"
+msgstr "Sensible Daten im Stream maskieren"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:220
+msgid "Max alert history entries"
+msgstr "Maximale Alarmverlaufseintraege"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:58
+msgid "Max stream lines"
+msgstr "Maximale Stream-Zeilen"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:228
+msgid "Maximum number of alert history entries to keep."
+msgstr "Maximale Anzahl der zu speichernden Alarmverlaufseintraege."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:66
+msgid "Maximum number of lines to keep in the stream view buffer."
+msgstr "Maximale Anzahl an Zeilen im Puffer der Stream-Ansicht."
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:147
+msgid "Message"
+msgstr "Nachricht"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:169
+msgid "Next"
+msgstr "Weiter"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:188
+msgid "No alert history entries yet."
+msgstr "Noch keine Alarmverlaufseintraege vorhanden."
+
+#: octoprint_logmonitor/static/js/logmonitor.js:360
+msgid "No alerts"
+msgstr "Keine Alarme"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:173
+msgid "No results found."
+msgstr "Keine Ergebnisse gefunden."
+
+#: octoprint_logmonitor/static/js/logmonitor.js:331
+msgid "Not streaming"
+msgstr "Kein Streaming aktiv"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:99
+msgid "Number of search results to display per page."
+msgstr "Anzahl der Suchergebnisse pro Seite."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:162
+msgid "Only selected logs"
+msgstr "Nur ausgewaehlte Protokolle"
+
+#: octoprint_logmonitor/templates/logmonitor_sidebar.jinja2:15
+msgid "Open History List"
+msgstr "Verlaufsliste oeffnen"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:46
+msgid "Poll interval (s)"
+msgstr "Abfrageintervall (s)"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:87
+msgid "Pre-enable the regex search option in the search form."
+msgstr "Aktiviert die Regex-Suchoption im Suchformular standardmaessig."
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:167
+msgid "Previous"
+msgstr "Zurueck"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:232
+msgid "Privacy"
+msgstr "Datenschutz"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:240
+msgid "Redact API keys, passwords and e-mail addresses from streamed log lines."
+msgstr ""
+"Entfernt API-Schluessel, Passwoerter und E-Mail-Adressen aus gestreamten "
+"Logzeilen."
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:180
+msgid "Refresh"
+msgstr "Aktualisieren"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:195
+msgid "Refresh status"
+msgstr "Status aktualisieren"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:91
+msgid "Results per page"
+msgstr "Ergebnisse pro Seite"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:10
+msgid "Search Logs"
+msgstr "Protokolle durchsuchen"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:79
+msgid "Search Settings"
+msgstr "Sucheinstellungen"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:95
+msgid "Search query..."
+msgstr "Suchbegriff..."
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:127
+msgid "Searching logs..."
+msgstr "Protokolle werden durchsucht..."
+
+#: octoprint_logmonitor/static/js/logmonitor.js:412
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:30
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:25
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:90
+msgid "Select log file..."
+msgstr "Logdatei auswaehlen..."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:152
+msgid "Select which severity levels should trigger navbar/sidebar alerts."
+msgstr "Waehle, welche Schweregrade Navbar-/Sidebar-Alarme ausloesen sollen."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:76
+msgid ""
+"Sets the initial auto-scroll state when the page loads. Can be toggled at"
+" any time directly in the stream view."
+msgstr ""
+"Setzt den anfaenglichen Auto-Scroll-Zustand beim Laden der Seite. Kann "
+"jederzeit direkt in der Stream-Ansicht umgeschaltet werden."
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:56
+msgid "Show CRITICAL"
+msgstr "CRITICAL anzeigen"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:40
+msgid "Show DEBUG"
+msgstr "DEBUG anzeigen"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:52
+msgid "Show ERROR"
+msgstr "ERROR anzeigen"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:44
+msgid "Show INFO"
+msgstr "INFO anzeigen"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:60
+msgid "Show UNKNOWN"
+msgstr "UNKNOWN anzeigen"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:48
+msgid "Show WARNING"
+msgstr "WARNING anzeigen"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:206
+msgid ""
+"Show an OctoPrint-style toast notification in the web UI when a severity "
+"alert fires."
+msgstr ""
+"Zeigt bei einem Schweregrad-Alarm eine Toast-Benachrichtigung im "
+"OctoPrint-Stil in der Weboberflaeche an."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:8
+msgid "Show indicator in Navbar"
+msgstr "Indikator in der Navbar anzeigen"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:18
+msgid "Show widget in Sidebar"
+msgstr "Widget in der Sidebar anzeigen"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:196
+msgid "Shows which logs are currently monitored by the background alert worker."
+msgstr "Zeigt, welche Logs aktuell vom Hintergrund-Alarmdienst ueberwacht werden."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:123
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:131
+msgid "Spam risk"
+msgstr "Spam-Risiko"
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:29
+msgid "Start Streaming"
+msgstr "Streaming starten"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:191
+msgid "Status not loaded yet."
+msgstr "Status noch nicht geladen."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:216
+msgid "Store triggered alerts in a history list."
+msgstr "Ausgeloeste Alarme in einer Verlaufsliste speichern."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:23
+msgid "Streaming Settings"
+msgstr "Streaming-Einstellungen"
+
+#: octoprint_logmonitor/static/js/logmonitor.js:325
+msgid "Streaming: "
+msgstr "Streaming: "
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:182
+msgid ""
+"These logs are monitored for severity triggers even when no live stream "
+"is open."
+msgstr ""
+"Diese Logs werden auch dann auf Schweregrad-Trigger ueberwacht, wenn kein"
+" Live-Stream geoeffnet ist."
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:144
+msgid "Timestamp"
+msgstr "Zeitstempel"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:116
+msgid "Trigger alerts for"
+msgstr "Alarme ausloesen fuer"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:110
+msgid "Turns all severity alert monitoring and notifications on or off."
+msgstr ""
+"Schaltet die gesamte Schweregrad-Alarmueberwachung und Benachrichtigungen"
+" ein oder aus."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:190
+msgid "Unknown"
+msgstr "Unbekannt"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:124
+msgid "Very high alert volume when OctoPrint debug mode is enabled."
+msgstr "Sehr hohes Alarmaufkommen, wenn der OctoPrint-Debug-Modus aktiviert ist."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:256
+msgid "Write Debug Test Entries"
+msgstr "Debug-Testeintraege schreiben"
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:251
+msgid "Writes Log Monitor frontend debug events into the OctoPrint server log."
+msgstr ""
+"Schreibt Frontend-Debug-Ereignisse des Log-Monitors in das OctoPrint-"
+"Serverlog."
+
+#: octoprint_logmonitor/templates/logmonitor_settings.jinja2:260
+msgid ""
+"Writes one test log entry for DEBUG, INFO, WARNING, ERROR, CRITICAL and "
+"UNKNOWN categories."
+msgstr ""
+"Schreibt je einen Test-Logeintrag fuer die Kategorien DEBUG, INFO, "
+"WARNING, ERROR, CRITICAL und UNKNOWN."
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:133
+msgid "results"
+msgstr "Ergebnisse"
+
