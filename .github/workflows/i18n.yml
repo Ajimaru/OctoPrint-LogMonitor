@@ -36,7 +36,7 @@ jobs:
           python -m venv .venv
           . .venv/bin/activate
           python -m pip install --upgrade pip
-          python -m pip install setuptools 'Babel==2.18.0' 'polib==1.2.0'
+          python -m pip install setuptools 'Babel==2.18.0' 'polib==1.2.0' 'Jinja2>=3,<4'
           python -m pip install --no-deps 'OctoPrint>=1.10.0,<2'
 
       - # Extract and validate translation catalog
