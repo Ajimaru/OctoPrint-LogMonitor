@@ -125,7 +125,7 @@ jobs:
         name: Install Node.js dependencies for hooks
         if: ${{ matrix.run-precommit }}
         run: |
-          if [ -f package-lock.json ]; then
+          if [ -f package.json ] && [ -f package-lock.json ]; then
             npm ci --no-audit --no-fund
           elif [ -f package.json ]; then
             npm install --no-audit --no-fund
@@ -213,6 +213,7 @@ jobs:
 
       - name: Smoke test plugin import
         run: |
+          python -m pip install --upgrade setuptools
           mkdir ../smoketest
           cd ../smoketest
           python -c "import octoprint_logmonitor; print(getattr(octoprint_logmonitor, '__version__', 'unknown'))"
