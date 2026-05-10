@@ -14,14 +14,12 @@
 
 ### Live log streaming and searching for OctoPrint with severity alerting in the navbar and sidebar
 
-**TODO**: add screenhots
-
 <!-- markdownlint-disable MD033-->
 <strong>
   Lightweight OctoPrint plugin that provides live log streaming, searching, and severity alerts directly in the navbar and sidebar.<br />
 </strong>
 </br />
-<img src="assets/img/logmonitor_navbar.png" alt="OctoPrint Log Monitor Navbar" width="666" />
+<img src="assets/img/main_screen.png" alt="OctoPrint Log Monitor Main Screen" width="666" />
 <!-- markdownlint-enable MD033-->
 
 ## Highlights
@@ -35,6 +33,9 @@
 - 🎯 **Smart Filtering** - Filter by severity level and free text in real-time
 - 📈 **Alert History** - View recent alerts with timestamps and messages
 - 📥 **Log Download** - Download log files directly from the plugin tab
+- 🧪 **Advanced Search** - Optional regex and case-sensitive search modes
+- 📤 **Export Results** - Export filtered/search results for offline analysis
+- 🔀 **Multi-Stream API** - Backend endpoints for parallel streaming of multiple logs
 - 🛡️ **Secure** - Path traversal protection and API key authentication
 
 ## Installation
@@ -83,13 +84,15 @@ Configure which severity levels trigger alerts:
 
 ### Streaming Settings
 
-- **Poll Interval** - How often to check for new log entries (default: 500ms)
-- **Max Stream Lines** - Maximum number of lines in buffer (default: 1000)
+- **Poll Interval** - How often to check for new log entries (default: 5s)
+- **Max Stream Lines** - Maximum number of lines in buffer (default: 500)
 - **Auto-scroll** - Automatically scroll to bottom (default: enabled)
 
 ### Search Settings
 
 - **Results per Page** - Number of search results per page (default: 50)
+- **Regex Search** - Optional regular expression search mode
+- **Case-Sensitive Search** - Toggle exact case matching for queries
 
 ## Usage
 
@@ -117,7 +120,7 @@ Configure which severity levels trigger alerts:
 
 ### Alerts
 
-When a log entry matches configured trigger severities:
+When a log entry matches configured trigger severities (default: WARNING/ERROR/CRITICAL):
 
 - A badge appears in the Navbar (if enabled)
 - The Sidebar widget updates (if enabled)

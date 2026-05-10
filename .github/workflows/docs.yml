@@ -1,4 +1,4 @@
-name: Build Docs
+name: Build and Deploy Docs
 
 on:
   push:
@@ -9,14 +9,16 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: docs-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  docs:
-    name: Docs validation
+  build:
+    name: Build docs
     runs-on: ubuntu-latest
 
     steps:
@@ -31,47 +33,31 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      - # Setup Node.js for optional docs tooling
-        name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "20"
-
-      - # Install npm deps only when project defines them
-        name: Install Node.js dependencies
+      - # Install docs dependencies
+        name: Install docs dependencies
         run: |
-          if [ -f package.json ] && [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
-          elif [ -f package.json ]; then
-            npm install --no-audit --no-fund
-          else
-            echo "No package.json present; skipping npm install"
-          fi
-
-      - # Install docs dependencies and build docs when configured
-        name: Build docs if mkdocs is configured
-        run: |
-          if [ ! -f mkdocs.yml ]; then
-            echo "No mkdocs.yml found; skipping docs build"
-            exit 0
-          fi
-
-          python -m venv .venv
-          . .venv/bin/activate
           python -m pip install --upgrade pip
+          python -m pip install mkdocs mkdocs-material
 
-          if [ -f requirements-docs.txt ]; then
-            python -m pip install -r requirements-docs.txt
-          else
-            python -m pip install mkdocs mkdocs-material
-          fi
-
-          if [ -x ./scripts/generate-diagrams.sh ]; then
-            ./scripts/generate-diagrams.sh
-          fi
-
-          if [ -x ./scripts/generate-jsdocs.sh ]; then
-            ./scripts/generate-jsdocs.sh
-          fi
-
+      - # Build site from repository root docs
+        name: Build MkDocs site
+        run: |
           mkdocs build --strict
+
+      - # Upload built site as artifact for Pages deployment
+        name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: /tmp/mkdocs-site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - # Deploy built site to GitHub Pages
+        name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

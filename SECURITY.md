@@ -15,8 +15,8 @@ The OctoPrint Log Monitor plugin reads log files produced by OctoPrint and
 streams their content to authenticated users through OctoPrint's existing
 web interface. The following security assumptions apply:
 
-- **Authentication is provided by OctoPrint.** All API endpoints exposed by
-  this plugin (`/api/plugin/logmonitor/*`) require a valid OctoPrint API key.
+- **Authentication is provided by OctoPrint.** All plugin routes are served
+  through OctoPrint's authenticated web interface under `/plugin/logmonitor/*`.
   The plugin does not implement its own authentication mechanism.
 - **The OctoPrint host is trusted.** The plugin runs with the same OS-level
   privileges as OctoPrint itself. If OctoPrint is compromised, the plugin
