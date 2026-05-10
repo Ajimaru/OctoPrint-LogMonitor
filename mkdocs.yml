@@ -7,19 +7,34 @@ theme:
   name: material
 
 nav:
-  - Home: docs/index.md
+  - Home: index.md
   - Plugin:
       - Overview: overview.md
+      - Python API: api/python.md
   - Project:
       - Contributing: contributing.md
       - Security: security.md
       - Changelog: changelog.md
       - Authors: authors.md
 
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [..]
+          options:
+            show_source: false
+            show_root_heading: true
+            show_root_toc_entry: true
+            docstring_style: google
+
 markdown_extensions:
   - admonition
   - attr_list
   - md_in_html
   - tables
+  - pymdownx.highlight
+  - pymdownx.superfences
   - toc:
       permalink: true
