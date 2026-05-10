@@ -53,6 +53,7 @@ jobs:
 
       - # Setup Node.js for ESLint/Prettier hooks
         name: Set up Node.js for hooks
+        if: ${{ hashFiles('.pre-commit-config.yaml') != '' }}
         uses: actions/setup-node@v6
         with:
           node-version: "20.19.0"
@@ -61,6 +62,7 @@ jobs:
 
       - # Install npm dependencies only if package.json exists
         name: Install Node.js dependencies for hooks
+        if: ${{ hashFiles('.pre-commit-config.yaml') != '' }}
         run: |
           if [ -f package.json ] && [ -f package-lock.json ]; then
             npm ci --no-audit --no-fund
@@ -80,6 +82,7 @@ jobs:
 
       - # Install ShellCheck required by local hook
         name: Install ShellCheck
+        if: ${{ hashFiles('.pre-commit-config.yaml') != '' }}
         run: |
           set -e
           SHELLCHECK_VERSION="0.11.0"
@@ -97,6 +100,7 @@ jobs:
 
       - # Run complete pre-commit suite
         name: Run pre-commit on all files
+        if: ${{ hashFiles('.pre-commit-config.yaml') != '' }}
         run: |
           pre-commit run --all-files --show-diff-on-failure --color always
 
