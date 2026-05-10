@@ -34,5 +34,6 @@ Homepage = "https://github.com/Ajimaru/OctoPrint-LogMonitor"
 
 [project.optional-dependencies]
 develop = [
+    "build",
     "go-task-bin"
 ]
