@@ -94,6 +94,20 @@ class FakeSettings:
             self._values[key] = value
 
 
+class FakeSettingsNoArgBaseFolder(FakeSettings):
+    """Settings stub emulating getBaseFolder() without arguments."""
+
+    def getBaseFolder(self):  # pylint: disable=invalid-name
+        """Return plugin-scoped base folder (not global logs folder)."""
+        return "/tmp/logmonitor-plugin-data"
+
+    def global_get_basefolder(self, name):
+        """Return global OctoPrint base folder for the requested category."""
+        if name == "logs":
+            return self._base_dir
+        raise KeyError(name)
+
+
 class _FakeOctoPrintGlobalSettings:
     """Minimal global settings stub for OctoPrint access decorators."""
 
@@ -223,6 +237,19 @@ class TestPluginCore(OctoPrintAccessPatchedTestCase):
         payload = self._resp(response).get_json()
         filenames = [entry["name"] for entry in payload["files"]]
         self.assertEqual(filenames, ["a.log", "b.log"])
+
+    def test_get_log_files_supports_noarg_basefolder_with_global_fallback(self):
+        (Path(self.temp_dir) / "octoprint.log").write_text("entry")
+
+        values = dict(self.plugin.get_settings_defaults())
+        self.plugin._settings = FakeSettingsNoArgBaseFolder(self.temp_dir, values)
+
+        with self.app.test_request_context("/files", method="GET"):
+            response = self.plugin.get_log_files()
+
+        payload = self._resp(response).get_json()
+        filenames = [entry["name"] for entry in payload["files"]]
+        self.assertEqual(filenames, ["octoprint.log"])
 
     def test_handle_alert_line_triggers_alert(self):
         values = dict(self.plugin.get_settings_defaults())

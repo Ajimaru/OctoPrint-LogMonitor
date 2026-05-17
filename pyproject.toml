@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "OctoPrint-LogMonitor"
-version = "0.1.0"
+version = "0.2.0"
 description = "Live log streaming and searching for OctoPrint with severity alerting"
 license = "AGPL-3.0-or-later"
 authors = [

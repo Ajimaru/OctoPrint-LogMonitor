@@ -117,7 +117,7 @@ class LogmonitorPlugin(
         if self._settings.get(["auto_start_streaming"]):
             try:
                 default_log_file = self._settings.get(["default_log_file"])
-                log_dir = self._settings.getBaseFolder("logs")
+                log_dir = self._get_logs_base_folder()
                 filepath = os.path.join(log_dir, default_log_file)
 
                 if os.path.exists(filepath):
@@ -328,7 +328,7 @@ class LogmonitorPlugin(
     def _get_available_log_filenames(self):
         """Return sorted list of available .log filenames from OctoPrint log folder."""
         try:
-            log_dir = self._settings.getBaseFolder("logs")
+            log_dir = self._get_logs_base_folder()
             if not os.path.exists(log_dir):
                 return []
 
@@ -367,7 +367,7 @@ class LogmonitorPlugin(
     def get_log_files(self):
         """Get list of available log files."""
         try:
-            log_dir = self._settings.getBaseFolder("logs")
+            log_dir = self._get_logs_base_folder()
 
             if not os.path.exists(log_dir):
                 return flask.jsonify({"files": [], "error": "Log directory not found"})
@@ -459,7 +459,7 @@ class LogmonitorPlugin(
                 )
                 return flask.jsonify({"error": "Invalid filename"}), 400
 
-            log_dir = self._settings.getBaseFolder("logs")
+            log_dir = self._get_logs_base_folder()
             if not is_safe_path(log_dir, filename):
                 self._log_security_event(
                     "path_traversal", f"Path traversal attempt in search: {filename!r}"
@@ -515,7 +515,7 @@ class LogmonitorPlugin(
                 )
                 return flask.jsonify({"error": "Invalid filename"}), 400
 
-            log_dir = self._settings.getBaseFolder("logs")
+            log_dir = self._get_logs_base_folder()
             if not is_safe_path(log_dir, filename):
                 self._log_security_event(
                     "path_traversal",
@@ -612,7 +612,7 @@ class LogmonitorPlugin(
                     400,
                 )
 
-            log_dir = self._settings.getBaseFolder("logs")
+            log_dir = self._get_logs_base_folder()
             started_files = []
             failed_files = []
 
@@ -919,7 +919,7 @@ class LogmonitorPlugin(
                 )
                 return flask.jsonify({"error": "Invalid filename"}), 400
 
-            log_dir = self._settings.getBaseFolder("logs")
+            log_dir = self._get_logs_base_folder()
             if not is_safe_path(log_dir, filename):
                 self._log_security_event(
                     "path_traversal",
@@ -1031,10 +1031,62 @@ class LogmonitorPlugin(
         """
         self._logger.warning(f"[SECURITY] {event_type}: {detail}")
 
+    def _get_logs_base_folder(self) -> str:
+        """Resolve OctoPrint's global log directory across API variants."""
+        candidates = []
+
+        global_getter = getattr(self._settings, "global_get_basefolder", None)
+        if callable(global_getter):
+            try:
+                candidate = global_getter("logs")
+                if isinstance(candidate, str) and candidate:
+                    candidates.append(candidate)
+            except Exception as e:
+                self._logger.debug("global_get_basefolder('logs') lookup failed: %s", e)
+
+        base_folder_getter = getattr(self._settings, "getBaseFolder", None)
+        if callable(base_folder_getter):
+            try:
+                candidate = base_folder_getter("logs")
+                if isinstance(candidate, str) and candidate:
+                    candidates.append(candidate)
+            except TypeError:
+                # OctoPrint 2.0 variants can expose getBaseFolder() without args.
+                try:
+                    candidate = base_folder_getter()
+                    if isinstance(candidate, str) and candidate:
+                        candidates.append(candidate)
+                except Exception as e:
+                    self._logger.debug("getBaseFolder() fallback failed: %s", e)
+            except Exception as e:
+                self._logger.debug("getBaseFolder('logs') lookup failed: %s", e)
+
+        try:
+            from octoprint.settings import settings as octoprint_settings
+
+            global_settings = octoprint_settings()
+            if global_settings is not None:
+                candidate = global_settings.getBaseFolder("logs")
+                if isinstance(candidate, str) and candidate:
+                    candidates.append(candidate)
+        except Exception as e:
+            self._logger.debug("octoprint.settings fallback lookup failed: %s", e)
+
+        for candidate in candidates:
+            if os.path.isdir(candidate):
+                return candidate
+
+        for candidate in candidates:
+            if os.path.exists(candidate):
+                return candidate
+
+        # Preserve previous behavior as last resort so callers still fail predictably.
+        return self._settings.getBaseFolder("logs")
+
     def _write_unknown_debug_test_log(self, message: str) -> None:
         """Append an UNKNOWN test line directly to octoprint.log."""
         try:
-            log_dir = self._settings.getBaseFolder("logs")
+            log_dir = self._get_logs_base_folder()
             filepath = os.path.join(log_dir, "octoprint.log")
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
             with open(filepath, "a", encoding="utf-8", errors="replace") as handle:
@@ -1076,7 +1128,7 @@ class LogmonitorPlugin(
 
     def _get_alert_monitor_files(self):
         """Resolve list of log files that should drive severity alerts."""
-        log_dir = self._settings.getBaseFolder("logs")
+        log_dir = self._get_logs_base_folder()
         mode = (self._settings.get(["alerts_monitor_mode"]) or "selected").lower()
 
         if mode == "all":
@@ -1241,7 +1293,7 @@ class LogmonitorPlugin(
             self._logger.info("Alert monitor disabled: no valid log files configured")
             return
 
-        log_dir = self._settings.getBaseFolder("logs")
+        log_dir = self._get_logs_base_folder()
         poll_interval = self._get_stream_poll_interval_seconds()
 
         for filename in files:
