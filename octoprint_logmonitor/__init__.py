@@ -1034,6 +1034,7 @@ class LogmonitorPlugin(
     def _get_logs_base_folder(self) -> str:
         """Resolve OctoPrint's global log directory across API variants."""
         candidates = []
+        noarg_base_folder = None
 
         global_getter = getattr(self._settings, "global_get_basefolder", None)
         if callable(global_getter):
@@ -1052,10 +1053,13 @@ class LogmonitorPlugin(
                     candidates.append(candidate)
             except TypeError:
                 # OctoPrint 2.0 variants can expose getBaseFolder() without args.
+                # That commonly resolves to the plugin data folder, not the
+                # global OctoPrint logs folder, so do not use it as a log-path
+                # candidate unless every global lookup path fails.
                 try:
                     candidate = base_folder_getter()
                     if isinstance(candidate, str) and candidate:
-                        candidates.append(candidate)
+                        noarg_base_folder = candidate
                 except Exception as e:
                     self._logger.debug("getBaseFolder() fallback failed: %s", e)
             except Exception as e:
@@ -1080,8 +1084,13 @@ class LogmonitorPlugin(
             if os.path.exists(candidate):
                 return candidate
 
-        # Preserve previous behavior as last resort so callers still fail predictably.
-        return self._settings.getBaseFolder("logs")
+        if noarg_base_folder:
+            self._logger.debug(
+                "Skipping no-arg getBaseFolder() result for log resolution: %s",
+                noarg_base_folder,
+            )
+
+        raise RuntimeError("Unable to resolve OctoPrint global logs folder")
 
     def _write_unknown_debug_test_log(self, message: str) -> None:
         """Append an UNKNOWN test line directly to octoprint.log."""
