@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: i18n@octoprint.org\n"
-"POT-Creation-Date: 2026-05-04 22:00+0200\n"
+"POT-Creation-Date: 2026-05-18 10:45+0200\n"
 "PO-Revision-Date: 2026-05-04 21:46+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -16,20 +16,20 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.16.0\n"
+"Generated-By: Babel 2.18.0\n"
 
-#: octoprint_logmonitor/static/js/logmonitor.js:327
+#: octoprint_logmonitor/static/js/logmonitor.js:333
 msgid " (switching...)"
 msgstr " (wird gewechselt...)"
 
-#: octoprint_logmonitor/static/js/logmonitor.js:354
+#: octoprint_logmonitor/static/js/logmonitor.js:360
 #, fuzzy, python-format
 msgid "%(count)s alert"
 msgid_plural "%(count)s alerts"
 msgstr[0] "%(count)s Alarm"
 msgstr[1] "%(count)s Alarme"
 
-#: octoprint_logmonitor/static/js/logmonitor.js:284
+#: octoprint_logmonitor/static/js/logmonitor.js:290
 #, fuzzy, python-format
 msgid "%(count)s history entry"
 msgid_plural "%(count)s history entries"
@@ -52,7 +52,7 @@ msgstr "Alarme & Benachrichtigungen"
 msgid "All available logs"
 msgstr "Alle verfuegbaren Protokolle"
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:36
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:40
 msgid "Auto-scroll"
 msgstr "Auto-Scroll"
 
@@ -82,7 +82,7 @@ msgstr ""
 msgid "Changes take effect immediately after saving."
 msgstr "Aenderungen werden direkt nach dem Speichern wirksam."
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:31
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:35
 msgid "Clear"
 msgstr "Leeren"
 
@@ -90,7 +90,7 @@ msgstr "Leeren"
 msgid "Clear Alerts"
 msgstr "Alarme loeschen"
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:183
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:197
 msgid "Clear History"
 msgstr "Verlauf loeschen"
 
@@ -122,6 +122,10 @@ msgstr "Zeigt ein Badge in der Navbar, wenn Schweregrad-Alarme auftreten."
 msgid "Display a widget in the sidebar showing log monitor status."
 msgstr "Zeigt ein Widget in der Sidebar mit dem Status der Logueberwachung."
 
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:33
+msgid "Download Log"
+msgstr ""
+
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:108
 msgid "Enable alerts globally"
 msgstr "Alarme global aktivieren"
@@ -138,7 +142,15 @@ msgstr "In-App-Toast-Benachrichtigungen aktivieren"
 msgid "Enable regex search by default"
 msgstr "Regex-Suche standardmaessig aktivieren"
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:67
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:142
+msgid "Export CSV"
+msgstr ""
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:146
+msgid "Export TXT"
+msgstr ""
+
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:71
 msgid "Filter logs..."
 msgstr "Protokolle filtern..."
 
@@ -154,11 +166,11 @@ msgstr "Wie oft auf neue Logeintraege geprueft wird (in Sekunden)."
 msgid "Keep alert history"
 msgstr "Alarmverlauf speichern"
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:146
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:160
 msgid "Level"
 msgstr "Stufe"
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:80
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:84
 msgid "Lines:"
 msgstr "Zeilen:"
 
@@ -174,7 +186,7 @@ msgstr "Log-Monitor"
 msgid "Log file pre-selected in the stream dropdown on page load."
 msgstr "Beim Laden der Seite im Stream-Dropdown vorausgewaehlte Logdatei."
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:145
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:159
 msgid "Logger"
 msgstr "Logger"
 
@@ -202,27 +214,27 @@ msgstr "Maximale Anzahl der zu speichernden Alarmverlaufseintraege."
 msgid "Maximum number of lines to keep in the stream view buffer."
 msgstr "Maximale Anzahl an Zeilen im Puffer der Stream-Ansicht."
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:147
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:161
 msgid "Message"
 msgstr "Nachricht"
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:169
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:183
 msgid "Next"
 msgstr "Weiter"
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:188
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:202
 msgid "No alert history entries yet."
 msgstr "Noch keine Alarmverlaufseintraege vorhanden."
 
-#: octoprint_logmonitor/static/js/logmonitor.js:360
+#: octoprint_logmonitor/static/js/logmonitor.js:366
 msgid "No alerts"
 msgstr "Keine Alarme"
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:173
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:187
 msgid "No results found."
 msgstr "Keine Ergebnisse gefunden."
 
-#: octoprint_logmonitor/static/js/logmonitor.js:331
+#: octoprint_logmonitor/static/js/logmonitor.js:337
 msgid "Not streaming"
 msgstr "Kein Streaming aktiv"
 
@@ -246,7 +258,7 @@ msgstr "Abfrageintervall (s)"
 msgid "Pre-enable the regex search option in the search form."
 msgstr "Aktiviert die Regex-Suchoption im Suchformular standardmaessig."
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:167
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:181
 msgid "Previous"
 msgstr "Zurueck"
 
@@ -260,7 +272,7 @@ msgstr ""
 "Entfernt API-Schluessel, Passwoerter und E-Mail-Adressen aus gestreamten "
 "Logzeilen."
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:180
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:194
 msgid "Refresh"
 msgstr "Aktualisieren"
 
@@ -280,18 +292,18 @@ msgstr "Protokolle durchsuchen"
 msgid "Search Settings"
 msgstr "Sucheinstellungen"
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:95
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:99
 msgid "Search query..."
 msgstr "Suchbegriff..."
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:127
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:131
 msgid "Searching logs..."
 msgstr "Protokolle werden durchsucht..."
 
-#: octoprint_logmonitor/static/js/logmonitor.js:412
+#: octoprint_logmonitor/static/js/logmonitor.js:418
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:30
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:25
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:90
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:94
 msgid "Select log file..."
 msgstr "Logdatei auswaehlen..."
 
@@ -307,27 +319,27 @@ msgstr ""
 "Setzt den anfaenglichen Auto-Scroll-Zustand beim Laden der Seite. Kann "
 "jederzeit direkt in der Stream-Ansicht umgeschaltet werden."
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:56
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:60
 msgid "Show CRITICAL"
 msgstr "CRITICAL anzeigen"
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:40
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:44
 msgid "Show DEBUG"
 msgstr "DEBUG anzeigen"
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:52
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:56
 msgid "Show ERROR"
 msgstr "ERROR anzeigen"
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:44
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:48
 msgid "Show INFO"
 msgstr "INFO anzeigen"
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:60
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:64
 msgid "Show UNKNOWN"
 msgstr "UNKNOWN anzeigen"
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:48
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:52
 msgid "Show WARNING"
 msgstr "WARNING anzeigen"
 
@@ -372,7 +384,7 @@ msgstr "Ausgeloeste Alarme in einer Verlaufsliste speichern."
 msgid "Streaming Settings"
 msgstr "Streaming-Einstellungen"
 
-#: octoprint_logmonitor/static/js/logmonitor.js:325
+#: octoprint_logmonitor/static/js/logmonitor.js:331
 msgid "Streaming: "
 msgstr "Streaming: "
 
@@ -384,7 +396,7 @@ msgstr ""
 "Diese Logs werden auch dann auf Schweregrad-Trigger ueberwacht, wenn kein"
 " Live-Stream geoeffnet ist."
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:144
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:158
 msgid "Timestamp"
 msgstr "Zeitstempel"
 
@@ -424,7 +436,7 @@ msgstr ""
 "Schreibt je einen Test-Logeintrag fuer die Kategorien DEBUG, INFO, "
 "WARNING, ERROR, CRITICAL und UNKNOWN."
 
-#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:133
+#: octoprint_logmonitor/templates/logmonitor_tab.jinja2:137
 msgid "results"
 msgstr "Ergebnisse"
 
