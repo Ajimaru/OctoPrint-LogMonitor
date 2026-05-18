@@ -46,9 +46,11 @@ class LogTailer:
         r"([A-Za-z0-9_.:-]+)\s+(.+)$"
     )
 
-    # Virtual printer serial lines often use: YYYY-MM-DD HH:MM:SS,ms >>> MESSAGE
+    # Virtual printer serial lines often use: YYYY-MM-DD HH:MM:SS,ms >>>
+    # MESSAGE
     SERIAL_IO_PATTERN = re.compile(
-        r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:,\d{3})?)\s+(>>>|<<<)\s+(.+)$"
+        r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:,\d{3})?)"
+        r"\s+(>>>|<<<)\s+(.+)$"
     )
 
     def __init__(
@@ -99,8 +101,10 @@ class LogTailer:
                 return False
 
             try:
-                # File handle is owned by the tailer for its lifetime; closed in stop().
-                self._file = open(  # noqa: SIM115  pylint: disable=consider-using-with
+                # File handle is owned by the tailer for its lifetime; closed
+                # in stop().
+                # pylint: disable-next=consider-using-with
+                self._file = open(  # noqa: SIM115
                     self._filepath, encoding="utf-8", errors="replace"
                 )
                 self._file_inode = os.fstat(self._file.fileno()).st_ino
@@ -114,7 +118,9 @@ class LogTailer:
                 self._running = True
 
                 if self._logger:
-                    self._logger.info(f"LogTailer started for {self._filepath}")
+                    self._logger.info(
+                        f"LogTailer started for {self._filepath}"
+                    )
 
                 return True
 
@@ -149,7 +155,9 @@ class LogTailer:
 
             if self._thread.is_alive():
                 if self._logger:
-                    self._logger.warning("LogTailer thread did not stop gracefully")
+                    self._logger.warning(
+                        "LogTailer thread did not stop gracefully"
+                    )
                 return False
 
         if self._file:
@@ -193,8 +201,10 @@ class LogTailer:
                     parsed = self._parse_line(line)
                     try:
                         self._callback(parsed)
-                    except Exception as e:  # pylint: disable=broad-exception-caught
-                        # Callback is user-supplied; never let it kill the thread.
+                    # pylint: disable-next=broad-exception-caught
+                    except Exception as e:
+                        # Callback is user-supplied; never let it kill the
+                        # thread.
                         if self._logger:
                             self._logger.error(f"Error in callback: {e}")
                 else:
@@ -202,7 +212,8 @@ class LogTailer:
                     time.sleep(self._poll_interval)
 
         except Exception as e:  # pylint: disable=broad-exception-caught
-            # Top-level guard: the background thread must never propagate exceptions.
+            # Top-level guard: the background thread must never propagate
+            # exceptions.
             if self._logger:
                 self._logger.error(f"Error in LogTailer thread: {e}")
         finally:
@@ -229,7 +240,8 @@ class LogTailer:
                 self._file.close()
 
             # File handle is owned by the tailer; closed in stop().
-            self._file = open(  # noqa: SIM115  pylint: disable=consider-using-with
+            # pylint: disable-next=consider-using-with
+            self._file = open(  # noqa: SIM115
                 self._filepath, encoding="utf-8", errors="replace"
             )
             self._file_inode = os.fstat(self._file.fileno()).st_ino

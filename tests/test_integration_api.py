@@ -34,13 +34,16 @@ class TestAPIEndpoints(unittest.TestCase):
         # Write test content
         log_content = "\n".join(
             [
-                "2026-02-19 10:00:00,000 - octoprint.server - INFO - Starting OctoPrint",
+                "2026-02-19 10:00:00,000 - octoprint.server"
+                " - INFO - Starting OctoPrint",
                 "2026-02-19 10:00:01,000 - octoprint.printer - WARNING"
                 " - Printer not responding",
-                "2026-02-19 10:00:02,000 - plugin.test - ERROR - Test plugin error",
+                "2026-02-19 10:00:02,000 - plugin.test - ERROR"
+                " - Test plugin error",
                 "2026-02-19 10:00:03,000 - octoprint.server - CRITICAL"
                 " - Critical error occurred",
-                "2026-02-19 10:00:04,000 - octoprint.printer - DEBUG - Debug info",
+                "2026-02-19 10:00:04,000 - octoprint.printer - DEBUG"
+                " - Debug info",
             ]
         )
 
@@ -238,14 +241,18 @@ class TestAPIEndpoints(unittest.TestCase):
         for safe_file in safe_filenames:
             # These should be allowed
             has_traversal = (
-                "/" in safe_file or "\\" in safe_file or safe_file.startswith(".")
+                "/" in safe_file
+                or "\\" in safe_file
+                or safe_file.startswith(".")
             )
             self.assertFalse(has_traversal, f"{safe_file} should be safe")
 
         for unsafe_file in unsafe_filenames:
             # These should be blocked
             has_traversal = (
-                "/" in unsafe_file or "\\" in unsafe_file or unsafe_file.startswith(".")
+                "/" in unsafe_file
+                or "\\" in unsafe_file
+                or unsafe_file.startswith(".")
             )
             self.assertTrue(has_traversal, f"{unsafe_file} should be blocked")
 
@@ -310,7 +317,9 @@ class TestAPIEndpoints(unittest.TestCase):
 
         # Both are valid responses depending on state
         self.assertIn(response_stopped["status"], ["stopped", "not_running"])
-        self.assertIn(response_not_running["status"], ["stopped", "not_running"])
+        self.assertIn(
+            response_not_running["status"], ["stopped", "not_running"]
+        )
 
     def test_alerts_reset_endpoint(self):
         """
@@ -370,7 +379,9 @@ class TestAPISecurityIntegration(unittest.TestCase):
 
         # Any filename containing these patterns should be rejected
         test_filename = "../../../etc/passwd"
-        has_dangerous = any(pattern in test_filename for pattern in dangerous_patterns)
+        has_dangerous = any(
+            pattern in test_filename for pattern in dangerous_patterns
+        )
         self.assertTrue(has_dangerous, "Pattern detection should work")
 
     def test_input_validation(self):
@@ -384,7 +395,13 @@ class TestAPISecurityIntegration(unittest.TestCase):
         - 'offset' parameter: non-negative integer
         - 'limit' parameter: positive integer, reasonable max
         """
-        valid_severity_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+        valid_severity_levels = {
+            "DEBUG",
+            "INFO",
+            "WARNING",
+            "ERROR",
+            "CRITICAL",
+        }
 
         # Test severity level validation
         test_levels = ["DEBUG", "ERROR", "INVALID_LEVEL"]
@@ -413,7 +430,8 @@ class TestAPISecurityIntegration(unittest.TestCase):
         # These should be treated as literal search strings
         # and will safely match nothing in the log file
         for _query in dangerous_queries:
-            # Each query is treated as literal text, making SQL injection impossible
+            # Each query is treated as literal text, making SQL injection
+            # impossible
             pass
 
 

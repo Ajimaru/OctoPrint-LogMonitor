@@ -44,7 +44,11 @@ class TestLogSearcher(unittest.TestCase):
     def test_search_all_lines(self):
         """Test searching without filters returns all lines."""
         result = self.searcher.search(
-            filepath=str(self.log_file), query="", levels=None, offset=0, limit=100
+            filepath=str(self.log_file),
+            query="",
+            levels=None,
+            offset=0,
+            limit=100,
         )
 
         self.assertEqual(result["total"], 8)
@@ -53,7 +57,11 @@ class TestLogSearcher(unittest.TestCase):
     def test_search_text_query(self):
         """Test text search."""
         result = self.searcher.search(
-            filepath=str(self.log_file), query="Error", levels=None, offset=0, limit=100
+            filepath=str(self.log_file),
+            query="Error",
+            levels=None,
+            offset=0,
+            limit=100,
         )
 
         # Should match lines containing "Error" in any field
@@ -162,7 +170,11 @@ class TestLogSearcher(unittest.TestCase):
     def test_invalid_file(self):
         """Test behavior with non-existent file."""
         result = self.searcher.search(
-            filepath="/nonexistent/file.log", query="", levels=None, offset=0, limit=10
+            filepath="/nonexistent/file.log",
+            query="",
+            levels=None,
+            offset=0,
+            limit=10,
         )
 
         self.assertEqual(result["total"], 0)
@@ -188,7 +200,8 @@ class TestLogSearcher(unittest.TestCase):
         compact_file = Path(self.temp_dir) / "compact.log"
         compact_file.write_text(
             "2026-05-03 22:20:17,441WARNING octoprint.plugins.logmonitor "
-            "The templates of this plugin are currently not being autoescaped\n"
+            "The templates of this plugin are currently not being"
+            " autoescaped\n"
         )
 
         result = self.searcher.search(
@@ -201,7 +214,9 @@ class TestLogSearcher(unittest.TestCase):
 
         self.assertEqual(result["total"], 1)
         self.assertEqual(result["results"][0]["level"], "WARNING")
-        self.assertEqual(result["results"][0]["logger"], "octoprint.plugins.logmonitor")
+        self.assertEqual(
+            result["results"][0]["logger"], "octoprint.plugins.logmonitor"
+        )
 
         compact_file.unlink()
 
@@ -228,7 +243,8 @@ class TestLogSearcher(unittest.TestCase):
         mixed_file.unlink()
 
     def test_search_explicit_levels_exclude_unknown_when_not_selected(self):
-        """UNKNOWN lines should be excluded when levels do not include UNKNOWN."""
+        """UNKNOWN lines should be excluded when levels
+        do not include UNKNOWN."""
         mixed_file = Path(self.temp_dir) / "mixed_levels.log"
         mixed_file.write_text(
             "2024-01-01 10:00:00,000 - octoprint - INFO - Known\n"
@@ -254,7 +270,11 @@ class TestLogSearcher(unittest.TestCase):
         empty_file.touch()
 
         result = self.searcher.search(
-            filepath=str(empty_file), query="test", levels=None, offset=0, limit=10
+            filepath=str(empty_file),
+            query="test",
+            levels=None,
+            offset=0,
+            limit=10,
         )
 
         self.assertEqual(result["total"], 0)
@@ -334,7 +354,8 @@ class TestLogSearcher(unittest.TestCase):
         case_file.unlink()
 
     def test_search_binary_file_uses_replace_error_handler(self):
-        """Binary content should not crash search due to UTF-8 decode errors."""
+        """Binary content should not crash search due to
+        UTF-8 decode errors."""
         binary_file = Path(self.temp_dir) / "binary.log"
         with open(binary_file, "wb") as f:
             f.write(b"line 1\nline\xff2\n")

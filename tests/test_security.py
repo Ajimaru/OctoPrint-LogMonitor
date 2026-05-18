@@ -69,7 +69,8 @@ class TestPathValidation(unittest.TestCase):
     def test_path_with_slashes_blocked(self):
         """Test that paths with directory separators are blocked."""
         # Note: os.path.join normalizes the path, but validate_filename
-        # should be used to reject filenames with slashes before calling is_safe_path
+        # should be used to reject filenames with slashes before calling
+        # is_safe_path
         result = validate_filename("subdir/file.log")
         self.assertFalse(result)
 
@@ -227,12 +228,16 @@ class TestPaginationValidation(unittest.TestCase):
 
     def test_offset_non_integer(self):
         """Test that non-integer offset is rejected."""
-        valid, _error = validate_pagination("invalid", 50)  # type: ignore[arg-type]
+        valid, _error = validate_pagination(  # type: ignore[arg-type]
+            "invalid", 50
+        )
         self.assertFalse(valid)
 
     def test_limit_non_integer(self):
         """Test that non-integer limit is rejected."""
-        valid, _error = validate_pagination(0, "invalid")  # type: ignore[arg-type]
+        valid, _error = validate_pagination(  # type: ignore[arg-type]
+            0, "invalid"
+        )
         self.assertFalse(valid)
 
     def test_large_offset(self):

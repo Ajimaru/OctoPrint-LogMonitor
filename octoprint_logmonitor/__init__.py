@@ -1,7 +1,8 @@
 """
 OctoPrint Log Monitor Plugin
 
-Provides live log streaming and searching capabilities with severity-based alerting.
+Provides live log streaming and searching capabilities
+with severity-based alerting.
 """
 
 # pylint: disable=broad-except,global-statement
@@ -65,11 +66,13 @@ class LogmonitorPlugin(
         self._alert_counts = {}
         self._alert_lock = threading.Lock()
         self._alert_history = []  # Store alert history
-        self._alert_tailers = {}  # Alert monitor tailers (independent from UI stream)
+        # Alert monitor tailers (independent from UI stream)
+        self._alert_tailers = {}
         self._active_tailers = {}  # Support multi-file streaming
         # Rate-limit search API: max 10 requests per minute per client
         self._search_rate_limiter = RateLimiter(max_calls=10, period=60.0)
-        # Line buffer: collect lines, flush as batch to reduce WebSocket pressure
+        # Line buffer: collect lines, flush as batch to reduce WebSocket
+        # pressure
         self._line_buffer = []
         self._line_buffer_lock = threading.Lock()
         self._flush_timer = None
@@ -135,7 +138,9 @@ class LogmonitorPlugin(
                     else:
                         self._logger.warning("Failed to auto-start streaming")
                 else:
-                    self._logger.warning(f"Default log file not found: {filepath}")
+                    self._logger.warning(
+                        f"Default log file not found: {filepath}"
+                    )
             except Exception as e:
                 self._logger.error(f"Error auto-starting stream: {e}")
 
@@ -154,7 +159,9 @@ class LogmonitorPlugin(
                 if tailer.is_running():
                     tailer.stop()
             except Exception as e:
-                self._logger.error(f"Error stopping tailer for {filename}: {e}")
+                self._logger.error(
+                    f"Error stopping tailer for {filename}: {e}"
+                )
 
         self._active_tailers.clear()
         self._stop_alert_monitoring()
@@ -178,13 +185,23 @@ class LogmonitorPlugin(
                                 parsed = default
                         plugin_data[key] = min(maximum, max(minimum, parsed))
 
-                    raw_interval_seconds = plugin_data.get("stream_poll_interval_s")
-                    raw_interval_ms = plugin_data.get("stream_poll_interval_ms")
+                    raw_interval_seconds = plugin_data.get(
+                        "stream_poll_interval_s"
+                    )
+                    raw_interval_ms = plugin_data.get(
+                        "stream_poll_interval_ms"
+                    )
 
-                    # Backward compatibility: convert legacy milliseconds setting.
-                    if raw_interval_seconds is None and raw_interval_ms is not None:
+                    # Backward compatibility: convert legacy milliseconds
+                    # setting.
+                    if (
+                        raw_interval_seconds is None
+                        and raw_interval_ms is not None
+                    ):
                         try:
-                            raw_interval_seconds = float(raw_interval_ms) / 1000.0
+                            raw_interval_seconds = (
+                                float(raw_interval_ms) / 1000.0
+                            )
                         except (TypeError, ValueError):
                             raw_interval_seconds = 5.0
 
@@ -207,7 +224,9 @@ class LogmonitorPlugin(
 
                     alerts_enabled = plugin_data.get("alerts_enabled")
                     if isinstance(alerts_enabled, str):
-                        plugin_data["alerts_enabled"] = alerts_enabled.lower() in {
+                        plugin_data[
+                            "alerts_enabled"
+                        ] = alerts_enabled.lower() in {
                             "1",
                             "true",
                             "yes",
@@ -268,7 +287,8 @@ class LogmonitorPlugin(
             "max_alert_history": 100,
             "alerts_monitor_mode": "selected",  # all|selected
             "alerts_monitored_logs": ["octoprint.log"],
-            # Mask sensitive data (API keys, passwords, emails) in streamed log lines
+            # Mask sensitive data (API keys, passwords, emails) in streamed log
+            # lines
             "mask_log_content": False,
             "debug_mode": False,
         }
@@ -326,7 +346,8 @@ class LogmonitorPlugin(
         return True
 
     def _get_available_log_filenames(self):
-        """Return sorted list of available .log filenames from OctoPrint log folder."""
+        """Return sorted list of available .log filenames
+        from OctoPrint log folder."""
         try:
             log_dir = self._get_logs_base_folder()
             if not os.path.exists(log_dir):
@@ -340,7 +361,9 @@ class LogmonitorPlugin(
 
             return sorted(files)
         except Exception as e:
-            self._logger.error(f"Error listing log filenames for template vars: {e}")
+            self._logger.error(
+                f"Error listing log filenames for template vars: {e}"
+            )
             return []
 
     def _get_stream_poll_interval_seconds(self) -> float:
@@ -370,7 +393,9 @@ class LogmonitorPlugin(
             log_dir = self._get_logs_base_folder()
 
             if not os.path.exists(log_dir):
-                return flask.jsonify({"files": [], "error": "Log directory not found"})
+                return flask.jsonify(
+                    {"files": [], "error": "Log directory not found"}
+                )
 
             files = []
             for filename in os.listdir(log_dir):
@@ -404,10 +429,13 @@ class LogmonitorPlugin(
             client_ip = flask.request.remote_addr or "unknown"
             if not self._search_rate_limiter.is_allowed(client_ip):
                 self._log_security_event(
-                    "rate_limit_exceeded", f"Search rate limit exceeded for {client_ip}"
+                    "rate_limit_exceeded",
+                    f"Search rate limit exceeded for {client_ip}",
                 )
                 return (
-                    flask.jsonify({"error": "Too many requests. Please slow down."}),
+                    flask.jsonify(
+                        {"error": "Too many requests. Please slow down."}
+                    ),
                     429,
                 )
 
@@ -418,9 +446,12 @@ class LogmonitorPlugin(
             query = flask.request.args.get("query", "")
             raw_levels = flask.request.args.getlist("levels")
             case_sensitive = (
-                flask.request.args.get("case_sensitive", "false").lower() == "true"
+                flask.request.args.get("case_sensitive", "false").lower()
+                == "true"
             )
-            use_regex = flask.request.args.get("use_regex", "false").lower() == "true"
+            use_regex = (
+                flask.request.args.get("use_regex", "false").lower() == "true"
+            )
 
             # Validate and clamp offset / limit
             try:
@@ -432,7 +463,9 @@ class LogmonitorPlugin(
                 )
             except (ValueError, TypeError):
                 return (
-                    flask.jsonify({"error": "offset and limit must be integers"}),
+                    flask.jsonify(
+                        {"error": "offset and limit must be integers"}
+                    ),
                     400,
                 )
 
@@ -446,7 +479,10 @@ class LogmonitorPlugin(
                 return (
                     flask.jsonify(
                         {
-                            "error": f"Invalid severity level(s): {', '.join(invalid_levels)}"
+                            "error": (
+                                "Invalid severity level(s): "
+                                f"{', '.join(invalid_levels)}"
+                            )
                         }
                     ),
                     400,
@@ -455,14 +491,16 @@ class LogmonitorPlugin(
             # --- Filename / path validation ---
             if not validate_filename(filename):
                 self._log_security_event(
-                    "invalid_filename", f"Rejected filename in search: {filename!r}"
+                    "invalid_filename",
+                    f"Rejected filename in search: {filename!r}",
                 )
                 return flask.jsonify({"error": "Invalid filename"}), 400
 
             log_dir = self._get_logs_base_folder()
             if not is_safe_path(log_dir, filename):
                 self._log_security_event(
-                    "path_traversal", f"Path traversal attempt in search: {filename!r}"
+                    "path_traversal",
+                    f"Path traversal attempt in search: {filename!r}",
                 )
                 return flask.jsonify({"error": "Access denied"}), 403
 
@@ -473,8 +511,15 @@ class LogmonitorPlugin(
 
             # --- File-size guard ---
             if not check_file_size(filepath):
-                self._logger.warning(f"Search rejected: file too large: {filename}")
-                return flask.jsonify({"error": "Log file is too large to process"}), 413
+                self._logger.warning(
+                    f"Search rejected: file too large: {filename}"
+                )
+                return (
+                    flask.jsonify(
+                        {"error": "Log file is too large to process"}
+                    ),
+                    413,
+                )
 
             # --- Perform search ---
             if not self._searcher:
@@ -495,7 +540,9 @@ class LogmonitorPlugin(
         except Exception as e:
             self._logger.error(f"Error searching logs: {e}")
             return (
-                flask.jsonify({"error": "Search failed. See server log for details."}),
+                flask.jsonify(
+                    {"error": "Search failed. See server log for details."}
+                ),
                 500,
             )
 
@@ -505,7 +552,9 @@ class LogmonitorPlugin(
         """Start or switch log streaming."""
         try:
             data = flask.request.get_json(silent=True) or {}
-            filename = data.get("file", self._settings.get(["default_log_file"]))
+            filename = data.get(
+                "file", self._settings.get(["default_log_file"])
+            )
 
             # --- Filename / path validation ---
             if not validate_filename(filename):
@@ -530,8 +579,15 @@ class LogmonitorPlugin(
 
             # --- File-size guard ---
             if not check_file_size(filepath):
-                self._logger.warning(f"Stream rejected: file too large: {filename}")
-                return flask.jsonify({"error": "Log file is too large to stream"}), 413
+                self._logger.warning(
+                    f"Stream rejected: file too large: {filename}"
+                )
+                return (
+                    flask.jsonify(
+                        {"error": "Log file is too large to stream"}
+                    ),
+                    413,
+                )
 
             # Stop existing tailer if running
             if self._tailer and self._tailer.is_running():
@@ -557,7 +613,9 @@ class LogmonitorPlugin(
 
                 # Send initial lines
                 initial_lines_count = 100  # Default
-                initial_lines = self._tailer.get_last_n_lines(initial_lines_count)
+                initial_lines = self._tailer.get_last_n_lines(
+                    initial_lines_count
+                )
 
                 return flask.jsonify(
                     {
@@ -567,7 +625,10 @@ class LogmonitorPlugin(
                     }
                 )
             else:
-                return flask.jsonify({"error": "Failed to start streaming"}), 500
+                return (
+                    flask.jsonify({"error": "Failed to start streaming"}),
+                    500,
+                )
 
         except Exception as e:
             self._logger.error(f"Error starting stream: {e}")
@@ -594,7 +655,9 @@ class LogmonitorPlugin(
             self._logger.error(f"Error stopping stream: {e}")
             return flask.jsonify({"error": "Failed to stop stream"}), 500
 
-    @octoprint.plugin.BlueprintPlugin.route("/stream/multi/start", methods=["POST"])
+    @octoprint.plugin.BlueprintPlugin.route(
+        "/stream/multi/start", methods=["POST"]
+    )
     @no_firstrun_access
     def start_multi_stream(self):
         """Start streaming multiple log files simultaneously (NEW)."""
@@ -608,7 +671,9 @@ class LogmonitorPlugin(
             # Hard cap: prevent absurdly large file lists
             if len(files) > 20:
                 return (
-                    flask.jsonify({"error": "Too many files specified (max 20)"}),
+                    flask.jsonify(
+                        {"error": "Too many files specified (max 20)"}
+                    ),
                     400,
                 )
 
@@ -629,21 +694,28 @@ class LogmonitorPlugin(
                         "invalid_filename",
                         f"Rejected filename in multi-stream: {filename!r}",
                     )
-                    failed_files.append({"file": filename, "error": "Invalid filename"})
+                    failed_files.append(
+                        {"file": filename, "error": "Invalid filename"}
+                    )
                     continue
 
                 if not is_safe_path(log_dir, filename):
                     self._log_security_event(
                         "path_traversal",
-                        f"Path traversal attempt in multi-stream: {filename!r}",
+                        f"Path traversal attempt in multi-stream:"
+                        f" {filename!r}",
                     )
-                    failed_files.append({"file": filename, "error": "Access denied"})
+                    failed_files.append(
+                        {"file": filename, "error": "Access denied"}
+                    )
                     continue
 
                 filepath = os.path.join(log_dir, filename)
 
                 if not os.path.isfile(filepath):
-                    failed_files.append({"file": filename, "error": "File not found"})
+                    failed_files.append(
+                        {"file": filename, "error": "File not found"}
+                    )
                     continue
 
                 # File-size guard
@@ -652,7 +724,10 @@ class LogmonitorPlugin(
                         f"Multi-stream rejected: file too large: {filename}"
                     )
                     failed_files.append(
-                        {"file": filename, "error": "File is too large to stream"}
+                        {
+                            "file": filename,
+                            "error": "File is too large to stream",
+                        }
                     )
                     continue
 
@@ -685,7 +760,9 @@ class LogmonitorPlugin(
                     self._active_tailers[filename] = tailer
                     started_files.append(filename)
                 else:
-                    failed_files.append({"file": filename, "error": "Failed to start"})
+                    failed_files.append(
+                        {"file": filename, "error": "Failed to start"}
+                    )
 
             return flask.jsonify(
                 {
@@ -698,9 +775,14 @@ class LogmonitorPlugin(
 
         except Exception as e:
             self._logger.error(f"Error starting multi-stream: {e}")
-            return flask.jsonify({"error": "Failed to start multi-stream"}), 500
+            return (
+                flask.jsonify({"error": "Failed to start multi-stream"}),
+                500,
+            )
 
-    @octoprint.plugin.BlueprintPlugin.route("/stream/multi/stop", methods=["POST"])
+    @octoprint.plugin.BlueprintPlugin.route(
+        "/stream/multi/stop", methods=["POST"]
+    )
     @no_firstrun_access
     def stop_multi_stream(self):
         """Stop streaming specific log files (NEW)."""
@@ -728,7 +810,9 @@ class LogmonitorPlugin(
                 stopped_files = []
                 for filename in files:
                     # Only allow plain string filenames; ignore others silently
-                    if not isinstance(filename, str) or not validate_filename(filename):
+                    if not isinstance(filename, str) or not validate_filename(
+                        filename
+                    ):
                         continue
                     if filename in self._active_tailers:
                         try:
@@ -736,7 +820,9 @@ class LogmonitorPlugin(
                             del self._active_tailers[filename]
                             stopped_files.append(filename)
                         except Exception as e:
-                            self._logger.error(f"Error stopping {filename}: {e}")
+                            self._logger.error(
+                                f"Error stopping {filename}: {e}"
+                            )
 
                 return flask.jsonify(
                     {
@@ -770,7 +856,9 @@ class LogmonitorPlugin(
             self._logger.error(f"Error resetting alerts: {e}")
             return flask.jsonify({"error": "Failed to reset alerts"}), 500
 
-    @octoprint.plugin.BlueprintPlugin.route("/debug/frontend", methods=["POST"])
+    @octoprint.plugin.BlueprintPlugin.route(
+        "/debug/frontend", methods=["POST"]
+    )
     @no_firstrun_access
     def frontend_debug_log(self):
         """Write frontend debug events into OctoPrint server logs."""
@@ -791,7 +879,9 @@ class LogmonitorPlugin(
             payload_text = ""
             if payload is not None:
                 try:
-                    payload_text = json.dumps(payload, ensure_ascii=True, default=str)
+                    payload_text = json.dumps(
+                        payload, ensure_ascii=True, default=str
+                    )
                 except TypeError:
                     payload_text = str(payload)
                 payload_text = payload_text[:2000]
@@ -799,10 +889,13 @@ class LogmonitorPlugin(
             client_ip = flask.request.remote_addr or "unknown"
             if payload_text:
                 self._logger.debug(
-                    f"[Frontend Debug] {message} | ip={client_ip} | payload={payload_text}"
+                    f"[Frontend Debug] {message}"
+                    f" | ip={client_ip} | payload={payload_text}"
                 )
             else:
-                self._logger.debug(f"[Frontend Debug] {message} | ip={client_ip}")
+                self._logger.debug(
+                    f"[Frontend Debug] {message} | ip={client_ip}"
+                )
 
             return flask.jsonify({"status": "logged"})
 
@@ -810,7 +903,9 @@ class LogmonitorPlugin(
             self._logger.error(f"Error writing frontend debug log: {e}")
             return flask.jsonify({"error": "Failed to write debug log"}), 500
 
-    @octoprint.plugin.BlueprintPlugin.route("/debug/test-entries", methods=["POST"])
+    @octoprint.plugin.BlueprintPlugin.route(
+        "/debug/test-entries", methods=["POST"]
+    )
     @no_firstrun_access
     def write_debug_test_entries(self):
         """Write one test entry per severity category into OctoPrint logs."""
@@ -858,7 +953,10 @@ class LogmonitorPlugin(
 
         except Exception as e:
             self._logger.error(f"Error writing debug test entries: {e}")
-            return flask.jsonify({"error": "Failed to write debug test entries"}), 500
+            return (
+                flask.jsonify({"error": "Failed to write debug test entries"}),
+                500,
+            )
 
     @octoprint.plugin.BlueprintPlugin.route("/export", methods=["POST"])
     @no_firstrun_access
@@ -870,11 +968,17 @@ class LogmonitorPlugin(
             format_type = data.get("format", "csv").lower()
 
             # Guard against excessively large export payloads
-            if not isinstance(results, list) or len(results) > MAX_SEARCH_LIMIT:
+            if (
+                not isinstance(results, list)
+                or len(results) > MAX_SEARCH_LIMIT
+            ):
                 return (
                     flask.jsonify(
                         {
-                            "error": f"results must be a list of at most {MAX_SEARCH_LIMIT} entries"
+                            "error": (
+                                "results must be a list of at most "
+                                f"{MAX_SEARCH_LIMIT} entries"
+                            )
                         }
                     ),
                     400,
@@ -898,7 +1002,9 @@ class LogmonitorPlugin(
             return flask.Response(
                 content,
                 mimetype=mimetype,
-                headers={"Content-Disposition": f"attachment;filename={filename}"},
+                headers={
+                    "Content-Disposition": (f"attachment;filename={filename}")
+                },
             )
 
         except Exception as e:
@@ -915,7 +1021,8 @@ class LogmonitorPlugin(
             # --- Filename / path validation ---
             if not validate_filename(filename):
                 self._log_security_event(
-                    "invalid_filename", f"Rejected filename in download: {filename!r}"
+                    "invalid_filename",
+                    f"Rejected filename in download: {filename!r}",
                 )
                 return flask.jsonify({"error": "Invalid filename"}), 400
 
@@ -932,7 +1039,9 @@ class LogmonitorPlugin(
             if not os.path.isfile(filepath):
                 return flask.jsonify({"error": "File not found"}), 404
 
-            return flask.send_file(filepath, as_attachment=True, download_name=filename)
+            return flask.send_file(
+                filepath, as_attachment=True, download_name=filename
+            )
 
         except Exception as e:
             self._logger.error(f"Error downloading file: {e}")
@@ -946,7 +1055,10 @@ class LogmonitorPlugin(
             try:
                 limit = int(flask.request.args.get("limit", 100))
             except (ValueError, TypeError):
-                return flask.jsonify({"error": "limit must be an integer"}), 400
+                return (
+                    flask.jsonify({"error": "limit must be an integer"}),
+                    400,
+                )
 
             # Clamp to safe maximum
             limit = min(max(1, limit), MAX_HISTORY_LIMIT)
@@ -959,9 +1071,14 @@ class LogmonitorPlugin(
 
         except Exception as e:
             self._logger.error(f"Error getting alert history: {e}")
-            return flask.jsonify({"error": "Failed to retrieve alert history"}), 500
+            return (
+                flask.jsonify({"error": "Failed to retrieve alert history"}),
+                500,
+            )
 
-    @octoprint.plugin.BlueprintPlugin.route("/alert-history/clear", methods=["POST"])
+    @octoprint.plugin.BlueprintPlugin.route(
+        "/alert-history/clear", methods=["POST"]
+    )
     @no_firstrun_access
     def clear_alert_history(self):
         """Clear alert history."""
@@ -973,9 +1090,14 @@ class LogmonitorPlugin(
 
         except Exception as e:
             self._logger.error(f"Error clearing alert history: {e}")
-            return flask.jsonify({"error": "Failed to clear alert history"}), 500
+            return (
+                flask.jsonify({"error": "Failed to clear alert history"}),
+                500,
+            )
 
-    @octoprint.plugin.BlueprintPlugin.route("/alerts/monitor/status", methods=["GET"])
+    @octoprint.plugin.BlueprintPlugin.route(
+        "/alerts/monitor/status", methods=["GET"]
+    )
     @no_firstrun_access
     def get_alert_monitor_status(self):
         """Return current alert-monitor configuration and active files."""
@@ -993,7 +1115,9 @@ class LogmonitorPlugin(
         except Exception as e:
             self._logger.error(f"Error getting alert monitor status: {e}")
             return (
-                flask.jsonify({"error": "Failed to retrieve alert monitor status"}),
+                flask.jsonify(
+                    {"error": "Failed to retrieve alert monitor status"}
+                ),
                 500,
             )
 
@@ -1009,7 +1133,10 @@ class LogmonitorPlugin(
 
         except Exception as e:
             self._logger.error(f"Error getting active streams: {e}")
-            return flask.jsonify({"error": "Failed to retrieve active streams"}), 500
+            return (
+                flask.jsonify({"error": "Failed to retrieve active streams"}),
+                500,
+            )
 
     def is_blueprint_csrf_protected(self):  # type: ignore[override]
         """Explicitly require CSRF protection for blueprint routes."""
@@ -1026,7 +1153,8 @@ class LogmonitorPlugin(
         server log only — they are never returned to API callers.
 
         Args:
-            event_type: Short machine-readable label (e.g. ``"path_traversal"``)
+            event_type: Short machine-readable label
+                (e.g. ``"path_traversal"``)
             detail: Human-readable description for the log entry.
         """
         self._logger.warning(f"[SECURITY] {event_type}: {detail}")
@@ -1043,7 +1171,9 @@ class LogmonitorPlugin(
                 if isinstance(candidate, str) and candidate:
                     candidates.append(candidate)
             except Exception as e:
-                self._logger.debug("global_get_basefolder('logs') lookup failed: %s", e)
+                self._logger.debug(
+                    "global_get_basefolder('logs') lookup failed: %s", e
+                )
 
         base_folder_getter = getattr(self._settings, "getBaseFolder", None)
         if callable(base_folder_getter):
@@ -1052,7 +1182,8 @@ class LogmonitorPlugin(
                 if isinstance(candidate, str) and candidate:
                     candidates.append(candidate)
             except TypeError:
-                # OctoPrint 2.0 variants can expose getBaseFolder() without args.
+                # OctoPrint 2.0 variants can expose
+                # getBaseFolder() without args.
                 # That commonly resolves to the plugin data folder, not the
                 # global OctoPrint logs folder, so do not use it as a log-path
                 # candidate unless every global lookup path fails.
@@ -1061,9 +1192,13 @@ class LogmonitorPlugin(
                     if isinstance(candidate, str) and candidate:
                         noarg_base_folder = candidate
                 except Exception as e:
-                    self._logger.debug("getBaseFolder() fallback failed: %s", e)
+                    self._logger.debug(
+                        "getBaseFolder() fallback failed: %s", e
+                    )
             except Exception as e:
-                self._logger.debug("getBaseFolder('logs') lookup failed: %s", e)
+                self._logger.debug(
+                    "getBaseFolder('logs') lookup failed: %s", e
+                )
 
         try:
             from octoprint.settings import settings as octoprint_settings
@@ -1074,7 +1209,9 @@ class LogmonitorPlugin(
                 if isinstance(candidate, str) and candidate:
                     candidates.append(candidate)
         except Exception as e:
-            self._logger.debug("octoprint.settings fallback lookup failed: %s", e)
+            self._logger.debug(
+                "octoprint.settings fallback lookup failed: %s", e
+            )
 
         for candidate in candidates:
             if os.path.isdir(candidate):
@@ -1086,7 +1223,8 @@ class LogmonitorPlugin(
 
         if noarg_base_folder:
             self._logger.debug(
-                "Skipping no-arg getBaseFolder() result for log resolution: %s",
+                "Skipping no-arg getBaseFolder() result"
+                " for log resolution: %s",
                 noarg_base_folder,
             )
 
@@ -1098,12 +1236,17 @@ class LogmonitorPlugin(
             log_dir = self._get_logs_base_folder()
             filepath = os.path.join(log_dir, "octoprint.log")
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
-            with open(filepath, "a", encoding="utf-8", errors="replace") as handle:
+            with open(
+                filepath, "a", encoding="utf-8", errors="replace"
+            ) as handle:
                 handle.write(
-                    f"{timestamp} - {self._logger.name} - UNKNOWN - {message}\n"
+                    f"{timestamp} - {self._logger.name}"
+                    f" - UNKNOWN - {message}\n"
                 )
         except OSError as e:
-            self._logger.error(f"Failed to write UNKNOWN debug test log entry: {e}")
+            self._logger.error(
+                f"Failed to write UNKNOWN debug test log entry: {e}"
+            )
 
     def _start_flush_timer(self):
         """Start the periodic line-buffer flush timer."""
@@ -1117,7 +1260,11 @@ class LogmonitorPlugin(
         with self._line_buffer_lock:
             if not self._line_buffer:
                 # Reschedule even if empty, as long as streaming is active
-                if self._tailer and self._tailer.is_running() or self._active_tailers:
+                if (
+                    self._tailer
+                    and self._tailer.is_running()
+                    or self._active_tailers
+                ):
                     self._start_flush_timer()
                 return
             batch = self._line_buffer[:]
@@ -1138,7 +1285,9 @@ class LogmonitorPlugin(
     def _get_alert_monitor_files(self):
         """Resolve list of log files that should drive severity alerts."""
         log_dir = self._get_logs_base_folder()
-        mode = (self._settings.get(["alerts_monitor_mode"]) or "selected").lower()
+        mode = (
+            self._settings.get(["alerts_monitor_mode"]) or "selected"
+        ).lower()
 
         if mode == "all":
             configured = self._get_available_log_filenames()
@@ -1174,7 +1323,8 @@ class LogmonitorPlugin(
         return unique_files
 
     def _refresh_runtime_alert_settings(self):
-        """Cache alert-related settings used in hot paths to avoid per-line lookups."""
+        """Cache alert-related settings used in hot paths
+        to avoid per-line lookups."""
         severity_triggers = self._settings.get(["severity_triggers"])
         if not isinstance(severity_triggers, list):
             severity_triggers = ["WARNING", "ERROR", "CRITICAL"]
@@ -1204,7 +1354,9 @@ class LogmonitorPlugin(
                 self._settings.get(["alert_history_enabled"])
             ),
             "max_alert_history": max_alert_history,
-            "enable_notifications": bool(self._settings.get(["enable_notifications"])),
+            "enable_notifications": bool(
+                self._settings.get(["enable_notifications"])
+            ),
         }
 
         with self._runtime_settings_lock:
@@ -1222,7 +1374,8 @@ class LogmonitorPlugin(
 
         log_method = self._logger.debug
         if not self._logger.isEnabledFor(logging.DEBUG):
-            # When OctoPrint runs without global --debug, DEBUG logs are filtered.
+            # When OctoPrint runs without global --debug,
+            # DEBUG logs are filtered.
             # Fall back to INFO so users still see the debug settings snapshot.
             log_method = self._logger.info
 
@@ -1286,7 +1439,9 @@ class LogmonitorPlugin(
                 if tailer.is_running():
                     tailer.stop()
             except Exception as e:
-                self._logger.error(f"Error stopping alert monitor for {filename}: {e}")
+                self._logger.error(
+                    f"Error stopping alert monitor for {filename}: {e}"
+                )
         self._alert_tailers.clear()
 
     def _restart_alert_monitoring(self):
@@ -1294,12 +1449,16 @@ class LogmonitorPlugin(
         self._stop_alert_monitoring()
 
         if not self._settings.get(["alerts_enabled"]):
-            self._logger.info("Alert monitor disabled: alerts are globally disabled")
+            self._logger.info(
+                "Alert monitor disabled: alerts are globally disabled"
+            )
             return
 
         files = self._get_alert_monitor_files()
         if not files:
-            self._logger.info("Alert monitor disabled: no valid log files configured")
+            self._logger.info(
+                "Alert monitor disabled: no valid log files configured"
+            )
             return
 
         log_dir = self._get_logs_base_folder()
@@ -1324,7 +1483,9 @@ class LogmonitorPlugin(
             if tailer.start():
                 self._alert_tailers[filename] = tailer
             else:
-                self._logger.warning(f"Failed to start alert monitor for {filename}")
+                self._logger.warning(
+                    f"Failed to start alert monitor for {filename}"
+                )
 
         self._logger.info(
             f"Alert monitor active for {len(self._alert_tailers)} log file(s)"
@@ -1345,7 +1506,9 @@ class LogmonitorPlugin(
                 return
 
             with self._alert_lock:
-                self._alert_counts[level] = self._alert_counts.get(level, 0) + 1
+                self._alert_counts[level] = (
+                    self._alert_counts.get(level, 0) + 1
+                )
 
                 if runtime_settings["alert_history_enabled"]:
                     alert_entry = {
@@ -1359,7 +1522,9 @@ class LogmonitorPlugin(
 
                     max_history = runtime_settings["max_alert_history"]
                     if len(self._alert_history) > max_history:
-                        self._alert_history = self._alert_history[-max_history:]
+                        self._alert_history = self._alert_history[
+                            -max_history:
+                        ]
 
             self._plugin_manager.send_plugin_message(
                 self._identifier,
@@ -1368,7 +1533,9 @@ class LogmonitorPlugin(
                     "level": level,
                     "count": self._alert_counts[level],
                     "message": parsed_line.get("message", ""),
-                    "notification_enabled": runtime_settings["enable_notifications"],
+                    "notification_enabled": runtime_settings[
+                        "enable_notifications"
+                    ],
                     "source_file": parsed_line.get("_source_file", ""),
                 },
             )
@@ -1377,7 +1544,8 @@ class LogmonitorPlugin(
             self._logger.error(f"Error recording alert line: {e}")
 
     def _handle_alert_line(self, parsed_line):
-        """Handle a log line for alert generation only (independent from stream)."""
+        """Handle a log line for alert generation only
+        (independent from stream)."""
         message = parsed_line.get("message", "")
         if isinstance(message, str) and "[LogMonitor Debug Test]" in message:
             return
@@ -1396,7 +1564,9 @@ class LogmonitorPlugin(
             # Optionally mask sensitive data before sending to frontend
             if self._settings.get(["mask_log_content"]):
                 masked = dict(parsed_line)
-                masked["message"] = mask_sensitive_data(masked.get("message", ""))
+                masked["message"] = mask_sensitive_data(
+                    masked.get("message", "")
+                )
                 masked["raw"] = mask_sensitive_data(masked.get("raw", ""))
                 send_line = masked
             else:
@@ -1450,7 +1620,7 @@ __plugin_hooks__: dict = {}
 # ~~ Plugin loading
 def __plugin_load__():
     """Load the plugin."""
-    global __plugin_implementation__  # type: ignore[reportUnnecessaryGlobalStatement]
+    global __plugin_implementation__  # type: ignore
     __plugin_implementation__ = LogmonitorPlugin()
 
     global __plugin_hooks__  # type: ignore[reportUnnecessaryGlobalStatement]
