@@ -84,8 +84,11 @@ def is_safe_path(base_dir: str, filename: str) -> bool:
     try:
         abs_base = os.path.realpath(os.path.abspath(base_dir))
         # Join base with the user-supplied name and resolve
-        candidate = os.path.realpath(os.path.abspath(os.path.join(abs_base, filename)))
-        # Candidate must start with base followed by a separator, OR equal base itself
+        candidate = os.path.realpath(
+            os.path.abspath(os.path.join(abs_base, filename))
+        )
+        # Candidate must start with base followed by a separator, OR equal base
+        # itself
         return candidate == abs_base or candidate.startswith(abs_base + os.sep)
     except (OSError, ValueError, TypeError):
         return False
@@ -122,7 +125,10 @@ def validate_filename(filename: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def check_file_size(filepath: str, max_bytes: int = MAX_FILE_SIZE_BYTES) -> bool:
+def check_file_size(
+    filepath: str,
+    max_bytes: int = MAX_FILE_SIZE_BYTES,
+) -> bool:
     """
     Return ``True`` if *filepath* exists and is within *max_bytes*.
 
@@ -131,7 +137,8 @@ def check_file_size(filepath: str, max_bytes: int = MAX_FILE_SIZE_BYTES) -> bool
 
     Args:
         filepath: Absolute path to the file.
-        max_bytes: Size limit in bytes.  Defaults to :data:`MAX_FILE_SIZE_BYTES`.
+        max_bytes: Size limit in bytes.  Defaults to
+            :data:`MAX_FILE_SIZE_BYTES`.
 
     Returns:
         ``True`` if the file is within the size limit.
@@ -190,8 +197,12 @@ def validate_severity_levels(
     """
     if not levels:
         return [], []
-    valid = [lvl.upper() for lvl in levels if lvl.upper() in VALID_SEVERITY_LEVELS]
-    invalid = [lvl for lvl in levels if lvl.upper() not in VALID_SEVERITY_LEVELS]
+    valid = [
+        lvl.upper() for lvl in levels if lvl.upper() in VALID_SEVERITY_LEVELS
+    ]
+    invalid = [
+        lvl for lvl in levels if lvl.upper() not in VALID_SEVERITY_LEVELS
+    ]
     return valid, invalid
 
 

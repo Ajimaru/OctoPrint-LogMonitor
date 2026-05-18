@@ -5,7 +5,8 @@ These tests run without a real OctoPrint environment by stubbing the
 required OctoPrint plugin mixins.
 """
 
-# pylint: disable=protected-access,missing-function-docstring,too-many-public-methods
+# pylint: disable=protected-access,missing-function-docstring
+# pylint: disable=too-many-public-methods
 
 import sys
 import tempfile
@@ -30,26 +31,36 @@ def _install_fake_octoprint():
 
     # pylint: disable=too-few-public-methods
     class DummyBlueprintPlugin:
-        """Minimal BlueprintPlugin stand-in providing a no-op route decorator."""
+        """Minimal BlueprintPlugin stand-in providing
+        a no-op route decorator."""
 
         @staticmethod
-        def route(_rule, methods=None, **_kwargs):  # pylint: disable=unused-argument
-            """No-op route decorator that returns the view function unchanged."""
+        def route(
+            _rule, methods=None, **_kwargs
+        ):  # pylint: disable=unused-argument
+            """No-op route decorator that returns
+            the view function unchanged."""
 
             def decorator(func):
                 return func
 
             return decorator
 
-    fake_plugin.StartupPlugin = type("StartupPlugin", (object,), {})  # type: ignore[attr-defined]
-    fake_plugin.TemplatePlugin = type("TemplatePlugin", (object,), {})  # type: ignore[attr-defined]
+    fake_plugin.StartupPlugin = type(  # type: ignore[attr-defined]
+        "StartupPlugin", (object,), {}
+    )
+    fake_plugin.TemplatePlugin = type(  # type: ignore[attr-defined]
+        "TemplatePlugin", (object,), {}
+    )
     fake_plugin.SettingsPlugin = type(  # type: ignore[attr-defined]
         "SettingsPlugin",
         (object,),
         {"on_settings_save": lambda self, data: data},
     )
-    fake_plugin.AssetPlugin = type("AssetPlugin", (object,), {})  # type: ignore[attr-defined]
-    fake_plugin.BlueprintPlugin = DummyBlueprintPlugin  # type: ignore[attr-defined]
+    fake_plugin.AssetPlugin = type(  # type: ignore[attr-defined]
+        "AssetPlugin", (object,), {}
+    )
+    setattr(fake_plugin, "BlueprintPlugin", DummyBlueprintPlugin)
 
     octoprint_module.plugin = fake_plugin  # type: ignore[attr-defined]
     sys.modules["octoprint"] = octoprint_module
@@ -75,7 +86,8 @@ class FakeSettings:
         return self._values.get(keys)
 
     def getBaseFolder(self, _name):  # pylint: disable=invalid-name
-        """Return the configured base folder (OctoPrint-style camelCase API)."""
+        """Return the configured base folder
+        (OctoPrint-style camelCase API)."""
         return self._base_dir
 
     def get_all_data(self):
@@ -92,6 +104,34 @@ class FakeSettings:
             # Setting a specific key
             key = keys[0] if isinstance(keys, list) else keys
             self._values[key] = value
+
+
+class FakeSettingsNoArgBaseFolder(FakeSettings):
+    """Settings stub emulating getBaseFolder() without arguments."""
+
+    # pylint: disable-next=invalid-name
+    def getBaseFolder(self):  # type: ignore[override]
+        """Return plugin-scoped base folder (not global logs folder)."""
+        return "/tmp/logmonitor-plugin-data"
+
+    def global_get_basefolder(self, name):
+        """Return global OctoPrint base folder for the requested category."""
+        if name == "logs":
+            return self._base_dir
+        raise KeyError(name)
+
+
+class FakeSettingsNoArgOnly(FakeSettings):
+    """Settings stub exposing only a no-arg getBaseFolder()."""
+
+    def __init__(self, base_dir, values, plugin_data_dir):
+        super().__init__(base_dir, values)
+        self._plugin_data_dir = plugin_data_dir
+
+    # pylint: disable-next=invalid-name
+    def getBaseFolder(self):  # type: ignore[override]
+        """Return plugin-scoped base folder (not global logs folder)."""
+        return self._plugin_data_dir
 
 
 class _FakeOctoPrintGlobalSettings:
@@ -113,7 +153,8 @@ class _FakeUserManager:
 
 
 class OctoPrintAccessPatchedTestCase(unittest.TestCase):
-    """Base test case that patches OctoPrint globals used by route decorators."""
+    """Base test case that patches OctoPrint globals
+    used by route decorators."""
 
     def setUp(self):
         super().setUp()
@@ -151,7 +192,8 @@ class TestPluginCore(OctoPrintAccessPatchedTestCase):
         self.app = flask.Flask(__name__)
         self.temp_dir = tempfile.mkdtemp()
         # Annotated as Any so MagicMock assignments to typed attributes
-        # (_logger, _plugin_manager, _settings, etc.) don't trip the type checker.
+        # (_logger, _plugin_manager, _settings, etc.)
+        # don't trip the type checker.
         self.plugin: Any = plugin_module.LogmonitorPlugin()
         self.plugin._logger = MagicMock()
         self.plugin._plugin_manager = MagicMock()
@@ -191,7 +233,9 @@ class TestPluginCore(OctoPrintAccessPatchedTestCase):
         self.assertIn("css", assets)
         configs = self.plugin.get_template_configs()
         config_types = {cfg["type"] for cfg in configs}
-        self.assertTrue({"tab", "navbar", "sidebar", "settings"}.issubset(config_types))
+        self.assertTrue(
+            {"tab", "navbar", "sidebar", "settings"}.issubset(config_types)
+        )
 
     def test_security_flags_are_explicitly_enabled(self):
         self.assertTrue(self.plugin.is_template_autoescaped())
@@ -207,10 +251,14 @@ class TestPluginCore(OctoPrintAccessPatchedTestCase):
         )
         self.plugin._settings = FakeSettings(self.temp_dir, values)
 
-        configs = {cfg["type"]: cfg for cfg in self.plugin.get_template_configs()}
+        configs = {
+            cfg["type"]: cfg for cfg in self.plugin.get_template_configs()
+        }
 
         self.assertEqual(configs["navbar"]["styles"], ["display: none"])
-        self.assertEqual(configs["sidebar"]["styles_wrapper"], ["display: none"])
+        self.assertEqual(
+            configs["sidebar"]["styles_wrapper"], ["display: none"]
+        )
 
     def test_get_log_files_filters_and_sorts(self):
         (Path(self.temp_dir) / "b.log").write_text("b")
@@ -223,6 +271,36 @@ class TestPluginCore(OctoPrintAccessPatchedTestCase):
         payload = self._resp(response).get_json()
         filenames = [entry["name"] for entry in payload["files"]]
         self.assertEqual(filenames, ["a.log", "b.log"])
+
+    def test_get_log_files_supports_noarg_basefolder_with_global_fallback(
+        self,
+    ):
+        (Path(self.temp_dir) / "octoprint.log").write_text("entry")
+
+        values = dict(self.plugin.get_settings_defaults())
+        self.plugin._settings = FakeSettingsNoArgBaseFolder(
+            self.temp_dir, values
+        )
+
+        with self.app.test_request_context("/files", method="GET"):
+            response = self.plugin.get_log_files()
+
+        payload = self._resp(response).get_json()
+        filenames = [entry["name"] for entry in payload["files"]]
+        self.assertEqual(filenames, ["octoprint.log"])
+
+    def test_get_logs_base_folder_rejects_noarg_plugin_data_fallback(self):
+        plugin_data_dir = Path(self.temp_dir) / "plugin-data"
+
+        values = dict(self.plugin.get_settings_defaults())
+        self.plugin._settings = FakeSettingsNoArgOnly(
+            self.temp_dir,
+            values,
+            str(plugin_data_dir),
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "global logs folder"):
+            self.plugin._get_logs_base_folder()
 
     def test_handle_alert_line_triggers_alert(self):
         values = dict(self.plugin.get_settings_defaults())
@@ -298,7 +376,9 @@ class TestPluginCore(OctoPrintAccessPatchedTestCase):
         self.assertEqual(self._status(response), 429)
 
     def test_search_logs_invalid_offset_limit(self):
-        with self.app.test_request_context("/search?offset=bad&limit=5", method="GET"):
+        with self.app.test_request_context(
+            "/search?offset=bad&limit=5", method="GET"
+        ):
             response = self.plugin.search_logs()
 
         self.assertEqual(self._status(response), 400)
@@ -320,19 +400,25 @@ class TestPluginCore(OctoPrintAccessPatchedTestCase):
         self.assertEqual(self._status(response), 400)
 
     def test_search_logs_invalid_severity(self):
-        with self.app.test_request_context("/search?levels=NOPE", method="GET"):
+        with self.app.test_request_context(
+            "/search?levels=NOPE", method="GET"
+        ):
             response = self.plugin.search_logs()
 
         self.assertEqual(self._status(response), 400)
 
     def test_search_logs_rejects_invalid_filename(self):
-        with self.app.test_request_context("/search?file=../bad.log", method="GET"):
+        with self.app.test_request_context(
+            "/search?file=../bad.log", method="GET"
+        ):
             response = self.plugin.search_logs()
 
         self.assertEqual(self._status(response), 400)
 
     def test_search_logs_missing_file(self):
-        with self.app.test_request_context("/search?file=missing.log", method="GET"):
+        with self.app.test_request_context(
+            "/search?file=missing.log", method="GET"
+        ):
             response = self.plugin.search_logs()
 
         self.assertEqual(self._status(response), 404)
@@ -343,7 +429,9 @@ class TestPluginCore(OctoPrintAccessPatchedTestCase):
 
         with (
             patch("octoprint_logmonitor.check_file_size", return_value=False),
-            self.app.test_request_context("/search?file=octoprint.log", method="GET"),
+            self.app.test_request_context(
+                "/search?file=octoprint.log", method="GET"
+            ),
         ):
             response = self.plugin.search_logs()
 
@@ -360,7 +448,9 @@ class TestPluginCore(OctoPrintAccessPatchedTestCase):
             "limit": 50,
         }
 
-        with self.app.test_request_context("/search?file=octoprint.log", method="GET"):
+        with self.app.test_request_context(
+            "/search?file=octoprint.log", method="GET"
+        ):
             response = self.plugin.search_logs()
 
         payload = self._resp(response).get_json()
@@ -375,16 +465,30 @@ class TestPluginCore(OctoPrintAccessPatchedTestCase):
 
     def test_alert_history_endpoints(self):
         self.plugin._alert_history = [
-            {"timestamp": "t1", "level": "ERROR", "logger": "a", "message": "m1"},
-            {"timestamp": "t2", "level": "ERROR", "logger": "b", "message": "m2"},
+            {
+                "timestamp": "t1",
+                "level": "ERROR",
+                "logger": "a",
+                "message": "m1",
+            },
+            {
+                "timestamp": "t2",
+                "level": "ERROR",
+                "logger": "b",
+                "message": "m2",
+            },
         ]
-        with self.app.test_request_context("/alert-history?limit=1", method="GET"):
+        with self.app.test_request_context(
+            "/alert-history?limit=1", method="GET"
+        ):
             response = self.plugin.get_alert_history()
         payload = self._resp(response).get_json()
         self.assertEqual(payload["total"], 2)
         self.assertEqual(len(payload["history"]), 1)
 
-        with self.app.test_request_context("/alert-history/clear", method="POST"):
+        with self.app.test_request_context(
+            "/alert-history/clear", method="POST"
+        ):
             response = self.plugin.clear_alert_history()
         self.assertEqual(self._resp(response).get_json()["status"], "cleared")
         self.assertEqual(self.plugin._alert_history, [])
@@ -433,14 +537,18 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
 
     def test_get_template_vars_uses_available_filenames(self):
         with patch.object(
-            self.plugin, "_get_available_log_filenames", return_value=["a.log", "b.log"]
+            self.plugin,
+            "_get_available_log_filenames",
+            return_value=["a.log", "b.log"],
         ):
             vars_payload = self.plugin.get_template_vars()
 
         self.assertEqual(vars_payload["log_files"], ["a.log", "b.log"])
 
     def test_get_available_log_filenames_handles_list_error(self):
-        with patch("octoprint_logmonitor.os.listdir", side_effect=OSError("boom")):
+        with patch(
+            "octoprint_logmonitor.os.listdir", side_effect=OSError("boom")
+        ):
             result = self.plugin._get_available_log_filenames()
 
         self.assertEqual(result, [])
@@ -466,7 +574,9 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
         values["debug_mode"] = False
         self.plugin._settings = FakeSettings(self.temp_dir, values)
 
-        with self.app.test_request_context("/debug/frontend", method="POST", json={}):
+        with self.app.test_request_context(
+            "/debug/frontend", method="POST", json={}
+        ):
             response = self.plugin.frontend_debug_log()
 
         self.assertEqual(response.get_json()["status"], "debug_disabled")
@@ -593,7 +703,9 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
         values["alerts_enabled"] = False
         self.plugin._settings = FakeSettings(self.temp_dir, values)
 
-        with patch.object(self.plugin, "_stop_alert_monitoring") as stop_monitoring:
+        with patch.object(
+            self.plugin, "_stop_alert_monitoring"
+        ) as stop_monitoring:
             self.plugin._restart_alert_monitoring()
 
         stop_monitoring.assert_called_once()
@@ -671,9 +783,13 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
         self.assertEqual(self.plugin._alert_tailers, {})
 
     def test_alert_history_invalid_limit(self):
-        with self.app.test_request_context("/alert-history?limit=bad", method="GET"):
+        with self.app.test_request_context(
+            "/alert-history?limit=bad", method="GET"
+        ):
             result = self.plugin.get_alert_history()
-        status_code = result[1] if isinstance(result, tuple) else result.status_code
+        status_code = (
+            result[1] if isinstance(result, tuple) else result.status_code
+        )
         self.assertEqual(status_code, 400)
 
     def test_start_stream_rejects_invalid_filename(self):
@@ -723,7 +839,9 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
 
         with self.app.test_request_context("/stream/stop", method="POST"):
             response = self.plugin.stop_stream()
-        self.assertEqual(self._resp(response).get_json()["status"], "not_running")
+        self.assertEqual(
+            self._resp(response).get_json()["status"], "not_running"
+        )
 
     def test_export_results_csv(self):
         self.plugin._searcher = MagicMock()
@@ -757,24 +875,35 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
         log_path = Path(self.temp_dir) / "octoprint.log"
         log_path.write_text("line 1")
 
-        with self.app.test_request_context("/download/octoprint.log", method="GET"):
+        with self.app.test_request_context(
+            "/download/octoprint.log", method="GET"
+        ):
             response = self.plugin.download_log_file("octoprint.log")
         self.assertEqual(self._status(response), 200)
-        disposition = self._resp(response).headers.get("Content-Disposition", "")
+        disposition = self._resp(response).headers.get(
+            "Content-Disposition", ""
+        )
         self.assertIn("attachment;", disposition)
 
     def test_download_log_file_rejects_invalid_filename(self):
-        with self.app.test_request_context("/download/../bad.log", method="GET"):
+        with self.app.test_request_context(
+            "/download/../bad.log", method="GET"
+        ):
             response = self.plugin.download_log_file("../bad.log")
         self.assertEqual(self._status(response), 400)
 
     def test_download_log_file_missing(self):
-        with self.app.test_request_context("/download/missing.log", method="GET"):
+        with self.app.test_request_context(
+            "/download/missing.log", method="GET"
+        ):
             response = self.plugin.download_log_file("missing.log")
         self.assertEqual(self._status(response), 404)
 
     def test_get_active_streams(self):
-        self.plugin._active_tailers = {"a.log": MagicMock(), "b.log": MagicMock()}
+        self.plugin._active_tailers = {
+            "a.log": MagicMock(),
+            "b.log": MagicMock(),
+        }
         with self.app.test_request_context("/multi-stream", method="GET"):
             response = self.plugin.get_active_streams()
         payload = self._resp(response).get_json()
@@ -793,7 +922,9 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
         self.plugin._settings = FakeSettings(self.temp_dir, values)
         self.plugin._alert_tailers = {"octoprint.log": MagicMock()}
 
-        with self.app.test_request_context("/alerts/monitor/status", method="GET"):
+        with self.app.test_request_context(
+            "/alerts/monitor/status", method="GET"
+        ):
             response = self.plugin.get_alert_monitor_status()
 
         payload = self._resp(response).get_json()
@@ -816,7 +947,9 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
 
     def test_start_multi_stream_limits_count(self):
         with self.app.test_request_context(
-            "/stream/multi/start", method="POST", json={"files": ["a.log"] * 25}
+            "/stream/multi/start",
+            method="POST",
+            json={"files": ["a.log"] * 25},
         ):
             response = self.plugin.start_multi_stream()
         self.assertEqual(self._status(response), 400)
@@ -831,7 +964,9 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
         with (
             patch("octoprint_logmonitor.LogTailer", return_value=tailer),
             self.app.test_request_context(
-                "/stream/multi/start", method="POST", json={"files": ["a.log", "b.log"]}
+                "/stream/multi/start",
+                method="POST",
+                json={"files": ["a.log", "b.log"]},
             ),
         ):
             response = self.plugin.start_multi_stream()
@@ -867,7 +1002,8 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
         self.plugin._alert_tailers = {
             "octoprint.log": MagicMock(),
         }
-        self.plugin._alert_tailers["octoprint.log"].is_running.return_value = True
+        tailer = self.plugin._alert_tailers["octoprint.log"]
+        tailer.is_running.return_value = True
 
         self.plugin.on_shutdown()
 
@@ -914,7 +1050,8 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
             self.plugin._restart_alert_monitoring()
 
         self.assertEqual(
-            set(self.plugin._alert_tailers.keys()), {"octoprint.log", "plugin.log"}
+            set(self.plugin._alert_tailers.keys()),
+            {"octoprint.log", "plugin.log"},
         )
 
     def test_on_after_startup_auto_start_success(self):
@@ -975,7 +1112,9 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
             }
         }
 
-        with patch.object(self.plugin, "_restart_alert_monitoring") as restart_mock:
+        with patch.object(
+            self.plugin, "_restart_alert_monitoring"
+        ) as restart_mock:
             self.plugin.on_settings_save(data)
 
         plugin_data = data["plugins"]["logmonitor"]
@@ -985,7 +1124,8 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
         self.assertEqual(plugin_data["max_alert_history"], 100)
         self.assertEqual(plugin_data["alerts_monitor_mode"], "selected")
         self.assertEqual(
-            plugin_data["alerts_monitored_logs"], ["octoprint.log", "plugin.log"]
+            plugin_data["alerts_monitored_logs"],
+            ["octoprint.log", "plugin.log"],
         )
         restart_mock.assert_called_once()
 
@@ -1032,10 +1172,17 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
 
     def test_get_alert_history_clamps_limit(self):
         self.plugin._alert_history = [
-            {"timestamp": f"t{i}", "level": "ERROR", "logger": "x", "message": "m"}
+            {
+                "timestamp": f"t{i}",
+                "level": "ERROR",
+                "logger": "x",
+                "message": "m",
+            }
             for i in range(MAX_HISTORY_LIMIT + 10)
         ]
-        with self.app.test_request_context("/alert-history?limit=9999", method="GET"):
+        with self.app.test_request_context(
+            "/alert-history?limit=9999", method="GET"
+        ):
             response = self.plugin.get_alert_history()
         payload = self._resp(response).get_json()
         self.assertEqual(len(payload["history"]), MAX_HISTORY_LIMIT)
@@ -1099,7 +1246,9 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
         values.update({"debug_mode": False})
         self.plugin._settings = FakeSettings(self.temp_dir, values)
 
-        with self.app.test_request_context("/debug/test-entries", method="POST"):
+        with self.app.test_request_context(
+            "/debug/test-entries", method="POST"
+        ):
             response = self.plugin.write_debug_test_entries()
 
         payload = self._resp(response).get_json()
@@ -1114,7 +1263,9 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
             patch.object(
                 self.plugin, "_write_unknown_debug_test_log"
             ) as write_unknown_mock,
-            self.app.test_request_context("/debug/test-entries", method="POST"),
+            self.app.test_request_context(
+                "/debug/test-entries", method="POST"
+            ),
         ):
             response = self.plugin.write_debug_test_entries()
 
@@ -1138,7 +1289,9 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
         self.plugin._handle_alert_line(
             {
                 "level": "WARNING",
-                "message": "[LogMonitor Debug Test] [WARNING] Warning test entry",
+                "message": (
+                    "[LogMonitor Debug Test] [WARNING] Warning test entry"
+                ),
                 "logger": "octoprint.plugins.logmonitor",
             }
         )

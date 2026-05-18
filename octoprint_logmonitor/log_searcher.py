@@ -106,7 +106,9 @@ class LogSearcher:
         # Validate and normalize severity levels
         if levels is not None:
             allowed_levels: set[str] = {
-                lvl.upper() for lvl in levels if lvl.upper() in self.VALID_LEVELS
+                lvl.upper()
+                for lvl in levels
+                if lvl.upper() in self.VALID_LEVELS
             }
         else:
             allowed_levels = self.VALID_LEVELS.copy()
@@ -148,7 +150,9 @@ class LogSearcher:
                 parsed = self._parse_line(line)
 
                 # Check if line matches filters
-                if self._matches_filters(parsed, search_pattern, allowed_levels):
+                if self._matches_filters(
+                    parsed, search_pattern, allowed_levels
+                ):
                     total_matches += 1
 
                     # Check if we should include this match (pagination)
@@ -158,10 +162,11 @@ class LogSearcher:
 
                         # Add context lines if requested
                         if context_lines > 0:
-                            match_entry["context_before"] = self._get_context_lines(
+                            ctx = self._get_context_lines
+                            match_entry["context_before"] = ctx(
                                 lines, i, context_lines, before=True
                             )
-                            match_entry["context_after"] = self._get_context_lines(
+                            match_entry["context_after"] = ctx(
                                 lines, i, context_lines, before=False
                             )
 
@@ -170,7 +175,10 @@ class LogSearcher:
                     current_match += 1
 
                     # Early exit if we have enough results
-                    if len(results) >= limit and current_match > offset + limit:
+                    if (
+                        len(results) >= limit
+                        and current_match > offset + limit
+                    ):
                         break
 
             return {

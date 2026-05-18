@@ -35,7 +35,9 @@ class TestLogTailer(unittest.TestCase):
 
     def test_start_stop(self):
         """Test starting and stopping the tailer."""
-        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
+        tailer = LogTailer(
+            str(self.log_file), self._callback, poll_interval=0.1
+        )
 
         # Start tailer
         self.assertTrue(tailer.start())
@@ -48,9 +50,13 @@ class TestLogTailer(unittest.TestCase):
     def test_tail_new_lines(self):
         """Test that new lines are captured."""
         # Write initial content
-        self.log_file.write_text("2024-01-01 10:00:00,000 - test - INFO - Initial\n")
+        self.log_file.write_text(
+            "2024-01-01 10:00:00,000 - test - INFO - Initial\n"
+        )
 
-        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
+        tailer = LogTailer(
+            str(self.log_file), self._callback, poll_interval=0.1
+        )
 
         tailer.start()
         time.sleep(0.2)  # Allow tailer to start
@@ -84,7 +90,9 @@ class TestLogTailer(unittest.TestCase):
         ]
         self.log_file.write_text("".join(lines))
 
-        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
+        tailer = LogTailer(
+            str(self.log_file), self._callback, poll_interval=0.1
+        )
 
         # Get last 2 lines
         last_lines = tailer.get_last_n_lines(2)
@@ -99,7 +107,9 @@ class TestLogTailer(unittest.TestCase):
 
     def test_get_last_lines_empty_file(self):
         """Empty file should return an empty list."""
-        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
+        tailer = LogTailer(
+            str(self.log_file), self._callback, poll_interval=0.1
+        )
 
         last_lines = tailer.get_last_n_lines(5)
 
@@ -107,7 +117,9 @@ class TestLogTailer(unittest.TestCase):
 
     def test_file_rotation(self):
         """Test handling of log file rotation."""
-        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
+        tailer = LogTailer(
+            str(self.log_file), self._callback, poll_interval=0.1
+        )
 
         # Write initial content
         self.log_file.write_text(
@@ -144,16 +156,24 @@ class TestLogTailer(unittest.TestCase):
 
     def test_double_start(self):
         """Test that starting already running tailer returns False."""
-        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
+        tailer = LogTailer(
+            str(self.log_file), self._callback, poll_interval=0.1
+        )
 
         self.assertTrue(tailer.start())
         self.assertFalse(tailer.start())  # Second start should fail
         tailer.stop()
 
     def test_parse_simple_serial_log_line(self):
-        """Serial-style lines without explicit logger/level should still parse."""
-        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
-        line = "2026-05-01 19:58:57,717 - serial.log is currently not enabled\n"
+        """Serial-style lines without explicit logger/level
+        should still parse."""
+        tailer = LogTailer(
+            str(self.log_file), self._callback, poll_interval=0.1
+        )
+        line = (
+            "2026-05-01 19:58:57,717"
+            " - serial.log is currently not enabled\n"
+        )
 
         parsed = tailer._parse_line(line)
 
@@ -163,8 +183,11 @@ class TestLogTailer(unittest.TestCase):
         self.assertIn("serial.log is currently not enabled", parsed["message"])
 
     def test_parse_line_normalizes_tabs(self):
-        """Tab characters should be normalized to spaces to avoid visual jumps."""
-        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
+        """Tab characters should be normalized to spaces
+        to avoid visual jumps."""
+        tailer = LogTailer(
+            str(self.log_file), self._callback, poll_interval=0.1
+        )
         line = "2026-05-01 20:00:00,000 - test - INFO - A\tB\tC\n"
 
         parsed = tailer._parse_line(line)
@@ -174,7 +197,9 @@ class TestLogTailer(unittest.TestCase):
 
     def test_parse_serial_io_arrow_line(self):
         """Virtual printer serial lines with >>>/<<< should not be UNKNOWN."""
-        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
+        tailer = LogTailer(
+            str(self.log_file), self._callback, poll_interval=0.1
+        )
         out_line = "2026-05-01 20:03:06,887 >>> wait\n"
         in_line = "2026-05-01 20:03:06,888 <<< ok\n"
 
@@ -190,11 +215,15 @@ class TestLogTailer(unittest.TestCase):
         self.assertEqual(parsed_in["message"], "<<< ok")
 
     def test_parse_compact_warning_line(self):
-        """Compact OctoPrint warning lines should still map to WARNING level."""
-        tailer = LogTailer(str(self.log_file), self._callback, poll_interval=0.1)
+        """Compact OctoPrint warning lines should still
+        map to WARNING level."""
+        tailer = LogTailer(
+            str(self.log_file), self._callback, poll_interval=0.1
+        )
         line = (
             "2026-05-03 22:20:17,441WARNING octoprint.plugins.logmonitor "
-            "The templates of this plugin are currently not being autoescaped\n"
+            "The templates of this plugin are currently not being"
+            " autoescaped\n"
         )
 
         parsed = tailer._parse_line(line)

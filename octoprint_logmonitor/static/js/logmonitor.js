@@ -6,8 +6,14 @@
 $(function () {
     function LogmonitorViewModel(parameters) {
         var self = this;
-        // BlueprintPlugin routes are served under /plugin/<id>/, NOT /api/plugin/<id>/
-        var pluginBaseUrl = "/plugin/logmonitor";
+        // BlueprintPlugin routes are served under <BASEURL>/plugin/<id>/.
+        // BASEURL includes any configured reverse-proxy path prefix.
+        var octoBaseUrl =
+            typeof BASEURL === "string" && BASEURL.length > 0 ? BASEURL : "/";
+        if (octoBaseUrl.charAt(octoBaseUrl.length - 1) !== "/") {
+            octoBaseUrl += "/";
+        }
+        var pluginBaseUrl = octoBaseUrl + "plugin/logmonitor";
 
         function pluginAjax(opts) {
             return $.ajax(opts);

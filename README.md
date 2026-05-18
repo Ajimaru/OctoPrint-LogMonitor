@@ -15,10 +15,6 @@
 ### Live log streaming and searching for OctoPrint with severity alerting in the navbar and sidebar
 
 <!-- markdownlint-disable MD033-->
-<strong>
-  Lightweight OctoPrint plugin that provides live log streaming, searching, and severity alerts directly in the navbar and sidebar.<br />
-</strong>
-</br />
 <img src="assets/img/main_screen.png" alt="OctoPrint Log Monitor Main Screen" width="666" />
 <!-- markdownlint-enable MD033-->
 
@@ -36,7 +32,7 @@
 - 🧪 **Advanced Search** - Optional regex and case-sensitive search modes
 - 📤 **Export Results** - Export filtered/search results for offline analysis
 - 🔀 **Multi-Stream API** - Backend endpoints for parallel streaming of multiple logs
-- 🛡️ **Secure** - Path traversal protection and API key authentication
+- 🛡️ **Secure** - Path traversal protection, input validation, and rate limiting
 
 ## Installation
 
