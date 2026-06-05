@@ -94,10 +94,12 @@ jobs:
       - # Upload coverage.xml to Codecov
         name: Upload coverage to Codecov
         if: ${{ matrix.run-coverage && github.repository == 'Ajimaru/OctoPrint-LogMonitor' }}
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
           flags: unittests
+          disable_search: true
           fail_ci_if_error: false
 
       - # Upload coverage report to Codacy (optional)
@@ -110,7 +112,7 @@ jobs:
           CODACY_PROJECT_NAME: ${{ vars.CODACY_PROJECT_NAME }}
         continue-on-error: true
         run: |
-          bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml -t "$CODACY_API_TOKEN"
+          bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml
 
       - # Setup Node.js for pre-commit hooks (ESLint/Prettier)
         name: Set up Node.js for hooks

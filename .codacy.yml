@@ -1,0 +1,11 @@
+---
+exclude_paths:
+  - ".codacy/**"
+  - "tests/**"
+  - "build/**"
+  - ".cache/**"
+  - ".venv-*/**"
+  - "**/site-packages/**"
+  - "OctoPrint_LogMonitor.egg-info/**"
+  - "translations/**"
+  - ".venv/**"

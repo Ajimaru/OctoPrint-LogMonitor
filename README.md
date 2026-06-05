@@ -172,7 +172,7 @@ Summary: this project exposes many status and quality badges (CI, linting, cover
 [![Coverage Diff](https://codecov.io/gh/Ajimaru/OctoPrint-LogMonitor/branch/main/graph/badge.svg?flag=patch)](https://codecov.io/gh/Ajimaru/OctoPrint-LogMonitor)
 [![Pylint Score](https://img.shields.io/badge/pylint-10.0-green.svg)](https://www.pylint.org/)
 [![Bandit Security](https://img.shields.io/badge/bandit-security-green.svg)](https://bandit.readthedocs.io/en/latest/)
-[![Depfu](https://img.shields.io/badge/dependencies-managed%20by%20Depfu-blue)](https://depfu.com/repos/github/Ajimaru/OctoPrint-LogMonitor)
+[![Depfu](https://badges.depfu.com/badges/b1bd984976a5ccb7ac298737eabe686f/status.svg)](https://depfu.com)
 [![Known Vulnerabilities](https://snyk.io/test/github/Ajimaru/OctoPrint-LogMonitor/badge.svg)](https://snyk.io/test/github/Ajimaru/OctoPrint-LogMonitor)
 
 ### 🔄 3. CI/CD & Release
