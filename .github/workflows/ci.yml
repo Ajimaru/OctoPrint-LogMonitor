@@ -96,8 +96,10 @@ jobs:
         if: ${{ matrix.run-coverage && github.repository == 'Ajimaru/OctoPrint-LogMonitor' }}
         uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
           flags: unittests
+          disable_search: true
           fail_ci_if_error: false
 
       - # Upload coverage report to Codacy (optional)
