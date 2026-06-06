@@ -107,9 +107,9 @@ jobs:
         if: ${{ matrix.run-coverage && github.repository == 'Ajimaru/OctoPrint-LogMonitor' }}
         env:
           CODACY_API_TOKEN: ${{ secrets.CODACY_API_TOKEN }}
-          CODACY_ORGANIZATION_PROVIDER: ${{ vars.CODACY_ORGANIZATION_PROVIDER }}
-          CODACY_USERNAME: ${{ vars.CODACY_USERNAME }}
-          CODACY_PROJECT_NAME: ${{ vars.CODACY_PROJECT_NAME }}
+          CODACY_ORGANIZATION_PROVIDER: gh
+          CODACY_USERNAME: Ajimaru
+          CODACY_PROJECT_NAME: OctoPrint-LogMonitor
         continue-on-error: true
         run: |
           bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml
