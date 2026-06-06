@@ -93,11 +93,11 @@ def is_safe_path(base_dir: str, filename: str) -> bool:
 
 
 def validate_filename(filename: str) -> bool:
-    r"""Check that *filename* is a plain filename with no path components.
+    """Check that *filename* is a plain filename with no path components.
 
     Rejects:
     * Empty strings
-    * Names containing ``/`` or ``\\``
+    * Names containing path separators (``/`` or backslash)
     * Names starting with ``.`` (hidden / relative traversal start)
     * Names that differ from ``os.path.basename(filename)``
 

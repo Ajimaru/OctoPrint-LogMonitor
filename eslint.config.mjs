@@ -7,7 +7,7 @@ export default [
       globals: {
         API_BASEURL: "readonly",
         BASEURL: "readonly",
-        OCTOPRINT_VIEWMODELS: "writable",
+        OCTOPRINT_VIEWMODELS: "readonly",
         PNotify: "readonly",
         $: "readonly",
         Audio: "readonly",

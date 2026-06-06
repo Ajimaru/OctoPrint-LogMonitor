@@ -973,13 +973,8 @@ $(() => {
 
         // NEW: Download log file
         self.downloadLogFile = function (filename) {
-            var path = "/download/" + encodeURIComponent(filename);
-            var url = pluginBaseUrl + path;
-            // Ensure the URL stays on the same origin — reject anything that
-            // resolves outside the expected plugin path.
-            if (!url.startsWith(pluginBaseUrl + "/download/")) {
-                return;
-            }
+            var url =
+                pluginBaseUrl + "/download/" + encodeURIComponent(filename);
             window.location.assign(url);
         };
 
