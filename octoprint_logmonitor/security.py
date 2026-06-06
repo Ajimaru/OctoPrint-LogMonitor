@@ -1,5 +1,4 @@
-"""
-Security Utilities Module
+"""Security Utilities Module.
 
 Centralized security helpers for the OctoPrint Log Monitor plugin.
 Provides path validation, input sanitization, rate limiting, and sensitive
@@ -61,8 +60,7 @@ _SENSITIVE_PATTERNS: list[tuple[re.Pattern, str]] = [
 
 
 def is_safe_path(base_dir: str, filename: str) -> bool:
-    """
-    Determine whether *filename* resolves to a path inside *base_dir*.
+    """Determine whether *filename* resolves to a path inside *base_dir*.
 
     This prevents path-traversal attacks (``../``, absolute paths, symlink
     escapes, etc.).  Both *base_dir* and the resolved candidate path are
@@ -95,8 +93,7 @@ def is_safe_path(base_dir: str, filename: str) -> bool:
 
 
 def validate_filename(filename: str) -> bool:
-    """
-    Check that *filename* is a plain filename with no path components.
+    r"""Check that *filename* is a plain filename with no path components.
 
     Rejects:
     * Empty strings
@@ -129,8 +126,7 @@ def check_file_size(
     filepath: str,
     max_bytes: int = MAX_FILE_SIZE_BYTES,
 ) -> bool:
-    """
-    Return ``True`` if *filepath* exists and is within *max_bytes*.
+    """Return ``True`` if *filepath* exists and is within *max_bytes*.
 
     Files that cannot be stat-ed (missing, permissions, etc.) return
     ``False`` so the caller can handle the error appropriately.
@@ -157,8 +153,7 @@ def check_file_size(
 def validate_pagination(
     offset: int, limit: int, max_limit: int = MAX_SEARCH_LIMIT
 ) -> tuple[bool, str]:
-    """
-    Validate ``offset`` and ``limit`` pagination parameters.
+    """Validate ``offset`` and ``limit`` pagination parameters.
 
     Args:
         offset: The requested result offset.
@@ -186,8 +181,7 @@ VALID_SEVERITY_LEVELS = frozenset(
 def validate_severity_levels(
     levels: Optional[list[str]],
 ) -> tuple[list[str], list[str]]:
-    """
-    Partition *levels* into valid and invalid severity level strings.
+    """Partition *levels* into valid and invalid severity level strings.
 
     Args:
         levels: User-supplied list of level strings (may be ``None``).
@@ -212,10 +206,10 @@ def validate_severity_levels(
 
 
 def mask_sensitive_data(text: str) -> str:
-    """
-    Apply all sensitive-data masking patterns to *text* and return the result.
+    """Apply all sensitive-data masking patterns to *text*.
 
-    This can be used for optional log-output sanitisation where administrators
+    Returns the sanitised result. This can be used for optional log-output
+    sanitisation where administrators
     want to prevent passwords, API keys, or e-mail addresses from appearing in
     streamed log content sent to the browser.
 
@@ -236,8 +230,7 @@ def mask_sensitive_data(text: str) -> str:
 
 
 class RateLimiter:
-    """
-    Simple thread-safe sliding-window rate limiter.
+    """Simple thread-safe sliding-window rate limiter.
 
     Tracks call timestamps per *client key* string (e.g. an IP address or
     user identifier).  Calls that exceed the configured quota within the
@@ -252,8 +245,7 @@ class RateLimiter:
     """
 
     def __init__(self, max_calls: int, period: float) -> None:
-        """
-        Initialise the rate limiter.
+        """Initialise the rate limiter.
 
         Args:
             max_calls: Maximum number of calls allowed within *period*.
@@ -265,8 +257,7 @@ class RateLimiter:
         self._lock = threading.Lock()
 
     def is_allowed(self, client_key: str) -> bool:
-        """
-        Check whether *client_key* is within the rate limit.
+        """Check whether *client_key* is within the rate limit.
 
         Calling this method counts as one request attempt regardless of the
         return value.
