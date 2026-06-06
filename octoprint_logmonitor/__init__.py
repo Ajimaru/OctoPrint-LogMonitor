@@ -1,11 +1,10 @@
-"""
-OctoPrint Log Monitor Plugin
+"""OctoPrint Log Monitor Plugin.
 
 Provides live log streaming and searching capabilities
 with severity-based alerting.
 """
 
-# pylint: disable=broad-except,global-statement
+# pylint: disable=broad-except,global-statement,too-many-lines
 # intentional: plugin handlers must not crash OctoPrint
 
 import json
@@ -42,10 +41,10 @@ class LogmonitorPlugin(
     octoprint.plugin.AssetPlugin,
     octoprint.plugin.BlueprintPlugin,
 ):
-    """
-    Main plugin class implementing OctoPrint Log Monitor functionality.
+    """Main plugin class implementing OctoPrint Log Monitor functionality.
 
     Features:
+
     - Live log streaming via WebSocket
     - Full-text log search with severity filtering
     - Navbar and Sidebar indicators for severity alerts
@@ -60,6 +59,7 @@ class LogmonitorPlugin(
     _plugin_version: str
 
     def __init__(self):
+        """Initialize plugin state."""
         super().__init__()
         self._tailer = None
         self._searcher = None
@@ -346,8 +346,10 @@ class LogmonitorPlugin(
         return True
 
     def _get_available_log_filenames(self):
-        """Return sorted list of available .log filenames
-        from OctoPrint log folder."""
+        """Return sorted list of available .log filenames.
+
+        Scans the OctoPrint log folder.
+        """
         try:
             log_dir = self._get_logs_base_folder()
             if not os.path.exists(log_dir):
@@ -735,8 +737,10 @@ class LogmonitorPlugin(
                 if filename in self._active_tailers:
                     try:
                         self._active_tailers[filename].stop()
-                    except Exception:
-                        pass
+                    except Exception as e:  # noqa: BLE001
+                        self._logger.debug(
+                            "Failed to stop tailer for %s: %s", filename, e
+                        )
 
                 # Create new tailer
                 poll_interval = self._get_stream_poll_interval_seconds()
@@ -1145,8 +1149,7 @@ class LogmonitorPlugin(
     # ~~ Helper methods
 
     def _log_security_event(self, event_type: str, detail: str) -> None:
-        """
-        Record a security-relevant event in the plugin log.
+        """Record a security-relevant event in the plugin log.
 
         This provides an audit trail for path-traversal attempts, rate-limit
         violations, and other security violations.  Details are written to the
@@ -1154,7 +1157,7 @@ class LogmonitorPlugin(
 
         Args:
             event_type: Short machine-readable label
-                (e.g. ``"path_traversal"``)
+                (e.g. ``"path_traversal"``).
             detail: Human-readable description for the log entry.
         """
         self._logger.warning(f"[SECURITY] {event_type}: {detail}")
@@ -1201,7 +1204,9 @@ class LogmonitorPlugin(
                 )
 
         try:
-            from octoprint.settings import settings as octoprint_settings
+            from octoprint.settings import (
+                settings as octoprint_settings,  # type: ignore[import-untyped]
+            )
 
             global_settings = octoprint_settings()
             if global_settings is not None:
@@ -1323,8 +1328,10 @@ class LogmonitorPlugin(
         return unique_files
 
     def _refresh_runtime_alert_settings(self):
-        """Cache alert-related settings used in hot paths
-        to avoid per-line lookups."""
+        """Cache alert-related settings used in hot paths.
+
+        Avoids per-line lookups.
+        """
         severity_triggers = self._settings.get(["severity_triggers"])
         if not isinstance(severity_triggers, list):
             severity_triggers = ["WARNING", "ERROR", "CRITICAL"]
@@ -1544,8 +1551,10 @@ class LogmonitorPlugin(
             self._logger.error(f"Error recording alert line: {e}")
 
     def _handle_alert_line(self, parsed_line):
-        """Handle a log line for alert generation only
-        (independent from stream)."""
+        """Handle a log line for alert generation only.
+
+        Independent from the UI stream.
+        """
         message = parsed_line.get("message", "")
         if isinstance(message, str) and "[LogMonitor Debug Test]" in message:
             return
@@ -1553,8 +1562,8 @@ class LogmonitorPlugin(
         self._record_alert_line(parsed_line, force=False)
 
     def _handle_log_line(self, parsed_line):
-        """
-        Handle a new log line from the tailer.
+        """Handle a new log line from the tailer.
+
         Buffers it for batched WebSocket delivery only.
 
         Args:
@@ -1618,7 +1627,7 @@ __plugin_hooks__: dict = {}
 
 
 # ~~ Plugin loading
-def __plugin_load__():
+def __plugin_load__():  # noqa: N807
     """Load the plugin."""
     global __plugin_implementation__  # type: ignore
     __plugin_implementation__ = LogmonitorPlugin()

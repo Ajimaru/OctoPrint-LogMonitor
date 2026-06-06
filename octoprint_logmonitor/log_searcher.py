@@ -1,5 +1,4 @@
-"""
-Log Searcher Module
+"""Log Searcher Module.
 
 Provides efficient log file searching with pagination and severity filtering.
 Memory-efficient implementation that streams through large log files.
@@ -13,8 +12,7 @@ from typing import Any, ClassVar, Optional
 
 
 class LogSearcher:
-    """
-    Efficient log file searcher with pagination support.
+    """Efficient log file searcher with pagination support.
 
     Features:
     - Memory-efficient line-by-line reading
@@ -51,8 +49,7 @@ class LogSearcher:
     }
 
     def __init__(self, logger: Optional[Any] = None):
-        """
-        Initialize the log searcher.
+        """Initialize the log searcher.
 
         Args:
             logger: Optional logger instance for debugging
@@ -72,8 +69,7 @@ class LogSearcher:
         use_regex: bool = False,
         context_lines: int = 0,
     ) -> dict[str, Any]:
-        """
-        Search log file for matching entries.
+        """Search log file for matching entries.
 
         Args:
             filepath: Path to the log file
@@ -200,8 +196,7 @@ class LogSearcher:
             }
 
     def _parse_line(self, line: str) -> dict[str, Any]:
-        """
-        Parse a log line into structured format.
+        """Parse a log line into structured format.
 
         Args:
             line: Raw log line
@@ -246,8 +241,7 @@ class LogSearcher:
         search_pattern: Optional[re.Pattern],
         levels: set[str],
     ) -> bool:
-        """
-        Check if a parsed log entry matches search filters.
+        """Check if a parsed log entry matches search filters.
 
         Args:
             parsed: Parsed log entry
@@ -273,8 +267,7 @@ class LogSearcher:
     def _get_context_lines(
         self, lines: list[str], index: int, count: int, before: bool = True
     ) -> list[dict[str, Any]]:
-        """
-        Get context lines before or after a match.
+        """Get context lines before or after a match.
 
         Args:
             lines: All lines from the file
@@ -300,8 +293,7 @@ class LogSearcher:
         return context
 
     def get_file_stats(self, filepath: str) -> dict[str, Any]:
-        """
-        Get statistics about a log file.
+        """Get statistics about a log file.
 
         Args:
             filepath: Path to the log file
@@ -342,8 +334,7 @@ class LogSearcher:
             return {"exists": True, "error": str(e)}
 
     def export_to_csv(self, results: list[dict[str, Any]]) -> str:
-        """
-        Export search results to CSV format.
+        """Export search results to CSV format.
 
         Args:
             results: List of search result dictionaries
@@ -370,8 +361,7 @@ class LogSearcher:
         return output.getvalue()
 
     def export_to_txt(self, results: list[dict[str, Any]]) -> str:
-        """
-        Export search results to plain text format.
+        """Export search results to plain text format.
 
         Args:
             results: List of search result dictionaries

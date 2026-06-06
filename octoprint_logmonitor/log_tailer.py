@@ -1,5 +1,4 @@
-"""
-Log Tailer Module
+"""Log Tailer Module.
 
 Provides background thread-based log file tailing functionality.
 Similar to 'tail -f' behavior for live log streaming.
@@ -13,8 +12,7 @@ from typing import Any, Callable, Optional
 
 
 class LogTailer:
-    """
-    Background thread that continuously monitors a log file for new lines.
+    """Background thread that continuously monitors a log file for new lines.
 
     Features:
     - Thread-safe start/stop
@@ -60,8 +58,7 @@ class LogTailer:
         poll_interval: float = 0.5,
         logger: Optional[Any] = None,
     ):
-        """
-        Initialize the log tailer.
+        """Initialize the log tailer.
 
         Args:
             filepath: Path to the log file to tail
@@ -83,8 +80,7 @@ class LogTailer:
         self._lock = threading.Lock()
 
     def start(self) -> bool:
-        """
-        Start the log tailer in a background thread.
+        """Start the log tailer in a background thread.
 
         Returns:
             True if started successfully, False otherwise
@@ -133,8 +129,7 @@ class LogTailer:
                 return False
 
     def stop(self, timeout: float = 5.0) -> bool:
-        """
-        Stop the log tailer gracefully.
+        """Stop the log tailer gracefully.
 
         Args:
             timeout: Maximum time to wait for thread to stop
@@ -221,8 +216,7 @@ class LogTailer:
                 self._logger.debug("LogTailer thread exiting")
 
     def _check_rotation(self) -> bool:
-        """
-        Check if the log file has been rotated.
+        """Check if the log file has been rotated.
 
         Returns:
             True if rotation detected, False otherwise
@@ -254,8 +248,7 @@ class LogTailer:
                 self._logger.error(f"Failed to reopen log file: {e}")
 
     def _parse_line(self, line: str) -> dict[str, Any]:
-        """
-        Parse a log line into structured format.
+        """Parse a log line into structured format.
 
         Args:
             line: Raw log line
@@ -332,8 +325,7 @@ class LogTailer:
         }
 
     def get_last_n_lines(self, n: int = 100) -> list:
-        """
-        Read the last N lines from the log file.
+        """Read the last N lines from the log file.
 
         Args:
             n: Number of lines to read

@@ -3,7 +3,7 @@
  * JavaScript ViewModel
  */
 
-$(function () {
+$(() => {
     function LogmonitorViewModel(parameters) {
         var self = this;
         // BlueprintPlugin routes are served under <BASEURL>/plugin/<id>/.
@@ -23,7 +23,7 @@ $(function () {
         self.loginState = parameters[1];
         self.activeSubtab = ko.observable("live");
 
-        self.switchSubtab = function (tabName) {
+        self.switchSubtab = (tabName) => {
             if (
                 tabName !== "live" &&
                 tabName !== "search" &&
@@ -54,11 +54,11 @@ $(function () {
                 : setting;
         }
 
-        self.isDebugMode = ko.pureComputed(function () {
+        self.isDebugMode = ko.pureComputed(() => {
             return !!getPluginSetting("debug_mode", false);
         });
 
-        self.debugLog = function (message, payload) {
+        self.debugLog = (message, payload) => {
             if (!self.isDebugMode()) return;
 
             var body = { message: String(message || "") };
@@ -72,12 +72,12 @@ $(function () {
                 data: JSON.stringify(body),
                 contentType: "application/json",
                 dataType: "json",
-            }).fail(function () {
+            }).fail(() => {
                 // Intentionally silent: never spam browser console for debug logging.
             });
         };
 
-        self.writeDebugTestEntries = function () {
+        self.writeDebugTestEntries = () => {
             if (!self.isDebugMode()) {
                 new PNotify({
                     title: "Log Monitor",
@@ -93,7 +93,7 @@ $(function () {
                 contentType: "application/json",
                 dataType: "json",
             })
-                .done(function (response) {
+                .done((response) => {
                     var count =
                         response && typeof response.entries === "number"
                             ? response.entries
@@ -107,7 +107,7 @@ $(function () {
                         type: "success",
                     });
                 })
-                .fail(function () {
+                .fail(() => {
                     new PNotify({
                         title: "Log Monitor",
                         text: "Failed to write debug test entries.",
@@ -149,7 +149,7 @@ $(function () {
             suppressStreamSwitch = false;
         }
 
-        self.lineCount = ko.computed(function () {
+        self.lineCount = ko.computed(() => {
             return self.allLines().length;
         });
 
@@ -196,19 +196,19 @@ $(function () {
             return "";
         }
 
-        self.alertCount = ko.pureComputed(function () {
+        self.alertCount = ko.pureComputed(() => {
             return totalAlerts();
         });
 
-        self.alertLevel = ko.pureComputed(function () {
+        self.alertLevel = ko.pureComputed(() => {
             return highestAlertLevel();
         });
 
-        self.hasAlerts = ko.computed(function () {
+        self.hasAlerts = ko.computed(() => {
             return self.alertCount() > 0;
         });
 
-        self.alertDetails = ko.pureComputed(function () {
+        self.alertDetails = ko.pureComputed(() => {
             var counts = self.alertCounts();
             var parts = [];
             [
@@ -218,7 +218,7 @@ $(function () {
                 "UNKNOWN",
                 "INFO",
                 "DEBUG",
-            ].forEach(function (level) {
+            ].forEach((level) => {
                 var count = counts[level] || 0;
                 if (count > 0) {
                     parts.push(level + ": " + count);
@@ -227,7 +227,7 @@ $(function () {
             return parts.join(" | ");
         });
 
-        self.navbarTooltip = ko.pureComputed(function () {
+        self.navbarTooltip = ko.pureComputed(() => {
             if (!self.hasAlerts()) {
                 return "Log Monitor";
             }
@@ -241,7 +241,7 @@ $(function () {
                 "UNKNOWN",
                 "INFO",
                 "DEBUG",
-            ].forEach(function (level) {
+            ].forEach((level) => {
                 var count = counts[level] || 0;
                 if (count > 0) {
                     lines.push(level + ": " + count);
@@ -251,10 +251,10 @@ $(function () {
             return "Alerts\n" + lines.join("\n");
         });
 
-        self.alertText = ko.computed(function () {
+        self.alertText = ko.computed(() => {
             return String(self.alertCount());
         });
-        self.alertClass = ko.computed(function () {
+        self.alertClass = ko.computed(() => {
             var level = self.alertLevel().toLowerCase();
             if (level === "critical" || level === "error") {
                 return "badge-important";
@@ -285,7 +285,7 @@ $(function () {
         self.caseSensitive = ko.observable(false);
         self.alertHistory = ko.observableArray([]);
         self.autoStartEnabled = ko.observable(false);
-        self.historySummary = ko.pureComputed(function () {
+        self.historySummary = ko.pureComputed(() => {
             var count = self.alertHistory().length;
             return ngettext(
                 "%(count)s history entry",
@@ -295,11 +295,11 @@ $(function () {
         });
 
         // Computed: Displayed lines (filtered)
-        self.displayedLines = ko.computed(function () {
+        self.displayedLines = ko.computed(() => {
             var lines = self.allLines();
             var filter = self.filterText().toLowerCase();
 
-            return lines.filter(function (line) {
+            return lines.filter((line) => {
                 // Apply severity filter
                 if (line.level === "DEBUG" && !self.showDebug()) return false;
                 if (line.level === "INFO" && !self.showInfo()) return false;
@@ -324,7 +324,7 @@ $(function () {
         });
 
         // Computed: Status text
-        self.statusText = ko.computed(function () {
+        self.statusText = ko.computed(() => {
             if (self.isStreaming()) {
                 var activeFile =
                     self.activeStreamFile() || self.selectedLogFile();
@@ -338,23 +338,23 @@ $(function () {
         });
 
         // Computed: Stream button text
-        self.streamButtonText = ko.computed(function () {
+        self.streamButtonText = ko.computed(() => {
             return self.isStreaming() ? "Stop Streaming" : "Start Streaming";
         });
 
-        self.streamControlsDisabled = ko.pureComputed(function () {
+        self.streamControlsDisabled = ko.pureComputed(() => {
             return self.isSwitchingStream();
         });
 
         // Computed: Sidebar status
-        self.statusIcon = ko.computed(function () {
+        self.statusIcon = ko.computed(() => {
             if (self.hasAlerts()) {
                 return "fa-exclamation-triangle text-error";
             }
             return "fa-check text-success";
         });
 
-        self.statusSummary = ko.computed(function () {
+        self.statusSummary = ko.computed(() => {
             if (self.hasAlerts()) {
                 var count = self.alertCount();
                 return ngettext(
@@ -378,22 +378,22 @@ $(function () {
             var obs = ps && ps[settingKey];
             if (typeof obs !== "function") return;
             target(!!obs());
-            obs.subscribe(function (v) {
+            obs.subscribe((v) => {
                 target(!!v);
             });
         }
 
         // Computed: Pagination
-        self.canGoPrevious = ko.computed(function () {
+        self.canGoPrevious = ko.computed(() => {
             return self.currentPage() > 0;
         });
 
-        self.canGoNext = ko.pureComputed(function () {
+        self.canGoNext = ko.pureComputed(() => {
             var pageSize = getPluginSetting("search_page_size", 50);
             return (self.currentPage() + 1) * pageSize < self.totalResults();
         });
 
-        self.paginationInfo = ko.pureComputed(function () {
+        self.paginationInfo = ko.pureComputed(() => {
             var pageSize = getPluginSetting("search_page_size", 50);
             var start = self.currentPage() * pageSize + 1;
             var end = Math.min(
@@ -405,7 +405,7 @@ $(function () {
             );
         });
 
-        self.updateSettingsDefaultLogFileDropdown = function (fileNames) {
+        self.updateSettingsDefaultLogFileDropdown = (fileNames) => {
             var select = $("#settings_plugin_logmonitor_default_log_file");
             if (!select.length) return;
 
@@ -420,7 +420,7 @@ $(function () {
                 ),
             );
 
-            fileNames.forEach(function (name) {
+            fileNames.forEach((name) => {
                 select.append($("<option></option>").val(name).text(name));
             });
 
@@ -429,7 +429,7 @@ $(function () {
             }
         };
 
-        self.updateSettingsAlertMonitoredLogsDropdown = function (fileNames) {
+        self.updateSettingsAlertMonitoredLogsDropdown = (fileNames) => {
             var select = $("#settings_plugin_logmonitor_alerts_monitored_logs");
             if (!select.length) return;
 
@@ -442,7 +442,7 @@ $(function () {
 
             select.empty();
 
-            fileNames.forEach(function (name) {
+            fileNames.forEach((name) => {
                 var option = $("<option></option>").val(name).text(name);
                 if (selected.indexOf(name) !== -1) {
                     option.prop("selected", true);
@@ -451,7 +451,7 @@ $(function () {
             });
         };
 
-        self.renderAlertMonitorStatus = function (data, errorText) {
+        self.renderAlertMonitorStatus = (data, errorText) => {
             var target = $("#settings_plugin_logmonitor_alert_monitor_status");
             var badge = $(
                 "#settings_plugin_logmonitor_alert_monitor_status_badge",
@@ -472,7 +472,7 @@ $(function () {
                     return '<span class="muted">none</span>';
                 }
 
-                var items = logs.map(function (name) {
+                var items = logs.map((name) => {
                     return "<li>" + escapeHtml(name) + "</li>";
                 });
 
@@ -547,10 +547,10 @@ $(function () {
                 method: "GET",
                 dataType: "json",
             })
-                .done(function (response) {
+                .done((response) => {
                     self.renderAlertMonitorStatus(response);
                 })
-                .fail(function (xhr) {
+                .fail((xhr) => {
                     self.renderAlertMonitorStatus(
                         null,
                         (xhr && xhr.statusText) || "request failed",
@@ -596,18 +596,18 @@ $(function () {
                 method: "GET",
                 dataType: "json",
             })
-                .done(function (response) {
+                .done((response) => {
                     var rawFiles = Array.isArray(response && response.files)
                         ? response.files
                         : [];
 
                     var fileNames = rawFiles
-                        .map(function (file) {
+                        .map((file) => {
                             return typeof file === "string"
                                 ? file
                                 : file && file.name;
                         })
-                        .filter(function (name) {
+                        .filter((name) => {
                             return typeof name === "string" && name.length > 0;
                         });
 
@@ -616,7 +616,7 @@ $(function () {
                     self.updateSettingsAlertMonitoredLogsDropdown(fileNames);
                     selectPreferredLogFile(fileNames);
                 })
-                .fail(function (xhr) {
+                .fail((xhr) => {
                     self.debugLog("Failed to load log file list", {
                         status: xhr && xhr.status,
                         responseText: xhr && xhr.responseText,
@@ -692,7 +692,7 @@ $(function () {
                 contentType: "application/json",
                 dataType: "json",
             })
-                .done(function (response) {
+                .done((response) => {
                     if (opts.isAutoSwitch) {
                         lineBuffer.length = 0;
                         self.allLines([]);
@@ -709,12 +709,12 @@ $(function () {
 
                     // Show initial lines if available
                     if (response.initial_lines) {
-                        response.initial_lines.forEach(function (line) {
+                        response.initial_lines.forEach((line) => {
                             lineBuffer.push(line);
                         });
                     }
                 })
-                .fail(function (error) {
+                .fail((error) => {
                     if (opts.isAutoSwitch) {
                         setSelectedLogFile(self.activeStreamFile() || "");
                     }
@@ -724,7 +724,7 @@ $(function () {
                         type: "error",
                     });
                 })
-                .always(function () {
+                .always(() => {
                     self.isSwitchingStream(false);
                 });
         };
@@ -736,21 +736,21 @@ $(function () {
                 contentType: "application/json",
                 dataType: "json",
             })
-                .done(function () {
+                .done(() => {
                     clearInterval(flushIntervalId);
                     flushIntervalId = null;
                     flushLineBuffer();
                     self.isStreaming(false);
                     self.activeStreamFile("");
                 })
-                .fail(function (error) {
+                .fail(() => {
                     new PNotify({
                         title: "Stream Error",
                         text: "Failed to stop streaming",
                         type: "error",
                     });
                 })
-                .always(function () {
+                .always(() => {
                     self.isSwitchingStream(false);
                 });
         };
@@ -761,7 +761,7 @@ $(function () {
         };
 
         // Search functions
-        self.searchButtonText = ko.pureComputed(function () {
+        self.searchButtonText = ko.pureComputed(() => {
             return self.isSearching()
                 ? gettext("Searching...")
                 : gettext("Search");
@@ -785,13 +785,14 @@ $(function () {
             }
 
             try {
+                if (query.length > 500) {
+                    return escapeHtml(rawText);
+                }
                 var flags = self.caseSensitive() ? "g" : "gi";
-                var pattern = self.useRegex()
-                    ? new RegExp(query, flags)
-                    : new RegExp(
-                          query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-                          flags,
-                      );
+                var safeQuery = self.useRegex()
+                    ? query
+                    : query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                var pattern = new RegExp(safeQuery, flags);
 
                 var lastIndex = 0;
                 var pieces = [];
@@ -871,12 +872,12 @@ $(function () {
                     use_regex: self.useRegex(),
                 },
             })
-                .done(function (response) {
+                .done((response) => {
                     self.searchResults(response.results);
                     self.totalResults(response.total);
                     self.hasSearched(true);
                 })
-                .fail(function (error) {
+                .fail((error) => {
                     if (error && error.statusText === "abort") {
                         return;
                     }
@@ -897,7 +898,7 @@ $(function () {
                         type: "error",
                     });
                 })
-                .always(function () {
+                .always(() => {
                     self.isSearching(false);
                     self.pendingSearchRequest = null;
                 });
@@ -924,7 +925,7 @@ $(function () {
                 method: "POST",
                 contentType: "application/json",
                 dataType: "json",
-            }).done(function () {
+            }).done(() => {
                 self.alertCounts({
                     DEBUG: 0,
                     INFO: 0,
@@ -954,7 +955,7 @@ $(function () {
                 }),
                 contentType: "application/json",
                 dataType: "text",
-                success: function (data) {
+                success: (data) => {
                     var blob = new Blob([data], { type: "text/plain" });
                     var url = window.URL.createObjectURL(blob);
                     var link = document.createElement("a");
@@ -964,7 +965,7 @@ $(function () {
                     link.click();
                     window.URL.revokeObjectURL(url);
                 },
-                error: function () {
+                error: () => {
                     alert("Failed to export results");
                 },
             });
@@ -974,7 +975,7 @@ $(function () {
         self.downloadLogFile = function (filename) {
             var url =
                 pluginBaseUrl + "/download/" + encodeURIComponent(filename);
-            window.location.href = url;
+            window.location.assign(url);
         };
 
         // NEW: Load alert history
@@ -983,7 +984,7 @@ $(function () {
                 url: pluginBaseUrl + "/alert-history",
                 method: "GET",
                 dataType: "json",
-            }).done(function (response) {
+            }).done((response) => {
                 var history = Array.isArray(response && response.history)
                     ? response.history.slice().reverse()
                     : [];
@@ -1000,7 +1001,7 @@ $(function () {
                 method: "POST",
                 contentType: "application/json",
                 dataType: "json",
-            }).done(function () {
+            }).done(() => {
                 self.alertHistory([]);
             });
         };
@@ -1019,7 +1020,7 @@ $(function () {
             var defaultLogFileObs =
                 pluginSettings && pluginSettings.default_log_file;
             if (typeof defaultLogFileObs === "function") {
-                defaultLogFileObs.subscribe(function (newValue) {
+                defaultLogFileObs.subscribe((newValue) => {
                     var files = self.availableLogFiles();
                     if (
                         !self.isStreaming() &&
@@ -1031,7 +1032,7 @@ $(function () {
                 });
             }
 
-            self.selectedLogFile.subscribe(function (newValue) {
+            self.selectedLogFile.subscribe((newValue) => {
                 if (suppressStreamSwitch) return;
                 if (!self.isStreaming() || self.isSwitchingStream()) return;
                 if (typeof newValue !== "string" || newValue.length === 0)
@@ -1048,7 +1049,7 @@ $(function () {
                     self.settings.settings.plugins.logmonitor.default_log_file();
                 if (file) {
                     setSelectedLogFile(file);
-                    setTimeout(function () {
+                    setTimeout(() => {
                         self.startStream();
                     }, 500);
                 }
@@ -1077,7 +1078,7 @@ $(function () {
                 lineBuffer.push(data.data);
             } else if (data.type === "log_lines") {
                 if (Array.isArray(data.data)) {
-                    data.data.forEach(function (line) {
+                    data.data.forEach((line) => {
                         lineBuffer.push(line);
                     });
                 }
@@ -1135,7 +1136,7 @@ $(function () {
                         "data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA==",
                     );
                     audio.volume = 0.5;
-                    audio.play().catch(function () {
+                    audio.play().catch(() => {
                         // Sound playback failed, continue silently
                     });
                 } catch (e) {

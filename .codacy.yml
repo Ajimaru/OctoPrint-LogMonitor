@@ -9,3 +9,4 @@ exclude_paths:
   - "OctoPrint_LogMonitor.egg-info/**"
   - "translations/**"
   - ".venv/**"
+  - "eslint.config.mjs"

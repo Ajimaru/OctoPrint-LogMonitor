@@ -169,7 +169,6 @@ Summary: this project exposes many status and quality badges (CI, linting, cover
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/1b946ed41ef2479fa1eb254e6eea9fb0)](https://app.codacy.com/gh/Ajimaru/OctoPrint-LogMonitor/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Codacy Coverage](https://app.codacy.com/project/badge/Coverage/1b946ed41ef2479fa1eb254e6eea9fb0)](https://app.codacy.com/gh/Ajimaru/OctoPrint-LogMonitor)
 [![Coverage](https://codecov.io/gh/Ajimaru/OctoPrint-LogMonitor/graph/badge.svg?branch=main)](https://codecov.io/gh/Ajimaru/OctoPrint-LogMonitor)
-[![Coverage Diff](https://codecov.io/gh/Ajimaru/OctoPrint-LogMonitor/branch/main/graph/badge.svg?flag=patch)](https://codecov.io/gh/Ajimaru/OctoPrint-LogMonitor)
 [![Pylint Score](https://img.shields.io/badge/pylint-10.0-green.svg)](https://www.pylint.org/)
 [![Bandit Security](https://img.shields.io/badge/bandit-security-green.svg)](https://bandit.readthedocs.io/en/latest/)
 [![Depfu](https://badges.depfu.com/badges/b1bd984976a5ccb7ac298737eabe686f/status.svg)](https://depfu.com)
