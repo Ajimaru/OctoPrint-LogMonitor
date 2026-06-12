@@ -10,3 +10,10 @@ exclude_paths:
   - "translations/**"
   - ".venv/**"
   - "eslint.config.mjs"
+  # CSS is excluded from Codacy: its server-side Stylelint profile is
+  # misconfigured (it references non-existent "scss_*"-prefixed rules, which
+  # fail to load and report as errors on line 1), and the remaining findings
+  # are pure style/notation preferences that conflict with our actual CSS
+  # formatter (Prettier, run via pre-commit) and with deliberate
+  # browser-compatibility choices (rgba()/max-width over modern syntax).
+  - "**/*.css"
