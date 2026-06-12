@@ -471,9 +471,15 @@
 }
 
 /*
- * Theme-agnostic styling: the rules above use translucent / inherited colors
- * (rgba(127,127,127,…), color: inherit) instead of hardcoded light values, so
- * the UI adapts to OctoPrint's light theme, its built-in dark mode, and
- * third-party themes such as Themeify without needing a theme-specific
- * selector (Themeify does not set body[data-theme="dark"]).
+ * Theme-agnostic styling: surface backgrounds, borders and muted text above
+ * use translucent / inherited colors (rgba(127,127,127,…), color: inherit)
+ * rather than fixed light tones, so panels, lists and status text adapt to
+ * OctoPrint's light theme, its built-in dark mode, and third-party themes such
+ * as Themeify without needing a theme-specific selector (Themeify does not set
+ * body[data-theme="dark"]).
+ *
+ * A few intentional fixed colors remain because they are not theme-dependent
+ * surfaces: severity accents (warning/error/critical), navbar badges, the
+ * terminal-style log output, and the search highlight (#fff2a8, paired with an
+ * explicit dark text color so it stays legible on any background).
  */
