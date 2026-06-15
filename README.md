@@ -14,6 +14,8 @@
 
 ### Live log streaming and searching for OctoPrint with severity alerting in the navbar and sidebar
 
+[![25% Vibe_Coded](https://img.shields.io/badge/25%25-Vibe_Coded-ff69b4?style=flat-square&logo=githubcopilot&logoColor=white)](https://github.com/ai-ecoverse/vibe-coded-badge-action)
+
 > [!NOTE]
 > **About this project.** I built this for my own printer setup with AI, and if
 > it helps others, even better. I have tested it to the best of my knowledge and
