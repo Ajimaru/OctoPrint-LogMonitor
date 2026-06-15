@@ -5,14 +5,21 @@
 <h1 align="center">OctoPrint‑LogMonitor</h1>
 <!-- markdownlint-enable MD041 MD033 -->
 
-[![License](https://img.shields.io/github/license/Ajimaru/OctoPrint-LogMonitor)](https://github.com/Ajimaru/OctoPrint-LogMonitor/blob/main/LICENSE)
-[![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://python.org)
-[![OctoPrint](https://img.shields.io/badge/OctoPrint-1.10.0%2B-blue.svg)](https://octoprint.org)
-[![Latest Release](https://img.shields.io/github/v/release/Ajimaru/OctoPrint-LogMonitor?sort=semver)](https://github.com/Ajimaru/OctoPrint-LogMonitor/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/Ajimaru/OctoPrint-LogMonitor/total.svg)](https://github.com/Ajimaru/OctoPrint-LogMonitor/releases)
-[![Made with Love](https://img.shields.io/badge/made_with-❤️-ff69b4)](https://github.com/Ajimaru/OctoPrint-LogMonitor)
+[![License](https://img.shields.io/github/license/Ajimaru/OctoPrint-LogMonitor?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/blob/main/LICENSE)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue?style=flat-square)](https://python.org)
+[![OctoPrint](https://img.shields.io/badge/OctoPrint-1.10.0%2B-blue?style=flat-square)](https://octoprint.org)
+[![Latest Release](https://img.shields.io/github/v/release/Ajimaru/OctoPrint-LogMonitor?sort=semver&style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Ajimaru/OctoPrint-LogMonitor/total?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/releases)
+[![Made with Love](https://img.shields.io/badge/made_with-❤️-ff69b4?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor)
 
 ### Live log streaming and searching for OctoPrint with severity alerting in the navbar and sidebar
+
+> [!NOTE]
+> **About this project.** I built this for my own printer setup with AI, and if
+> it helps others, even better. I have tested it to the best of my knowledge and
+> ability, and every change is backed by an automated test suite, CI, and
+> security scans (Bandit, CodeQL). Disclosed here per the OctoPrint plugin guidelines.
+> Issues and PRs are welcome.
 
 <!-- markdownlint-disable MD033-->
 <img src="assets/img/main_screen.png" alt="OctoPrint Log Monitor Main Screen" width="666" />
@@ -154,55 +161,55 @@ Summary: this project exposes many status and quality badges (CI, linting, cover
 
 ### 🏗️ 1. Build & Test Status
 
-[![CI](https://github.com/Ajimaru/OctoPrint-LogMonitor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Ajimaru/OctoPrint-LogMonitor/actions/workflows/ci.yml?query=branch%3Amain)
-[![i18n](https://github.com/Ajimaru/OctoPrint-LogMonitor/actions/workflows/i18n.yml/badge.svg?branch=main)](https://github.com/Ajimaru/OctoPrint-LogMonitor/actions/workflows/i18n.yml?query=branch%3Amain)
-[![Lint](https://github.com/Ajimaru/OctoPrint-LogMonitor/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/Ajimaru/OctoPrint-LogMonitor/actions/workflows/lint.yml?query=branch%3Amain)
-[![Docs workflow](https://github.com/Ajimaru/OctoPrint-LogMonitor/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/Ajimaru/OctoPrint-LogMonitor/actions/workflows/docs.yml?query=branch%3Amain)
-[![Bandit SARIF](https://github.com/Ajimaru/OctoPrint-LogMonitor/actions/workflows/bandit-sarif.yml/badge.svg?branch=main)](https://github.com/Ajimaru/OctoPrint-LogMonitor/actions/workflows/bandit-sarif.yml?query=branch%3Amain)
+[![CI](https://img.shields.io/github/actions/workflow/status/Ajimaru/OctoPrint-LogMonitor/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/Ajimaru/OctoPrint-LogMonitor/actions/workflows/ci.yml?query=branch%3Amain)
+[![i18n](https://img.shields.io/github/actions/workflow/status/Ajimaru/OctoPrint-LogMonitor/i18n.yml?branch=main&style=flat-square&label=i18n)](https://github.com/Ajimaru/OctoPrint-LogMonitor/actions/workflows/i18n.yml?query=branch%3Amain)
+[![Lint](https://img.shields.io/github/actions/workflow/status/Ajimaru/OctoPrint-LogMonitor/lint.yml?branch=main&style=flat-square&label=Lint)](https://github.com/Ajimaru/OctoPrint-LogMonitor/actions/workflows/lint.yml?query=branch%3Amain)
+[![Docs workflow](https://img.shields.io/github/actions/workflow/status/Ajimaru/OctoPrint-LogMonitor/docs.yml?branch=main&style=flat-square&label=docs)](https://github.com/Ajimaru/OctoPrint-LogMonitor/actions/workflows/docs.yml?query=branch%3Amain)
+[![Bandit SARIF](https://img.shields.io/github/actions/workflow/status/Ajimaru/OctoPrint-LogMonitor/bandit-sarif.yml?branch=main&style=flat-square&label=Bandit%20SARIF)](https://github.com/Ajimaru/OctoPrint-LogMonitor/actions/workflows/bandit-sarif.yml?query=branch%3Amain)
 
 ### 🧪 2. Code Quality & Formatting
 
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
-[![Code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
-[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://pre-commit.com/)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/1b946ed41ef2479fa1eb254e6eea9fb0)](https://app.codacy.com/gh/Ajimaru/OctoPrint-LogMonitor/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
-[![Coverage](https://codecov.io/gh/Ajimaru/OctoPrint-LogMonitor/graph/badge.svg?branch=main)](https://codecov.io/gh/Ajimaru/OctoPrint-LogMonitor)
-[![Pylint Score](https://img.shields.io/badge/pylint-10.0-green.svg)](https://www.pylint.org/)
-[![Bandit Security](https://img.shields.io/badge/bandit-security-green.svg)](https://bandit.readthedocs.io/en/latest/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000?style=flat-square)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat-square&labelColor=ef8336)](https://pycqa.github.io/isort/)
+[![Code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4?style=flat-square)](https://github.com/prettier/prettier)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?style=flat-square&logo=pre-commit&logoColor=white)](https://pre-commit.com/)
+[![Codacy Badge](https://img.shields.io/codacy/grade/1b946ed41ef2479fa1eb254e6eea9fb0?style=flat-square)](https://app.codacy.com/gh/Ajimaru/OctoPrint-LogMonitor/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Coverage](https://img.shields.io/codecov/c/github/Ajimaru/OctoPrint-LogMonitor?style=flat-square)](https://codecov.io/gh/Ajimaru/OctoPrint-LogMonitor)
+[![Pylint Score](https://img.shields.io/badge/pylint-10.0-green?style=flat-square)](https://www.pylint.org/)
+[![Bandit Security](https://img.shields.io/badge/bandit-security-green?style=flat-square)](https://bandit.readthedocs.io/en/latest/)
 [![Depfu](https://badges.depfu.com/badges/b1bd984976a5ccb7ac298737eabe686f/status.svg)](https://depfu.com)
 [![Known Vulnerabilities](https://snyk.io/test/github/Ajimaru/OctoPrint-LogMonitor/badge.svg)](https://snyk.io/test/github/Ajimaru/OctoPrint-LogMonitor)
 
 ### 🔄 3. CI/CD & Release
 
-[![SemVer](https://img.shields.io/badge/semver-2.0.0-blue)](https://semver.org/)
-[![Release Date](https://img.shields.io/github/release-date/Ajimaru/OctoPrint-LogMonitor)](https://github.com/Ajimaru/OctoPrint-LogMonitor/releases)
-[![Latest Release](https://img.shields.io/github/v/release/Ajimaru/OctoPrint-LogMonitor?sort=semver)](https://github.com/Ajimaru/OctoPrint-LogMonitor/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/Ajimaru/OctoPrint-LogMonitor/total.svg)](https://github.com/Ajimaru/OctoPrint-LogMonitor/releases)
-[![Pre‑Release](https://img.shields.io/github/v/release/Ajimaru/OctoPrint-LogMonitor?include_prereleases&label=pre-release)](https://github.com/Ajimaru/OctoPrint-LogMonitor/releases)
-[![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://python.org)
-[![OctoPrint](https://img.shields.io/badge/OctoPrint-1.10.0%2B-blue.svg)](https://octoprint.org)
-[![Maintenance](https://img.shields.io/maintenance/yes/2026)](https://github.com/Ajimaru/OctoPrint-LogMonitor/graphs/commit-activity)
+[![SemVer](https://img.shields.io/badge/semver-2.0.0-blue?style=flat-square)](https://semver.org/)
+[![Release Date](https://img.shields.io/github/release-date/Ajimaru/OctoPrint-LogMonitor?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/releases)
+[![Latest Release](https://img.shields.io/github/v/release/Ajimaru/OctoPrint-LogMonitor?sort=semver&style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Ajimaru/OctoPrint-LogMonitor/total?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/releases)
+[![Pre‑Release](https://img.shields.io/github/v/release/Ajimaru/OctoPrint-LogMonitor?include_prereleases&label=pre-release&style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/releases)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue?style=flat-square)](https://python.org)
+[![OctoPrint](https://img.shields.io/badge/OctoPrint-1.10.0%2B-blue?style=flat-square)](https://octoprint.org)
+[![Maintenance](https://img.shields.io/maintenance/yes/2026?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/graphs/commit-activity)
 
 ### 📊 4. Repository Activity
 
-[![Open Issues](https://img.shields.io/github/issues/Ajimaru/OctoPrint-LogMonitor)](https://github.com/Ajimaru/OctoPrint-LogMonitor/issues?q=is%3Aissue%20state%3Aopen)
-[![Closed Issues](https://img.shields.io/github/issues-closed-raw/Ajimaru/OctoPrint-LogMonitor)](https://github.com/Ajimaru/OctoPrint-LogMonitor/issues?q=is%3Aissue%20state%3Aclosed)
-[![Open PRs](https://img.shields.io/github/issues-pr/Ajimaru/OctoPrint-LogMonitor)](https://github.com/Ajimaru/OctoPrint-LogMonitor/pulls?q=is%3Apr+is%3Aopen)
-[![Closed PRs](https://img.shields.io/github/issues-pr-closed/Ajimaru/OctoPrint-LogMonitor)](https://github.com/Ajimaru/OctoPrint-LogMonitor/pulls?q=is%3Apr+is%3Aclosed)
-[![Last Commit](https://img.shields.io/github/last-commit/Ajimaru/OctoPrint-LogMonitor)](https://github.com/Ajimaru/OctoPrint-LogMonitor/commits/main)
-[![Commit Activity (year)](https://img.shields.io/github/commit-activity/y/Ajimaru/OctoPrint-LogMonitor)](https://github.com/Ajimaru/OctoPrint-LogMonitor/graphs/commit-activity)
-[![Contributors](https://img.shields.io/github/contributors/Ajimaru/OctoPrint-LogMonitor)](https://github.com/Ajimaru/OctoPrint-LogMonitor/graphs/contributors)
+[![Open Issues](https://img.shields.io/github/issues/Ajimaru/OctoPrint-LogMonitor?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/issues?q=is%3Aissue%20state%3Aopen)
+[![Closed Issues](https://img.shields.io/github/issues-closed-raw/Ajimaru/OctoPrint-LogMonitor?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/issues?q=is%3Aissue%20state%3Aclosed)
+[![Open PRs](https://img.shields.io/github/issues-pr/Ajimaru/OctoPrint-LogMonitor?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/pulls?q=is%3Apr+is%3Aopen)
+[![Closed PRs](https://img.shields.io/github/issues-pr-closed/Ajimaru/OctoPrint-LogMonitor?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/pulls?q=is%3Apr+is%3Aclosed)
+[![Last Commit](https://img.shields.io/github/last-commit/Ajimaru/OctoPrint-LogMonitor?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/commits/main)
+[![Commit Activity (year)](https://img.shields.io/github/commit-activity/y/Ajimaru/OctoPrint-LogMonitor?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/graphs/commit-activity)
+[![Contributors](https://img.shields.io/github/contributors/Ajimaru/OctoPrint-LogMonitor?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/graphs/contributors)
 
 ### 🧾 5. Metadata
 
-![Code Size](https://img.shields.io/github/languages/code-size/Ajimaru/OctoPrint-LogMonitor)
-[![Security](https://img.shields.io/badge/security-policy-blue)](https://github.com/Ajimaru/OctoPrint-LogMonitor/blob/main/SECURITY.md)
-[![Snyk](https://img.shields.io/badge/security-snyk-blueviolet)](https://app.snyk.io)
-![Languages Count](https://img.shields.io/github/languages/count/Ajimaru/OctoPrint-LogMonitor)
-![Top Language](https://img.shields.io/github/languages/top/Ajimaru/OctoPrint-LogMonitor)
-[![License](https://img.shields.io/github/license/Ajimaru/OctoPrint-LogMonitor)](https://github.com/Ajimaru/OctoPrint-LogMonitor/blob/main/LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Ajimaru/OctoPrint-LogMonitor/pulls)
+![Code Size](https://img.shields.io/github/languages/code-size/Ajimaru/OctoPrint-LogMonitor?style=flat-square)
+[![Security](https://img.shields.io/badge/security-policy-blue?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/blob/main/SECURITY.md)
+[![Snyk](https://img.shields.io/badge/security-snyk-blueviolet?style=flat-square)](https://app.snyk.io)
+![Languages Count](https://img.shields.io/github/languages/count/Ajimaru/OctoPrint-LogMonitor?style=flat-square)
+![Top Language](https://img.shields.io/github/languages/top/Ajimaru/OctoPrint-LogMonitor?style=flat-square)
+[![License](https://img.shields.io/github/license/Ajimaru/OctoPrint-LogMonitor?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/blob/main/LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](https://github.com/Ajimaru/OctoPrint-LogMonitor/pulls)
 
 </details>
 <!-- markdownlint-enable MD033 -->
