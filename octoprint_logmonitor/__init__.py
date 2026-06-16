@@ -12,7 +12,7 @@ import logging
 import os
 import threading
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 import flask
 import octoprint.plugin
@@ -32,6 +32,17 @@ from .security import (
     validate_pagination,
     validate_severity_levels,
 )
+
+# Error codes returned by ``_resolve_log_path``.
+_LogPathErrorCode = Literal["invalid", "denied", "not_found"]
+
+# Maps the error code from ``_resolve_log_path`` to a client-safe
+# ``(message, http_status)`` pair.
+_LOG_PATH_ERRORS: dict[_LogPathErrorCode, tuple[str, int]] = {
+    "invalid": ("Invalid filename", 400),
+    "denied": ("Access denied", 403),
+    "not_found": ("Log file not found", 404),
+}
 
 
 class LogmonitorPlugin(
@@ -420,7 +431,16 @@ class LogmonitorPlugin(
 
         except Exception as e:
             self._logger.error(f"Error listing log files: {e}")
-            return flask.jsonify({"files": [], "error": str(e)}), 500
+            return (
+                flask.jsonify(
+                    {
+                        "files": [],
+                        "error": "Failed to list log files."
+                        " See server log for details.",
+                    }
+                ),
+                500,
+            )
 
     @octoprint.plugin.BlueprintPlugin.route("/search", methods=["GET"])
     @no_firstrun_access
@@ -491,25 +511,11 @@ class LogmonitorPlugin(
                 )
 
             # --- Filename / path validation ---
-            if not validate_filename(filename):
-                self._log_security_event(
-                    "invalid_filename",
-                    f"Rejected filename in search: {filename!r}",
-                )
-                return flask.jsonify({"error": "Invalid filename"}), 400
-
-            log_dir = self._get_logs_base_folder()
-            if not is_safe_path(log_dir, filename):
-                self._log_security_event(
-                    "path_traversal",
-                    f"Path traversal attempt in search: {filename!r}",
-                )
-                return flask.jsonify({"error": "Access denied"}), 403
-
-            filepath = os.path.join(log_dir, filename)
-
-            if not os.path.isfile(filepath):
-                return flask.jsonify({"error": "Log file not found"}), 404
+            filepath, err_code = self._resolve_log_path(filename, "search")
+            if filepath is None:
+                assert err_code is not None
+                msg, status = _LOG_PATH_ERRORS[err_code]
+                return flask.jsonify({"error": msg}), status
 
             # --- File-size guard ---
             if not check_file_size(filepath):
@@ -559,25 +565,13 @@ class LogmonitorPlugin(
             )
 
             # --- Filename / path validation ---
-            if not validate_filename(filename):
-                self._log_security_event(
-                    "invalid_filename",
-                    f"Rejected filename in stream/start: {filename!r}",
-                )
-                return flask.jsonify({"error": "Invalid filename"}), 400
-
-            log_dir = self._get_logs_base_folder()
-            if not is_safe_path(log_dir, filename):
-                self._log_security_event(
-                    "path_traversal",
-                    f"Path traversal attempt in stream/start: {filename!r}",
-                )
-                return flask.jsonify({"error": "Access denied"}), 403
-
-            filepath = os.path.join(log_dir, filename)
-
-            if not os.path.isfile(filepath):
-                return flask.jsonify({"error": "Log file not found"}), 404
+            filepath, err_code = self._resolve_log_path(
+                filename, "stream/start"
+            )
+            if filepath is None:
+                assert err_code is not None
+                msg, status = _LOG_PATH_ERRORS[err_code]
+                return flask.jsonify({"error": msg}), status
 
             # --- File-size guard ---
             if not check_file_size(filepath):
@@ -634,7 +628,15 @@ class LogmonitorPlugin(
 
         except Exception as e:
             self._logger.error(f"Error starting stream: {e}")
-            return flask.jsonify({"error": str(e)}), 500
+            return (
+                flask.jsonify(
+                    {
+                        "error": "Failed to start streaming."
+                        " See server log for details."
+                    }
+                ),
+                500,
+            )
 
     @octoprint.plugin.BlueprintPlugin.route("/stream/stop", methods=["POST"])
     @no_firstrun_access
@@ -679,45 +681,23 @@ class LogmonitorPlugin(
                     400,
                 )
 
-            log_dir = self._get_logs_base_folder()
             started_files = []
             failed_files = []
 
             for filename in files:
-                if not isinstance(filename, str):
-                    failed_files.append(
-                        {"file": str(filename), "error": "Invalid filename"}
-                    )
-                    continue
-
                 # Validate filename and path
-                if not validate_filename(filename):
-                    self._log_security_event(
-                        "invalid_filename",
-                        f"Rejected filename in multi-stream: {filename!r}",
+                filepath, err_code = self._resolve_log_path(
+                    filename, "multi-stream"
+                )
+                if filepath is None:
+                    assert err_code is not None
+                    msg = _LOG_PATH_ERRORS[err_code][0]
+                    label = (
+                        filename
+                        if isinstance(filename, str)
+                        else str(filename)
                     )
-                    failed_files.append(
-                        {"file": filename, "error": "Invalid filename"}
-                    )
-                    continue
-
-                if not is_safe_path(log_dir, filename):
-                    self._log_security_event(
-                        "path_traversal",
-                        f"Path traversal attempt in multi-stream:"
-                        f" {filename!r}",
-                    )
-                    failed_files.append(
-                        {"file": filename, "error": "Access denied"}
-                    )
-                    continue
-
-                filepath = os.path.join(log_dir, filename)
-
-                if not os.path.isfile(filepath):
-                    failed_files.append(
-                        {"file": filename, "error": "File not found"}
-                    )
+                    failed_files.append({"file": label, "error": msg})
                     continue
 
                 # File-size guard
@@ -1170,6 +1150,7 @@ class LogmonitorPlugin(
         global_getter = getattr(self._settings, "global_get_basefolder", None)
         if callable(global_getter):
             try:
+                # pylint: disable-next=not-callable
                 candidate = global_getter("logs")
                 if isinstance(candidate, str) and candidate:
                     candidates.append(candidate)
@@ -1181,6 +1162,7 @@ class LogmonitorPlugin(
         base_folder_getter = getattr(self._settings, "getBaseFolder", None)
         if callable(base_folder_getter):
             try:
+                # pylint: disable-next=not-callable
                 candidate = base_folder_getter("logs")
                 if isinstance(candidate, str) and candidate:
                     candidates.append(candidate)
@@ -1191,6 +1173,7 @@ class LogmonitorPlugin(
                 # global OctoPrint logs folder, so do not use it as a log-path
                 # candidate unless every global lookup path fails.
                 try:
+                    # pylint: disable-next=not-callable
                     candidate = base_folder_getter()
                     if isinstance(candidate, str) and candidate:
                         noarg_base_folder = candidate
@@ -1204,6 +1187,7 @@ class LogmonitorPlugin(
                 )
 
         try:
+            # pylint: disable=import-outside-toplevel
             from octoprint.settings import (
                 settings as octoprint_settings,  # type: ignore[import-untyped]
             )
@@ -1234,6 +1218,50 @@ class LogmonitorPlugin(
             )
 
         raise RuntimeError("Unable to resolve OctoPrint global logs folder")
+
+    def _resolve_log_path(
+        self, filename, context: str
+    ) -> tuple[str | None, _LogPathErrorCode | None]:
+        """Validate *filename* and resolve it to a safe path in the log dir.
+
+        This is the single chokepoint through which every user-supplied log
+        filename must pass before it reaches a filesystem sink.  It enforces
+        :func:`validate_filename` (no path components) followed by
+        :func:`is_safe_path` (realpath containment), emitting the appropriate
+        security event on rejection.
+
+        Args:
+            filename: The user/API-supplied filename.
+            context: Short label for security-event logging, e.g.
+                ``"search"``.
+
+        Returns:
+            ``(filepath, None)`` when the filename is valid and the resolved
+            path exists as a regular file.  Otherwise ``(None, error_code)``
+            where *error_code* is one of ``"invalid"``, ``"denied"`` or
+            ``"not_found"``.  Callers map the code to their own response shape.
+        """
+        if not isinstance(filename, str) or not validate_filename(filename):
+            self._log_security_event(
+                "invalid_filename",
+                f"Rejected filename in {context}: {filename!r}",
+            )
+            return None, "invalid"
+
+        log_dir = self._get_logs_base_folder()
+        if not is_safe_path(log_dir, filename):
+            self._log_security_event(
+                "path_traversal",
+                f"Path traversal attempt in {context}: {filename!r}",
+            )
+            return None, "denied"
+
+        # is_safe_path guarantees the join stays inside log_dir.
+        filepath = os.path.join(log_dir, filename)
+        if not os.path.isfile(filepath):
+            return None, "not_found"
+
+        return filepath, None
 
     def _write_unknown_debug_test_log(self, message: str) -> None:
         """Append an UNKNOWN test line directly to octoprint.log."""

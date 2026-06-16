@@ -49,3 +49,7 @@ env/
 .githooks/
 .pre-commit-config.yaml
 .octoprint-*/
+
+# Local-only lint config
+.markdownlint.json
+.markdownlintignore

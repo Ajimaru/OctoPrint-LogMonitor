@@ -31,8 +31,7 @@ _SENSITIVE_PATTERNS: list[tuple[re.Pattern, str]] = [
     # API keys / tokens / secrets  (key = value  or  key: value)
     (
         re.compile(
-            r"(?i)(api[_\-]?key|apikey|access[_\-]?token|auth[_\-]?token"
-            r"|secret[_\-]?key|client[_\-]?secret)\s*[:=]\s*\S+",
+            r"(?i)(api[_\-]?key|apikey|access[_\-]?token|auth[_\-]?token|secret[_\-]?key|client[_\-]?secret)\s*[:=]\s*\S+",  # noqa: E501
         ),
         r"\1: [REDACTED]",
     ),
