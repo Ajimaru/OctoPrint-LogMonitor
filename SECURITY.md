@@ -2,10 +2,8 @@
 
 ## Supported Versions
 
-| Version | Supported |
-| ------- | --------- |
-| 0.1.x   | ✅ Yes    |
-| < 0.1   | ❌ No     |
+Security fixes are provided for the latest released version. We recommend
+always running the most recent release.
 
 ---
 
@@ -32,16 +30,16 @@ web interface. The following security assumptions apply:
 
 ## Built-in Security Controls
 
-| Control                       | Details                                                                                                                                                                                                                                               |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Path traversal prevention** | All file names supplied by API callers are validated with `validate_filename()` and `is_safe_path()` before any filesystem access. Absolute paths, `..` components, and symlink escapes are rejected with HTTP 400/403 and logged as security events. |
-| **File-size guard**           | Files larger than 1 GiB are rejected to prevent memory exhaustion (HTTP 413).                                                                                                                                                                         |
-| **Rate limiting**             | The search endpoint enforces a sliding-window rate limit (10 requests / minute per client IP) to mitigate abuse (HTTP 429).                                                                                                                           |
-| **Input validation**          | `offset`, `limit`, severity level strings, and all JSON payloads are validated; bad input returns HTTP 400.                                                                                                                                           |
-| **Generic error responses**   | Internal exception messages, stack traces, and file paths are written to OctoPrint's server log only and are never returned to API callers.                                                                                                           |
-| **Sensitive data masking**    | When `mask_log_content` is enabled in plugin settings, streamed log lines are scanned for API keys, passwords, Bearer tokens, and email addresses and the values are replaced with `[REDACTED]`.                                                      |
-| **Audit logging**             | Path traversal attempts, rate-limit violations, and invalid filename submissions are logged as `[SECURITY]` events in OctoPrint's server log.                                                                                                         |
-| **Thread safety**             | Shared state (alert counters, alert history, tailer references) is protected by `threading.Lock()` instances to prevent race conditions.                                                                                                              |
+| Control                       | Details                                                                                                                                                                                                                                                                                                           |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Path traversal prevention** | All file names supplied by API callers pass through the single `_resolve_log_path()` chokepoint, which validates with `validate_filename()` and `is_safe_path()` before any filesystem access. Absolute paths, `..` components, and symlink escapes are rejected with HTTP 400/403 and logged as security events. |
+| **File-size guard**           | Files larger than 1 GiB are rejected to prevent memory exhaustion (HTTP 413).                                                                                                                                                                                                                                     |
+| **Rate limiting**             | The search endpoint enforces a sliding-window rate limit (10 requests / minute per client IP address) to mitigate abuse (HTTP 429).                                                                                                                                                                               |
+| **Input validation**          | `offset`, `limit`, severity level strings, and all JSON payloads are validated; bad input returns HTTP 400.                                                                                                                                                                                                       |
+| **Generic error responses**   | Internal exception messages, stack traces, and file paths are written to OctoPrint's server log only and are never returned to API callers.                                                                                                                                                                       |
+| **Sensitive data masking**    | When `mask_log_content` is enabled in plugin settings, streamed log lines are scanned for API keys, passwords, Bearer tokens, and email addresses and the values are replaced with `[REDACTED]`.                                                                                                                  |
+| **Audit logging**             | Path traversal attempts, rate-limit violations, and invalid filename submissions are logged as `[SECURITY]` events in OctoPrint's server log.                                                                                                                                                                     |
+| **Thread safety**             | Shared state (alert counters, alert history, tailer references) is protected by `threading.Lock()` instances to prevent race conditions.                                                                                                                                                                          |
 
 ---
 
@@ -68,7 +66,7 @@ Monitor, please **do not open a public GitHub issue**.
 
 Report vulnerabilities by emailing:
 
-> **<security@ajimaru.dev>** _(replace with the actual contact address)_
+> **<ajimaru_gdr@pm.me>**
 
 Please include:
 
@@ -76,8 +74,8 @@ Please include:
 2. Reproduction steps (version, configuration, request/response details).
 3. Any suggested mitigations you may have identified.
 
-We aim to acknowledge reports within **48 hours** and to publish a patched
-release within **14 days** for critical issues. We will credit reporters in
+We will review and respond to reports as soon as we reasonably can, and aim
+to address confirmed issues in a future release. We will credit reporters in
 the changelog unless they prefer to remain anonymous.
 
 ### Scope
@@ -88,18 +86,11 @@ In-scope for vulnerability reports:
 - Authentication bypass
 - Denial of service via resource exhaustion
 - Information disclosure (internal paths, stack traces, sensitive data)
-- Injection attacks (regex, command, etc.)
+- Injection attacks, including regex denial-of-service (ReDoS) and OS command injection
 
 Out of scope:
 
 - Vulnerabilities in OctoPrint itself (report to the OctoPrint project)
 - Issues that require physical access to the host machine
 - Social-engineering attacks
-
----
-
-## Security Changelog
-
-| Version | Date       | Summary                                                                                                                                                               |
-| ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0.1.0   | 2026-02-19 | Initial release with path traversal protection, rate limiting, input validation, file-size guard, generic error responses, sensitive data masking, and audit logging. |
+- Vulnerabilities in third-party dependencies (report to the respective maintainers)
