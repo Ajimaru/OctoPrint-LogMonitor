@@ -66,7 +66,7 @@ Monitor, please **do not open a public GitHub issue**.
 
 Report vulnerabilities by emailing:
 
-> **<ajimaru_gdr@pm.me>**
+> **ajimaru_gdr [at] pm [dot] me**
 
 Please include:
 
