@@ -4,8 +4,7 @@ Provides live log streaming and searching capabilities
 with severity-based alerting.
 """
 
-# pylint: disable=broad-except,global-statement,too-many-lines
-# intentional: plugin handlers must not crash OctoPrint
+from __future__ import annotations
 
 import json
 import logging
@@ -32,6 +31,10 @@ from .security import (
     validate_pagination,
     validate_severity_levels,
 )
+
+# pylint: disable=broad-except,global-statement,too-many-lines
+# intentional: plugin handlers must not crash OctoPrint
+
 
 # Error codes returned by ``_resolve_log_path``.
 _LogPathErrorCode = Literal["invalid", "denied", "not_found"]
@@ -513,7 +516,8 @@ class LogmonitorPlugin(
             # --- Filename / path validation ---
             filepath, err_code = self._resolve_log_path(filename, "search")
             if filepath is None:
-                assert err_code is not None
+                if err_code is None:
+                    return flask.jsonify({"error": "internal error"}), 500
                 msg, status = _LOG_PATH_ERRORS[err_code]
                 return flask.jsonify({"error": msg}), status
 
@@ -569,7 +573,8 @@ class LogmonitorPlugin(
                 filename, "stream/start"
             )
             if filepath is None:
-                assert err_code is not None
+                if err_code is None:
+                    return flask.jsonify({"error": "internal error"}), 500
                 msg, status = _LOG_PATH_ERRORS[err_code]
                 return flask.jsonify({"error": msg}), status
 
@@ -690,7 +695,8 @@ class LogmonitorPlugin(
                     filename, "multi-stream"
                 )
                 if filepath is None:
-                    assert err_code is not None
+                    if err_code is None:
+                        return flask.jsonify({"error": "internal error"}), 500
                     msg = _LOG_PATH_ERRORS[err_code][0]
                     label = (
                         filename
@@ -1650,7 +1656,7 @@ __plugin_license__ = "AGPL-3.0-or-later"
 
 
 # Module-level plugin variables (populated by __plugin_load__)
-__plugin_implementation__: "LogmonitorPlugin | None" = None
+__plugin_implementation__: LogmonitorPlugin | None = None
 __plugin_hooks__: dict = {}
 
 

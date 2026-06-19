@@ -3,7 +3,7 @@
 ## Supported Versions
 
 Security fixes are provided for the latest released version. We recommend
-always running the most recent release.
+always running the most recent release where possible.
 
 ---
 
@@ -34,7 +34,7 @@ web interface. The following security assumptions apply:
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Path traversal prevention** | All file names supplied by API callers pass through the single `_resolve_log_path()` chokepoint, which validates with `validate_filename()` and `is_safe_path()` before any filesystem access. Absolute paths, `..` components, and symlink escapes are rejected with HTTP 400/403 and logged as security events. |
 | **File-size guard**           | Files larger than 1 GiB are rejected to prevent memory exhaustion (HTTP 413).                                                                                                                                                                                                                                     |
-| **Rate limiting**             | The search endpoint enforces a sliding-window rate limit (10 requests / minute per client IP address) to mitigate abuse (HTTP 429).                                                                                                                                                                               |
+| **Rate limiting**             | The search endpoint enforces a sliding-window rate limit (10 requests / minute per client IP (Internet Protocol) address) to mitigate abuse (HTTP 429).                                                                                                                                                           |
 | **Input validation**          | `offset`, `limit`, severity level strings, and all JSON payloads are validated; bad input returns HTTP 400.                                                                                                                                                                                                       |
 | **Generic error responses**   | Internal exception messages, stack traces, and file paths are written to OctoPrint's server log only and are never returned to API callers.                                                                                                                                                                       |
 | **Sensitive data masking**    | When `mask_log_content` is enabled in plugin settings, streamed log lines are scanned for API keys, passwords, Bearer tokens, and email addresses and the values are replaced with `[REDACTED]`.                                                                                                                  |
