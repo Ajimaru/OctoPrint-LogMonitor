@@ -53,7 +53,7 @@ jobs:
     steps:
       - # Checkout repository code
         name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - # Setup Python version and pip cache
         name: Set up Python
@@ -191,7 +191,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Python
         uses: actions/setup-python@v6
