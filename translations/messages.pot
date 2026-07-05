@@ -8,19 +8,21 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"POT-Creation-Date: 2026-07-05 20:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.18.0\n"
+"Generated-By: Babel 2.16.0\n"
 
+#: build/lib/octoprint_logmonitor/static/js/logmonitor.js:332
 #: octoprint_logmonitor/static/js/logmonitor.js:332
 msgid " (switching...)"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/static/js/logmonitor.js:359
 #: octoprint_logmonitor/static/js/logmonitor.js:359
 #, python-format
 msgid "%(count)s alert"
@@ -28,6 +30,7 @@ msgid_plural "%(count)s alerts"
 msgstr[0] ""
 msgstr[1] ""
 
+#: build/lib/octoprint_logmonitor/static/js/logmonitor.js:289
 #: octoprint_logmonitor/static/js/logmonitor.js:289
 #, python-format
 msgid "%(count)s history entry"
@@ -35,272 +38,339 @@ msgid_plural "%(count)s history entries"
 msgstr[0] ""
 msgstr[1] ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:186
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:186
 msgid "Alert monitor status"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:156
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:156
 msgid "Alert source logs"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:102
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:102
 msgid "Alerts &amp; Notifications"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:168
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:168
 msgid "All available logs"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:40
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:40
 msgid "Auto-scroll"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:74
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:74
 msgid "Auto-scroll enabled by default"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:40
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:40
 msgid "Auto-start streaming on page load"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:42
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:42
-msgid ""
-"Automatically start streaming the default log file when OctoPrint loads."
+msgid "Automatically start streaming the default log file when OctoPrint loads."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:132
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:132
 msgid ""
 "Can generate many alerts because log files usually contain frequent INFO "
 "entries."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:266
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:266
 msgid "Changes take effect immediately after saving."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:35
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:35
 msgid "Clear"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_sidebar.jinja2:19
 #: octoprint_logmonitor/templates/logmonitor_sidebar.jinja2:19
 msgid "Clear Alerts"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:197
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:197
 msgid "Clear History"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:170
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:170
 msgid ""
-"Controls which log files are monitored for severity trigger alerts in the "
-"background."
+"Controls which log files are monitored for severity trigger alerts in the"
+" background."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:243
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:243
 msgid "Debug"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:25
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:25
 msgid "Default log file"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:2
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:2
 msgid "Display Settings"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:10
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:10
 msgid "Display a badge in the navbar when severity alerts occur."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:20
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:20
 msgid "Display a widget in the sidebar showing log monitor status."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:33
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:33
 msgid "Download Log"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:108
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:108
 msgid "Enable alerts globally"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:249
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:249
 msgid "Enable debug mode in OctoPrint log"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:204
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:204
 msgid "Enable in-app toast notifications"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:85
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:85
 msgid "Enable regex search by default"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:142
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:142
 msgid "Export CSV"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:146
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:146
 msgid "Export TXT"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:71
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:71
 msgid "Filter logs..."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:14
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:14
 msgid "History List"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:54
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:54
 msgid "How often to check for new log entries (in seconds)."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:214
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:214
 msgid "Keep alert history"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:160
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:160
 msgid "Level"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:84
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:84
 msgid "Lines:"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:6
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:6
 msgid "Live Log Stream"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:2
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:2
 msgid "Log Monitor"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:32
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:32
 msgid "Log file pre-selected in the stream dropdown on page load."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:159
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:159
 msgid "Logger"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:175
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:175
 msgid "Logs for alert monitoring"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:238
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:238
 msgid "Mask sensitive data in stream"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:220
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:220
 msgid "Max alert history entries"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:58
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:58
 msgid "Max stream lines"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:228
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:228
 msgid "Maximum number of alert history entries to keep."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:66
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:66
 msgid "Maximum number of lines to keep in the stream view buffer."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:161
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:161
 msgid "Message"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:183
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:183
 msgid "Next"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:202
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:202
 msgid "No alert history entries yet."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/static/js/logmonitor.js:365
 #: octoprint_logmonitor/static/js/logmonitor.js:365
 msgid "No alerts"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:187
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:187
 msgid "No results found."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/static/js/logmonitor.js:336
 #: octoprint_logmonitor/static/js/logmonitor.js:336
 msgid "Not streaming"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:99
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:99
 msgid "Number of search results to display per page."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:162
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:162
 msgid "Only selected logs"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_sidebar.jinja2:15
 #: octoprint_logmonitor/templates/logmonitor_sidebar.jinja2:15
 msgid "Open History List"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:46
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:46
 msgid "Poll interval (s)"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:87
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:87
 msgid "Pre-enable the regex search option in the search form."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:181
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:181
 msgid "Previous"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:232
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:232
 msgid "Privacy"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:240
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:240
-msgid ""
-"Redact API keys, passwords and e-mail addresses from streamed log lines."
+msgid "Redact API keys, passwords and e-mail addresses from streamed log lines."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:194
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:194
 msgid "Refresh"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:195
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:195
 msgid "Refresh status"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:91
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:91
 msgid "Results per page"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/static/js/logmonitor.js:757
 #: octoprint_logmonitor/static/js/logmonitor.js:757
 msgid "Search"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:10
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:10
 msgid "Search Logs"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:79
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:79
 msgid "Search Settings"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:99
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:99
 msgid "Search query..."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:131
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:131
 msgid "Searching logs..."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/static/js/logmonitor.js:756
 #: octoprint_logmonitor/static/js/logmonitor.js:756
 msgid "Searching..."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/static/js/logmonitor.js:417
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:30
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:25
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:94
 #: octoprint_logmonitor/static/js/logmonitor.js:417
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:30
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:25
@@ -308,125 +378,153 @@ msgstr ""
 msgid "Select log file..."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:152
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:152
 msgid "Select which severity levels should trigger navbar/sidebar alerts."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:76
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:76
 msgid ""
-"Sets the initial auto-scroll state when the page loads. Can be toggled at "
-"any time directly in the stream view."
+"Sets the initial auto-scroll state when the page loads. Can be toggled at"
+" any time directly in the stream view."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:60
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:60
 msgid "Show CRITICAL"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:44
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:44
 msgid "Show DEBUG"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:56
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:56
 msgid "Show ERROR"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:48
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:48
 msgid "Show INFO"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:64
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:64
 msgid "Show UNKNOWN"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:52
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:52
 msgid "Show WARNING"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:206
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:206
 msgid ""
 "Show an OctoPrint-style toast notification in the web UI when a severity "
 "alert fires."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:8
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:8
 msgid "Show indicator in Navbar"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:18
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:18
 msgid "Show widget in Sidebar"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:196
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:196
-msgid ""
-"Shows which logs are currently monitored by the background alert worker."
+msgid "Shows which logs are currently monitored by the background alert worker."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:123
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:131
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:123
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:131
 msgid "Spam risk"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:29
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:29
 msgid "Start Streaming"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:191
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:191
 msgid "Status not loaded yet."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:216
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:216
 msgid "Store triggered alerts in a history list."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:23
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:23
 msgid "Streaming Settings"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/static/js/logmonitor.js:330
 #: octoprint_logmonitor/static/js/logmonitor.js:330
 msgid "Streaming: "
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:182
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:182
 msgid ""
-"These logs are monitored for severity triggers even when no live stream is "
-"open."
+"These logs are monitored for severity triggers even when no live stream "
+"is open."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:158
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:158
 msgid "Timestamp"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:116
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:116
 msgid "Trigger alerts for"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:110
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:110
 msgid "Turns all severity alert monitoring and notifications on or off."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:190
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:190
 msgid "Unknown"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:124
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:124
 msgid "Very high alert volume when OctoPrint debug mode is enabled."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:256
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:256
 msgid "Write Debug Test Entries"
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:251
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:251
-msgid ""
-"Writes Log Monitor frontend debug events into the OctoPrint server log."
+msgid "Writes Log Monitor frontend debug events into the OctoPrint server log."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_settings.jinja2:260
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:260
 msgid ""
 "Writes one test log entry for DEBUG, INFO, WARNING, ERROR, CRITICAL and "
 "UNKNOWN categories."
 msgstr ""
 
+#: build/lib/octoprint_logmonitor/templates/logmonitor_tab.jinja2:137
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:137
 msgid "results"
 msgstr ""
+
