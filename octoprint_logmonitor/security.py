@@ -254,12 +254,15 @@ class RateLimiter:
         self._period = period
         self._clients: dict[str, list[float]] = {}
         self._lock = threading.Lock()
+        self._last_cleanup = time.monotonic()
 
     def is_allowed(self, client_key: str) -> bool:
         """Check whether *client_key* is within the rate limit.
 
         Calling this method counts as one request attempt regardless of the
-        return value.
+        return value.  Fully-expired client entries are pruned automatically
+        once per sliding-window period, so the tracking dict cannot grow
+        without bound.
 
         Args:
             client_key: An opaque string identifying the caller (e.g. IP).
@@ -270,6 +273,10 @@ class RateLimiter:
         """
         now = time.monotonic()
         with self._lock:
+            if now - self._last_cleanup >= self._period:
+                self._cleanup_locked(now)
+                self._last_cleanup = now
+
             timestamps = self._clients.get(client_key, [])
             # Evict expired timestamps
             timestamps = [t for t in timestamps if now - t < self._period]
@@ -282,11 +289,16 @@ class RateLimiter:
 
     def cleanup(self) -> None:
         """Remove all fully-expired client entries to free memory."""
-        now = time.monotonic()
         with self._lock:
-            for key in list(self._clients.keys()):
-                self._clients[key] = [
-                    t for t in self._clients[key] if now - t < self._period
-                ]
-                if not self._clients[key]:
-                    del self._clients[key]
+            self._cleanup_locked(time.monotonic())
+
+    def _cleanup_locked(self, now: float) -> None:
+        """Prune expired entries; caller must hold ``self._lock``."""
+        for key in list(self._clients.keys()):
+            remaining = [
+                t for t in self._clients[key] if now - t < self._period
+            ]
+            if remaining:
+                self._clients[key] = remaining
+            else:
+                del self._clients[key]
