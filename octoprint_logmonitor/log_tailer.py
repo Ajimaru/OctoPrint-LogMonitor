@@ -5,10 +5,15 @@ Similar to 'tail -f' behavior for live log streaming.
 """
 
 import os
-import re
 import threading
 import time
 from typing import Any, Callable, Optional
+
+from .log_parser import parse_line
+
+#: Block size used when reading a file backwards in
+#: :meth:`LogTailer.get_last_n_lines`.
+_TAIL_BLOCK_SIZE = 8192
 
 
 class LogTailer:
@@ -16,40 +21,10 @@ class LogTailer:
 
     Features:
     - Thread-safe start/stop
-    - Handles file rotation
+    - Handles file rotation (rename/recreate and copy-truncate)
     - Parses OctoPrint log format
     - Calls callback for each new line
     """
-
-    # pylint: disable=too-many-instance-attributes
-
-    # OctoPrint log format: YYYY-MM-DD HH:MM:SS[,ms] - LOGGER - LEVEL - MESSAGE
-    LOG_PATTERN = re.compile(
-        r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:,\d{3})?)\s+-\s+"
-        r"([^\-]+)\s+-\s+"
-        r"(DEBUG|INFO|WARNING|ERROR|CRITICAL)\s+-\s+"
-        r"(.+)$"
-    )
-
-    # Serial log often uses: YYYY-MM-DD HH:MM:SS,ms - MESSAGE
-    SIMPLE_LOG_PATTERN = re.compile(
-        r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:,\d{3})?)\s+-\s+(.+)$"
-    )
-
-    # Some environments log compact lines without the usual " - " separators:
-    # YYYY-MM-DD HH:MM:SS,msLEVEL LOGGER MESSAGE
-    COMPACT_LOG_PATTERN = re.compile(
-        r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:,\d{3})?)"
-        r"\s*(DEBUG|INFO|WARNING|ERROR|CRITICAL)\s+"
-        r"([A-Za-z0-9_.:-]+)\s+(.+)$"
-    )
-
-    # Virtual printer serial lines often use: YYYY-MM-DD HH:MM:SS,ms >>>
-    # MESSAGE
-    SERIAL_IO_PATTERN = re.compile(
-        r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:,\d{3})?)"
-        r"\s+(>>>|<<<)\s+(.+)$"
-    )
 
     def __init__(
         self,
@@ -216,14 +191,24 @@ class LogTailer:
                 self._logger.debug("LogTailer thread exiting")
 
     def _check_rotation(self) -> bool:
-        """Check if the log file has been rotated.
+        """Check if the log file has been rotated or truncated.
+
+        Detects both rotation styles used by logrotate-like tools:
+
+        - rename/recreate: the path now points to a different inode
+        - copy-truncate: same inode, but the file shrank below the
+          current read position
 
         Returns:
-            True if rotation detected, False otherwise
+            True if rotation/truncation detected, False otherwise
         """
         try:
-            current_inode = os.stat(self._filepath).st_ino
-            return current_inode != self._file_inode
+            stat = os.stat(self._filepath)
+            if stat.st_ino != self._file_inode:
+                return True
+            if self._file is not None and stat.st_size < self._file.tell():
+                return True
+            return False
         except OSError:
             return False
 
@@ -254,78 +239,16 @@ class LogTailer:
             line: Raw log line
 
         Returns:
-            Dictionary with parsed fields
+            Dictionary with parsed fields (see
+            :func:`octoprint_logmonitor.log_parser.parse_line`)
         """
-        line = line.rstrip("\n\r")
-        raw_line = line.replace("\t", "    ")
-
-        match = self.LOG_PATTERN.match(raw_line)
-
-        if match:
-            message = match.group(4).replace("\t", "    ")
-            return {
-                "timestamp": match.group(1),
-                "logger": match.group(2).strip(),
-                "level": match.group(3),
-                "message": message,
-                "raw": raw_line,
-            }
-
-        simple_match = self.SIMPLE_LOG_PATTERN.match(raw_line)
-        if simple_match:
-            message = simple_match.group(2).strip()
-            level = "INFO"
-            upper_message = message.upper()
-            if "CRITICAL" in upper_message:
-                level = "CRITICAL"
-            elif "ERROR" in upper_message:
-                level = "ERROR"
-            elif "WARNING" in upper_message:
-                level = "WARNING"
-            elif "DEBUG" in upper_message:
-                level = "DEBUG"
-
-            return {
-                "timestamp": simple_match.group(1),
-                "logger": "serial.log",
-                "level": level,
-                "message": message,
-                "raw": raw_line,
-            }
-
-        compact_match = self.COMPACT_LOG_PATTERN.match(raw_line)
-        if compact_match:
-            return {
-                "timestamp": compact_match.group(1),
-                "logger": compact_match.group(3).strip(),
-                "level": compact_match.group(2),
-                "message": compact_match.group(4),
-                "raw": raw_line,
-            }
-
-        serial_match = self.SERIAL_IO_PATTERN.match(raw_line)
-        if serial_match:
-            direction = serial_match.group(2)
-            message = serial_match.group(3).strip()
-            return {
-                "timestamp": serial_match.group(1),
-                "logger": "serial.log",
-                "level": "INFO",
-                "message": f"{direction} {message}",
-                "raw": raw_line,
-            }
-
-        # Line doesn't match expected format, return as-is
-        return {
-            "timestamp": "",
-            "logger": "",
-            "level": "UNKNOWN",
-            "message": raw_line,
-            "raw": raw_line,
-        }
+        return parse_line(line)
 
     def get_last_n_lines(self, n: int = 100) -> list:
         """Read the last N lines from the log file.
+
+        Reads the file backwards in blocks, so only roughly the requested
+        amount of data is loaded regardless of total file size.
 
         Args:
             n: Number of lines to read
@@ -333,19 +256,27 @@ class LogTailer:
         Returns:
             List of parsed log line dictionaries
         """
-        if not os.path.exists(self._filepath):
+        if n <= 0 or not os.path.exists(self._filepath):
             return []
 
         try:
-            with open(self._filepath, encoding="utf-8", errors="replace") as f:
-                # Read all lines
-                lines = f.readlines()
+            with open(self._filepath, "rb") as f:
+                f.seek(0, os.SEEK_END)
+                pos = f.tell()
+                data = b""
 
-                # Get last N lines
-                last_lines = lines[-n:] if len(lines) > n else lines
+                # Read blocks from the end until enough newlines collected
+                # (n + 1 newlines guarantee n complete lines).
+                while pos > 0 and data.count(b"\n") <= n:
+                    read_size = min(_TAIL_BLOCK_SIZE, pos)
+                    pos -= read_size
+                    f.seek(pos)
+                    data = f.read(read_size) + data
 
-                # Parse each line
-                return [self._parse_line(line) for line in last_lines]
+            text = data.decode("utf-8", errors="replace")
+            last_lines = text.splitlines()[-n:]
+
+            return [self._parse_line(line) for line in last_lines]
 
         except OSError as e:
             if self._logger:

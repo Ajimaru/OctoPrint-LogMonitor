@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-18 10:45+0200\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,18 +17,18 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: octoprint_logmonitor/static/js/logmonitor.js:333
+#: octoprint_logmonitor/static/js/logmonitor.js:332
 msgid " (switching...)"
 msgstr ""
 
-#: octoprint_logmonitor/static/js/logmonitor.js:360
+#: octoprint_logmonitor/static/js/logmonitor.js:359
 #, python-format
 msgid "%(count)s alert"
 msgid_plural "%(count)s alerts"
 msgstr[0] ""
 msgstr[1] ""
 
-#: octoprint_logmonitor/static/js/logmonitor.js:290
+#: octoprint_logmonitor/static/js/logmonitor.js:289
 #, python-format
 msgid "%(count)s history entry"
 msgid_plural "%(count)s history entries"
@@ -64,7 +64,8 @@ msgid "Auto-start streaming on page load"
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:42
-msgid "Automatically start streaming the default log file when OctoPrint loads."
+msgid ""
+"Automatically start streaming the default log file when OctoPrint loads."
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:132
@@ -91,8 +92,8 @@ msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:170
 msgid ""
-"Controls which log files are monitored for severity trigger alerts in the"
-" background."
+"Controls which log files are monitored for severity trigger alerts in the "
+"background."
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:243
@@ -219,7 +220,7 @@ msgstr ""
 msgid "No alert history entries yet."
 msgstr ""
 
-#: octoprint_logmonitor/static/js/logmonitor.js:366
+#: octoprint_logmonitor/static/js/logmonitor.js:365
 msgid "No alerts"
 msgstr ""
 
@@ -227,7 +228,7 @@ msgstr ""
 msgid "No results found."
 msgstr ""
 
-#: octoprint_logmonitor/static/js/logmonitor.js:337
+#: octoprint_logmonitor/static/js/logmonitor.js:336
 msgid "Not streaming"
 msgstr ""
 
@@ -260,7 +261,8 @@ msgid "Privacy"
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:240
-msgid "Redact API keys, passwords and e-mail addresses from streamed log lines."
+msgid ""
+"Redact API keys, passwords and e-mail addresses from streamed log lines."
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:194
@@ -273,6 +275,10 @@ msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:91
 msgid "Results per page"
+msgstr ""
+
+#: octoprint_logmonitor/static/js/logmonitor.js:757
+msgid "Search"
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:10
@@ -291,7 +297,11 @@ msgstr ""
 msgid "Searching logs..."
 msgstr ""
 
-#: octoprint_logmonitor/static/js/logmonitor.js:418
+#: octoprint_logmonitor/static/js/logmonitor.js:756
+msgid "Searching..."
+msgstr ""
+
+#: octoprint_logmonitor/static/js/logmonitor.js:417
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:30
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:25
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:94
@@ -304,8 +314,8 @@ msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:76
 msgid ""
-"Sets the initial auto-scroll state when the page loads. Can be toggled at"
-" any time directly in the stream view."
+"Sets the initial auto-scroll state when the page loads. Can be toggled at "
+"any time directly in the stream view."
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:60
@@ -347,7 +357,8 @@ msgid "Show widget in Sidebar"
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:196
-msgid "Shows which logs are currently monitored by the background alert worker."
+msgid ""
+"Shows which logs are currently monitored by the background alert worker."
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:123
@@ -371,14 +382,14 @@ msgstr ""
 msgid "Streaming Settings"
 msgstr ""
 
-#: octoprint_logmonitor/static/js/logmonitor.js:331
+#: octoprint_logmonitor/static/js/logmonitor.js:330
 msgid "Streaming: "
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:182
 msgid ""
-"These logs are monitored for severity triggers even when no live stream "
-"is open."
+"These logs are monitored for severity triggers even when no live stream is "
+"open."
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:158
@@ -406,7 +417,8 @@ msgid "Write Debug Test Entries"
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:251
-msgid "Writes Log Monitor frontend debug events into the OctoPrint server log."
+msgid ""
+"Writes Log Monitor frontend debug events into the OctoPrint server log."
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_settings.jinja2:260
@@ -418,4 +430,3 @@ msgstr ""
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:137
 msgid "results"
 msgstr ""
-
