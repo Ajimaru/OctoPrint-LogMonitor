@@ -216,7 +216,39 @@ class TestLogTailer(unittest.TestCase):
         self.assertEqual(parsed_in["message"], "<<< ok")
 
     def test_detects_truncation_as_rotation(self):
-        """Copy-truncate rotation (same inode, smaller file) is detected."""
+        """Copy-truncate rotation (same inode, smaller file) is detected.
+
+        Exercises _check_rotation() directly without starting the
+        background thread, so the poll loop cannot reopen the file and
+        reset the read position out from under the assertions.
+        """
+        self.log_file.write_text(
+            "2024-01-01 10:00:00,000 - test - INFO - one\n"
+            "2024-01-01 10:00:01,000 - test - INFO - two\n"
+        )
+
+        tailer = LogTailer(
+            str(self.log_file), self._callback, poll_interval=0.05
+        )
+
+        # Open the file and seek to the end, mirroring what start() does,
+        # but leave the background thread stopped.
+        tailer._file = open(  # noqa: SIM115
+            str(self.log_file), encoding="utf-8", errors="replace"
+        )
+        self.addCleanup(tailer._file.close)
+        tailer._file_inode = os.fstat(tailer._file.fileno()).st_ino
+        tailer._file.seek(0, 2)  # SEEK_END
+
+        # Same inode, no shrink yet -> not a rotation.
+        self.assertFalse(tailer._check_rotation())
+
+        # Shrink the file below the read position -> copy-truncate.
+        self.log_file.write_text("")
+        self.assertTrue(tailer._check_rotation())
+
+    def test_picks_up_lines_after_truncation(self):
+        """After a copy-truncate the running tailer resumes reading."""
         self.log_file.write_text(
             "2024-01-01 10:00:00,000 - test - INFO - one\n"
             "2024-01-01 10:00:01,000 - test - INFO - two\n"
@@ -228,10 +260,7 @@ class TestLogTailer(unittest.TestCase):
         self.assertTrue(tailer.start())
 
         try:
-            # Same inode, but shrink the file below the read position.
-            self.assertFalse(tailer._check_rotation())
             self.log_file.write_text("")
-            self.assertTrue(tailer._check_rotation())
 
             # After truncation the tailer must pick up new lines again.
             with self.log_file.open("a") as handle:
