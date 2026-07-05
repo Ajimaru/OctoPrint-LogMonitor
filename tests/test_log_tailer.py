@@ -1,5 +1,4 @@
-"""
-Tests for LogTailer class.
+"""Tests for LogTailer class.
 """
 
 import os
@@ -166,7 +165,8 @@ class TestLogTailer(unittest.TestCase):
 
     def test_parse_simple_serial_log_line(self):
         """Serial-style lines without explicit logger/level
-        should still parse."""
+        should still parse.
+        """
         tailer = LogTailer(
             str(self.log_file), self._callback, poll_interval=0.1
         )
@@ -184,7 +184,8 @@ class TestLogTailer(unittest.TestCase):
 
     def test_parse_line_normalizes_tabs(self):
         """Tab characters should be normalized to spaces
-        to avoid visual jumps."""
+        to avoid visual jumps.
+        """
         tailer = LogTailer(
             str(self.log_file), self._callback, poll_interval=0.1
         )
@@ -214,9 +215,88 @@ class TestLogTailer(unittest.TestCase):
         self.assertEqual(parsed_in["logger"], "serial.log")
         self.assertEqual(parsed_in["message"], "<<< ok")
 
+    def test_detects_truncation_as_rotation(self):
+        """Copy-truncate rotation (same inode, smaller file) is detected.
+
+        Exercises _check_rotation() directly without starting the
+        background thread, so the poll loop cannot reopen the file and
+        reset the read position out from under the assertions.
+        """
+        self.log_file.write_text(
+            "2024-01-01 10:00:00,000 - test - INFO - one\n"
+            "2024-01-01 10:00:01,000 - test - INFO - two\n"
+        )
+
+        tailer = LogTailer(
+            str(self.log_file), self._callback, poll_interval=0.05
+        )
+
+        # Open the file and seek to the end, mirroring what start() does,
+        # but leave the background thread stopped.
+        tailer._file = open(  # noqa: SIM115
+            str(self.log_file), encoding="utf-8", errors="replace"
+        )
+        self.addCleanup(tailer._file.close)
+        tailer._file_inode = os.fstat(tailer._file.fileno()).st_ino
+        tailer._file.seek(0, 2)  # SEEK_END
+
+        # Same inode, no shrink yet -> not a rotation.
+        self.assertFalse(tailer._check_rotation())
+
+        # Shrink the file below the read position -> copy-truncate.
+        self.log_file.write_text("")
+        self.assertTrue(tailer._check_rotation())
+
+    def test_picks_up_lines_after_truncation(self):
+        """After a copy-truncate the running tailer resumes reading."""
+        self.log_file.write_text(
+            "2024-01-01 10:00:00,000 - test - INFO - one\n"
+            "2024-01-01 10:00:01,000 - test - INFO - two\n"
+        )
+
+        tailer = LogTailer(
+            str(self.log_file), self._callback, poll_interval=0.05
+        )
+        self.assertTrue(tailer.start())
+
+        try:
+            self.log_file.write_text("")
+
+            # After truncation the tailer must pick up new lines again.
+            with self.log_file.open("a") as handle:
+                handle.write("2024-01-01 10:00:02,000 - test - INFO - fresh\n")
+
+            deadline = time.time() + 3.0
+            while time.time() < deadline and not self.received_lines:
+                time.sleep(0.05)
+
+            messages = [line["message"] for line in self.received_lines]
+            self.assertIn("fresh", messages)
+        finally:
+            tailer.stop()
+
+    def test_get_last_n_lines_large_file(self):
+        """Backward block reads return the correct tail of a large file."""
+        with self.log_file.open("w") as handle:
+            for i in range(5000):
+                handle.write(
+                    f"2024-01-01 10:00:00,000 - test - INFO - line {i}\n"
+                )
+
+        tailer = LogTailer(
+            str(self.log_file), self._callback, poll_interval=0.1
+        )
+
+        last_lines = tailer.get_last_n_lines(3)
+
+        self.assertEqual(len(last_lines), 3)
+        self.assertEqual(last_lines[-1]["message"], "line 4999")
+        self.assertEqual(last_lines[0]["message"], "line 4997")
+
     def test_parse_compact_warning_line(self):
         """Compact OctoPrint warning lines should still
-        map to WARNING level."""
+        map to WARNING level.
+        """
         tailer = LogTailer(
             str(self.log_file), self._callback, poll_interval=0.1
         )

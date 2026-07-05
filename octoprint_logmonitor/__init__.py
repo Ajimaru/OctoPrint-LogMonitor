@@ -47,6 +47,21 @@ _LOG_PATH_ERRORS: dict[_LogPathErrorCode, tuple[str, int]] = {
     "not_found": ("Log file not found", 404),
 }
 
+# Hard cap on lines buffered between WebSocket flushes.  Bounds memory if
+# flushing stalls; must be >= the largest allowed ``max_stream_lines``.
+_MAX_BUFFERED_LINES = 10000
+
+
+def _new_alert_counts() -> dict[str, int]:
+    """Return a fresh per-severity alert counter mapping."""
+    return {
+        "DEBUG": 0,
+        "INFO": 0,
+        "WARNING": 0,
+        "ERROR": 0,
+        "CRITICAL": 0,
+    }
+
 
 class LogmonitorPlugin(
     octoprint.plugin.StartupPlugin,
@@ -90,6 +105,7 @@ class LogmonitorPlugin(
         self._line_buffer = []
         self._line_buffer_lock = threading.Lock()
         self._flush_timer = None
+        self._flush_timer_lock = threading.Lock()
         self._runtime_settings_lock = threading.Lock()
         self._runtime_alert_settings = {
             "alerts_enabled": True,
@@ -119,13 +135,7 @@ class LogmonitorPlugin(
 
         # Reset alert counts
         with self._alert_lock:
-            self._alert_counts = {
-                "DEBUG": 0,
-                "INFO": 0,
-                "WARNING": 0,
-                "ERROR": 0,
-                "CRITICAL": 0,
-            }
+            self._alert_counts = _new_alert_counts()
 
         # Start independent alert monitoring (not tied to UI live streaming)
         self._restart_alert_monitoring()
@@ -161,6 +171,10 @@ class LogmonitorPlugin(
     def on_shutdown(self):
         """Clean shutdown of background threads."""
         self._logger.info("Log Monitor Plugin shutting down")
+
+        self._stop_flush_timer()
+        with self._line_buffer_lock:
+            self._line_buffer.clear()
 
         # Stop main tailer if running
         if self._tailer and self._tailer.is_running():
@@ -234,7 +248,10 @@ class LogmonitorPlugin(
 
                     clamp_int_setting("max_stream_lines", 500, 100, 10000)
                     clamp_int_setting("search_page_size", 50, 10, 500)
-                    clamp_int_setting("max_alert_history", 100, 10, 1000)
+                    # Keep in sync with the runtime cap (MAX_HISTORY_LIMIT).
+                    clamp_int_setting(
+                        "max_alert_history", 100, 10, MAX_HISTORY_LIMIT
+                    )
 
                     alerts_enabled = plugin_data.get("alerts_enabled")
                     if isinstance(alerts_enabled, str):
@@ -359,23 +376,30 @@ class LogmonitorPlugin(
         """Enable Jinja autoescaping for all plugin templates."""
         return True
 
+    def _list_log_files(self) -> list[tuple[str, str]]:
+        """Return sorted ``(filename, filepath)`` pairs of available logs.
+
+        Scans the OctoPrint log folder for regular ``.log`` files.
+        """
+        log_dir = self._get_logs_base_folder()
+        if not os.path.isdir(log_dir):
+            return []
+
+        entries = []
+        for filename in sorted(os.listdir(log_dir)):
+            filepath = os.path.join(log_dir, filename)
+            if os.path.isfile(filepath) and filename.endswith(".log"):
+                entries.append((filename, filepath))
+
+        return entries
+
     def _get_available_log_filenames(self):
         """Return sorted list of available .log filenames.
 
         Scans the OctoPrint log folder.
         """
         try:
-            log_dir = self._get_logs_base_folder()
-            if not os.path.exists(log_dir):
-                return []
-
-            files = []
-            for filename in os.listdir(log_dir):
-                filepath = os.path.join(log_dir, filename)
-                if os.path.isfile(filepath) and filename.endswith(".log"):
-                    files.append(filename)
-
-            return sorted(files)
+            return [filename for filename, _ in self._list_log_files()]
         except Exception as e:
             self._logger.error(
                 f"Error listing log filenames for template vars: {e}"
@@ -413,22 +437,14 @@ class LogmonitorPlugin(
                     {"files": [], "error": "Log directory not found"}
                 )
 
-            files = []
-            for filename in os.listdir(log_dir):
-                filepath = os.path.join(log_dir, filename)
-
-                # Only include .log files
-                if os.path.isfile(filepath) and filename.endswith(".log"):
-                    files.append(
-                        {
-                            "name": filename,
-                            "size": os.path.getsize(filepath),
-                            "modified": os.path.getmtime(filepath),
-                        }
-                    )
-
-            # Sort by name
-            files.sort(key=lambda x: x["name"])
+            files = [
+                {
+                    "name": filename,
+                    "size": os.path.getsize(filepath),
+                    "modified": os.path.getmtime(filepath),
+                }
+                for filename, filepath in self._list_log_files()
+            ]
 
             return flask.jsonify({"files": files})
 
@@ -480,12 +496,12 @@ class LogmonitorPlugin(
 
             # Validate and clamp offset / limit
             try:
+                default_limit = int(self._settings.get(["search_page_size"]))
+            except (ValueError, TypeError):
+                default_limit = 50
+            try:
                 offset = int(flask.request.args.get("offset", 0))
-                limit = int(
-                    flask.request.args.get(
-                        "limit", str(self._settings.get(["search_page_size"]))
-                    )
-                )
+                limit = int(flask.request.args.get("limit", default_limit))
             except (ValueError, TypeError):
                 return (
                     flask.jsonify(
@@ -605,11 +621,11 @@ class LogmonitorPlugin(
 
             # Start tailing
             if self._tailer.start():
-                # Start batch-flush timer
-                if self._flush_timer:
-                    self._flush_timer.cancel()
-                with self._line_buffer_lock:
-                    self._line_buffer.clear()
+                # Reset the batch buffer, unless multi-stream tailers are
+                # still feeding it.
+                if not self._active_tailers:
+                    with self._line_buffer_lock:
+                        self._line_buffer.clear()
                 self._start_flush_timer()
 
                 # Send initial lines
@@ -648,17 +664,21 @@ class LogmonitorPlugin(
     def stop_stream(self):
         """Stop log streaming."""
         try:
-            if self._flush_timer:
-                self._flush_timer.cancel()
-                self._flush_timer = None
-            with self._line_buffer_lock:
-                self._line_buffer.clear()
             if self._tailer and self._tailer.is_running():
                 self._tailer.stop()
                 self._tailer = None
-                return flask.jsonify({"status": "stopped"})
+                status = "stopped"
             else:
-                return flask.jsonify({"status": "not_running"})
+                status = "not_running"
+
+            # Keep the flush timer alive while multi-stream tailers still
+            # feed the shared line buffer.
+            if not self._active_tailers:
+                self._stop_flush_timer()
+                with self._line_buffer_lock:
+                    self._line_buffer.clear()
+
+            return flask.jsonify({"status": status})
 
         except Exception as e:
             self._logger.error(f"Error stopping stream: {e}")
@@ -669,7 +689,7 @@ class LogmonitorPlugin(
     )
     @no_firstrun_access
     def start_multi_stream(self):
-        """Start streaming multiple log files simultaneously (NEW)."""
+        """Start streaming multiple log files simultaneously."""
         try:
             data = flask.request.get_json(silent=True) or {}
             files = data.get("files", [])
@@ -754,6 +774,9 @@ class LogmonitorPlugin(
                         {"file": filename, "error": "Failed to start"}
                     )
 
+            if started_files:
+                self._ensure_flush_timer()
+
             return flask.jsonify(
                 {
                     "status": "multi_started",
@@ -775,7 +798,7 @@ class LogmonitorPlugin(
     )
     @no_firstrun_access
     def stop_multi_stream(self):
-        """Stop streaming specific log files (NEW)."""
+        """Stop streaming specific log files."""
         try:
             data = flask.request.get_json(silent=True) or {}
             files = data.get("files", [])
@@ -786,15 +809,18 @@ class LogmonitorPlugin(
                 return flask.jsonify({"error": "files must be a list"}), 400
 
             if stop_all:
+                stopped_count = 0
                 for filename, tailer in list(self._active_tailers.items()):
                     try:
                         tailer.stop()
                         del self._active_tailers[filename]
+                        stopped_count += 1
                     except Exception as e:
                         self._logger.error(f"Error stopping {filename}: {e}")
 
+                self._stop_flush_timer_if_idle()
                 return flask.jsonify(
-                    {"status": "all_stopped", "total_stopped": len(files)}
+                    {"status": "all_stopped", "total_stopped": stopped_count}
                 )
             else:
                 stopped_files = []
@@ -814,6 +840,7 @@ class LogmonitorPlugin(
                                 f"Error stopping {filename}: {e}"
                             )
 
+                self._stop_flush_timer_if_idle()
                 return flask.jsonify(
                     {
                         "status": "multi_stopped",
@@ -832,13 +859,7 @@ class LogmonitorPlugin(
         """Reset severity alert counters."""
         try:
             with self._alert_lock:
-                self._alert_counts = {
-                    "DEBUG": 0,
-                    "INFO": 0,
-                    "WARNING": 0,
-                    "ERROR": 0,
-                    "CRITICAL": 0,
-                }
+                self._alert_counts = _new_alert_counts()
 
             return flask.jsonify({"status": "reset"})
 
@@ -1287,39 +1308,76 @@ class LogmonitorPlugin(
                 f"Failed to write UNKNOWN debug test log entry: {e}"
             )
 
+    def _has_active_streams(self) -> bool:
+        """Return True while any UI-facing tailer is delivering lines."""
+        if self._tailer and self._tailer.is_running():
+            return True
+        return bool(self._active_tailers)
+
     def _start_flush_timer(self):
-        """Start the periodic line-buffer flush timer."""
+        """(Re)start the periodic line-buffer flush timer."""
         interval = self._get_stream_poll_interval_seconds()
-        self._flush_timer = threading.Timer(interval, self._flush_line_buffer)
-        self._flush_timer.daemon = True
-        self._flush_timer.start()
+        with self._flush_timer_lock:
+            if self._flush_timer is not None:
+                self._flush_timer.cancel()
+            self._flush_timer = threading.Timer(
+                interval, self._flush_line_buffer
+            )
+            self._flush_timer.daemon = True
+            self._flush_timer.start()
+
+    def _ensure_flush_timer(self):
+        """Start the flush timer only if none is currently scheduled.
+
+        Lazy safety net: guarantees buffered lines are eventually delivered
+        no matter which code path (UI stream, multi-stream, auto-start)
+        started a tailer.
+        """
+        with self._flush_timer_lock:
+            if self._flush_timer is not None:
+                return
+        self._start_flush_timer()
+
+    def _stop_flush_timer(self):
+        """Cancel the flush timer if one is scheduled."""
+        with self._flush_timer_lock:
+            if self._flush_timer is not None:
+                self._flush_timer.cancel()
+                self._flush_timer = None
+
+    def _stop_flush_timer_if_idle(self):
+        """Stop the flush timer and drop the buffer once no tailer is left."""
+        if self._has_active_streams():
+            return
+        self._stop_flush_timer()
+        with self._line_buffer_lock:
+            self._line_buffer.clear()
 
     def _flush_line_buffer(self):
         """Flush buffered lines as a single batch WebSocket message."""
         with self._line_buffer_lock:
-            if not self._line_buffer:
-                # Reschedule even if empty, as long as streaming is active
-                if (
-                    self._tailer
-                    and self._tailer.is_running()
-                    or self._active_tailers
-                ):
-                    self._start_flush_timer()
-                return
             batch = self._line_buffer[:]
             self._line_buffer.clear()
 
-        max_lines = self._settings.get(["max_stream_lines"])
-        if len(batch) > max_lines:
-            batch = batch[-max_lines:]
+        if batch:
+            try:
+                max_lines = int(self._settings.get(["max_stream_lines"]))
+            except (TypeError, ValueError):
+                max_lines = 500
+            if len(batch) > max_lines:
+                batch = batch[-max_lines:]
 
-        self._plugin_manager.send_plugin_message(
-            self._identifier, {"type": "log_lines", "data": batch}
-        )
+            self._plugin_manager.send_plugin_message(
+                self._identifier, {"type": "log_lines", "data": batch}
+            )
 
-        # Reschedule
-        if self._tailer and self._tailer.is_running() or self._active_tailers:
+        # Reschedule while streaming is active; otherwise clear the timer
+        # slot so _ensure_flush_timer can restart it later.
+        if self._has_active_streams():
             self._start_flush_timer()
+        else:
+            with self._flush_timer_lock:
+                self._flush_timer = None
 
     def _get_alert_monitor_files(self):
         """Resolve list of log files that should drive severity alerts."""
@@ -1615,9 +1673,17 @@ class LogmonitorPlugin(
             else:
                 send_line = parsed_line
 
-            # Buffer line for batched WebSocket delivery
+            # Buffer line for batched WebSocket delivery; cap the buffer so
+            # memory stays bounded even if flushing stalls.
             with self._line_buffer_lock:
                 self._line_buffer.append(send_line)
+                overflow = len(self._line_buffer) - _MAX_BUFFERED_LINES
+                if overflow > 0:
+                    del self._line_buffer[:overflow]
+
+            # Lazy safety net: whoever produces lines guarantees a flush
+            # timer exists (covers auto-start and multi-stream paths).
+            self._ensure_flush_timer()
 
         except Exception as e:
             self._logger.error(f"Error handling log line: {e}")
