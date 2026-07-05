@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "OctoPrint-LogMonitor"
-version = "0.2.3"
+version = "0.2.4"
 description = "Live log streaming and searching for OctoPrint with severity alerting"
 license = "AGPL-3.0-or-later"
 authors = [
@@ -51,6 +51,9 @@ line-length = 79
 
 [tool.ruff.lint]
 select = ["D"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

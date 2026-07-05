@@ -280,11 +280,10 @@ $(() => {
         self.lastSearchAt = 0;
         self.pendingSearchRequest = null;
 
-        // NEW: Advanced search and export features
+        // Advanced search and export features
         self.useRegex = ko.observable(false);
         self.caseSensitive = ko.observable(false);
         self.alertHistory = ko.observableArray([]);
-        self.autoStartEnabled = ko.observable(false);
         self.historySummary = ko.pureComputed(() => {
             var count = self.alertHistory().length;
             return ngettext(
@@ -457,15 +456,6 @@ $(() => {
                 "#settings_plugin_logmonitor_alert_monitor_status_badge",
             );
             if (!target.length) return;
-
-            function escapeHtml(value) {
-                return String(value)
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#39;");
-            }
 
             function renderLogList(logs) {
                 if (!logs || logs.length === 0) {
@@ -937,7 +927,7 @@ $(() => {
             });
         };
 
-        // NEW: Export functions
+        // Export functions
         self.exportResults = function (format) {
             if (self.searchResults().length === 0) {
                 alert("No results to export");
@@ -971,14 +961,14 @@ $(() => {
             });
         };
 
-        // NEW: Download log file
+        // Download log file
         self.downloadLogFile = function (filename) {
             var url =
                 pluginBaseUrl + "/download/" + encodeURIComponent(filename);
             window.location.assign(url);
         };
 
-        // NEW: Load alert history
+        // Load alert history
         self.loadAlertHistory = function () {
             pluginAjax({
                 url: pluginBaseUrl + "/alert-history",
@@ -992,7 +982,7 @@ $(() => {
             });
         };
 
-        // NEW: Clear alert history
+        // Clear alert history
         self.clearAlertHistory = function () {
             if (!confirm("Clear all alert history?")) return;
 
@@ -1006,7 +996,7 @@ $(() => {
             });
         };
 
-        // NEW: Auto-start streaming on page load
+        // Auto-start streaming on page load
         self.onStartup = function () {
             // Load alert history
             self.loadAlertHistory();
@@ -1087,10 +1077,6 @@ $(() => {
             }
         };
 
-        self.handleLogLine = function (line) {
-            lineBuffer.push(line);
-        };
-
         self.handleAlert = function (alert) {
             var level = String((alert && alert.level) || "").toUpperCase();
             if (!level) {
@@ -1126,22 +1112,6 @@ $(() => {
                     text: notificationMessage,
                     type: pnotifyType,
                 });
-            }
-
-            // NEW: Play sound if available (optional)
-            if (alert.notification_enabled) {
-                try {
-                    // Use a small beep sound encoded in base64
-                    var audio = new Audio(
-                        "data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA==",
-                    );
-                    audio.volume = 0.5;
-                    audio.play().catch(() => {
-                        // Sound playback failed, continue silently
-                    });
-                } catch (e) {
-                    // Audio not supported
-                }
             }
         };
 

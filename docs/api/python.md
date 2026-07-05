@@ -2,6 +2,10 @@
 
 This page is generated from Python docstrings.
 
+## `log_parser`
+
+::: octoprint_logmonitor.log_parser
+
 ## `log_searcher`
 
 ::: octoprint_logmonitor.log_searcher

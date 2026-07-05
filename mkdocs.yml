@@ -10,6 +10,9 @@ nav:
   - Home: index.md
   - Plugin:
       - Overview: overview.md
+      - Configuration: configuration.md
+      - REST API: rest-api.md
+      - Troubleshooting: troubleshooting.md
       - Python API: api/python.md
   - Project:
       - Contributing: contributing.md
