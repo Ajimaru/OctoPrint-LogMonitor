@@ -1,43 +1,31 @@
 """Log Searcher Module.
 
 Provides efficient log file searching with pagination and severity filtering.
-Memory-efficient implementation that streams through large log files.
+Memory-efficient implementation that streams through large log files
+line by line instead of loading them into memory.
 """
 
 import csv
 import io
 import os
 import re
+from collections import deque
 from typing import Any, ClassVar, Optional
+
+from .log_parser import parse_line
 
 
 class LogSearcher:
     """Efficient log file searcher with pagination support.
 
     Features:
-    - Memory-efficient line-by-line reading
+    - Memory-efficient line-by-line streaming (never loads the whole file)
     - Free-text search (case-insensitive)
     - Severity level filtering
     - Pagination support
     - Context lines (lines before/after match)
     - Regex search mode (optional)
     """
-
-    # OctoPrint log format: YYYY-MM-DD HH:MM:SS,ms - LOGGER - LEVEL - MESSAGE
-    LOG_PATTERN = re.compile(
-        r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})\s+-\s+"
-        r"([^\-]+)\s+-\s+"
-        r"(DEBUG|INFO|WARNING|ERROR|CRITICAL)\s+-\s+"
-        r"(.+)$"
-    )
-
-    # Compact format seen in some environments:
-    # YYYY-MM-DD HH:MM:SS,msLEVEL LOGGER MESSAGE
-    COMPACT_LOG_PATTERN = re.compile(
-        r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})"
-        r"\s*(DEBUG|INFO|WARNING|ERROR|CRITICAL)\s+"
-        r"([A-Za-z0-9_.:-]+)\s+(.+)$"
-    )
 
     VALID_LEVELS: ClassVar[set[str]] = {
         "DEBUG",
@@ -71,6 +59,12 @@ class LogSearcher:
     ) -> dict[str, Any]:
         """Search log file for matching entries.
 
+        The file is streamed line by line; memory usage is bounded by
+        ``limit`` and ``context_lines``, not by file size.  Scanning stops
+        early once the requested page (plus one look-ahead match) is
+        complete, so ``total`` is exact only up to that point and should be
+        read as "at least this many matches".
+
         Args:
             filepath: Path to the log file
             query: Search query (free text or regex)
@@ -84,7 +78,7 @@ class LogSearcher:
         Returns:
             Dictionary with:
                 - results: List of matching log entries
-                - total: Total number of matches found
+                - total: Number of matches found before scanning stopped
                 - offset: Current offset
                 - limit: Current limit
         """
@@ -132,50 +126,68 @@ class LogSearcher:
                     "error": f"Invalid search pattern: {e}",
                 }
 
-        # Search the file
+        # Stream through the file
         try:
-            results = []
+            results: list[dict[str, Any]] = []
             total_matches = 0
             current_match = 0
 
+            # Sliding window of parsed lines preceding the current one.
+            before_buffer: Optional[deque] = (
+                deque(maxlen=context_lines) if context_lines > 0 else None
+            )
+            # Matches still waiting for their after-context to fill up:
+            # list of [entry, remaining_line_count] pairs.
+            pending_after: list[list[Any]] = []
+
             with open(filepath, encoding="utf-8", errors="replace") as f:
-                lines = f.readlines()
+                for line in f:
+                    parsed = self._parse_line(line)
 
-            # Process lines
-            for i, line in enumerate(lines):
-                parsed = self._parse_line(line)
+                    # Feed after-context of earlier matches first, so the
+                    # match line itself is not part of its own context.
+                    if pending_after:
+                        for item in pending_after:
+                            item[0]["context_after"].append(parsed)
+                            item[1] -= 1
+                        pending_after = [
+                            item for item in pending_after if item[1] > 0
+                        ]
 
-                # Check if line matches filters
-                if self._matches_filters(
-                    parsed, search_pattern, allowed_levels
-                ):
-                    total_matches += 1
-
-                    # Check if we should include this match (pagination)
-                    if current_match >= offset and len(results) < limit:
-                        # Add the match
-                        match_entry = parsed.copy()
-
-                        # Add context lines if requested
-                        if context_lines > 0:
-                            ctx = self._get_context_lines
-                            match_entry["context_before"] = ctx(
-                                lines, i, context_lines, before=True
-                            )
-                            match_entry["context_after"] = ctx(
-                                lines, i, context_lines, before=False
-                            )
-
-                        results.append(match_entry)
-
-                    current_match += 1
-
-                    # Early exit if we have enough results
-                    if (
-                        len(results) >= limit
-                        and current_match > offset + limit
+                    if self._matches_filters(
+                        parsed, search_pattern, allowed_levels
                     ):
-                        break
+                        total_matches += 1
+
+                        # Include this match on the requested page
+                        if current_match >= offset and len(results) < limit:
+                            match_entry = parsed.copy()
+
+                            if context_lines > 0:
+                                match_entry["context_before"] = list(
+                                    before_buffer or ()
+                                )
+                                match_entry["context_after"] = []
+                                pending_after.append(
+                                    [match_entry, context_lines]
+                                )
+
+                            results.append(match_entry)
+
+                        current_match += 1
+
+                        # Early exit once the page is full, one extra match
+                        # confirmed (so callers can detect further pages) and
+                        # all after-context collected.
+                        if (
+                            len(results) >= limit
+                            and current_match > offset + limit
+                            and not pending_after
+                        ):
+                            break
+
+                    if before_buffer is not None:
+                        before_buffer.append(parsed)
 
             return {
                 "results": results,
@@ -202,38 +214,10 @@ class LogSearcher:
             line: Raw log line
 
         Returns:
-            Dictionary with parsed fields
+            Dictionary with parsed fields (see
+            :func:`octoprint_logmonitor.log_parser.parse_line`)
         """
-        line = line.rstrip("\n\r")
-
-        match = self.LOG_PATTERN.match(line)
-
-        if match:
-            return {
-                "timestamp": match.group(1),
-                "logger": match.group(2).strip(),
-                "level": match.group(3),
-                "message": match.group(4),
-                "raw": line,
-            }
-
-        compact_match = self.COMPACT_LOG_PATTERN.match(line)
-        if compact_match:
-            return {
-                "timestamp": compact_match.group(1),
-                "logger": compact_match.group(3).strip(),
-                "level": compact_match.group(2),
-                "message": compact_match.group(4),
-                "raw": line,
-            }
-        # Line doesn't match expected format
-        return {
-            "timestamp": "",
-            "logger": "",
-            "level": "UNKNOWN",
-            "message": line,
-            "raw": line,
-        }
+        return parse_line(line)
 
     def _matches_filters(
         self,
@@ -263,34 +247,6 @@ class LogSearcher:
             search_pattern.search(parsed["message"])
             or search_pattern.search(parsed["raw"])
         )
-
-    def _get_context_lines(
-        self, lines: list[str], index: int, count: int, before: bool = True
-    ) -> list[dict[str, Any]]:
-        """Get context lines before or after a match.
-
-        Args:
-            lines: All lines from the file
-            index: Index of the match
-            count: Number of context lines to get
-            before: If True, get lines before; if False, get lines after
-
-        Returns:
-            List of parsed context line dictionaries
-        """
-        if before:
-            start = max(0, index - count)
-            end = index
-        else:
-            start = index + 1
-            end = min(len(lines), index + 1 + count)
-
-        context = []
-        for i in range(start, end):
-            if 0 <= i < len(lines):
-                context.append(self._parse_line(lines[i]))
-
-        return context
 
     def get_file_stats(self, filepath: str) -> dict[str, Any]:
         """Get statistics about a log file.

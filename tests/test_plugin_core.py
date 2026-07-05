@@ -1,5 +1,4 @@
-"""
-Unit tests for core plugin behaviors in octoprint_logmonitor.__init__.
+"""Unit tests for core plugin behaviors in octoprint_logmonitor.__init__.
 
 These tests run without a real OctoPrint environment by stubbing the
 required OctoPrint plugin mixins.
@@ -32,14 +31,16 @@ def _install_fake_octoprint():
     # pylint: disable=too-few-public-methods
     class DummyBlueprintPlugin:
         """Minimal BlueprintPlugin stand-in providing
-        a no-op route decorator."""
+        a no-op route decorator.
+        """
 
         @staticmethod
         def route(
             _rule, methods=None, **_kwargs
         ):  # pylint: disable=unused-argument
             """No-op route decorator that returns
-            the view function unchanged."""
+            the view function unchanged.
+            """
 
             def decorator(func):
                 return func
@@ -87,7 +88,8 @@ class FakeSettings:
 
     def getBaseFolder(self, _name):  # pylint: disable=invalid-name
         """Return the configured base folder
-        (OctoPrint-style camelCase API)."""
+        (OctoPrint-style camelCase API).
+        """
         return self._base_dir
 
     def get_all_data(self):
@@ -154,7 +156,8 @@ class _FakeUserManager:
 
 class OctoPrintAccessPatchedTestCase(unittest.TestCase):
     """Base test case that patches OctoPrint globals
-    used by route decorators."""
+    used by route decorators.
+    """
 
     def setUp(self):
         super().setUp()
@@ -975,6 +978,25 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
         self.assertEqual(payload["status"], "multi_started")
         self.assertEqual(set(payload["started"]), {"a.log", "b.log"})
 
+    def test_start_multi_stream_ensures_flush_timer(self):
+        (Path(self.temp_dir) / "a.log").write_text("a")
+
+        tailer = MagicMock()
+        tailer.start.return_value = True
+
+        with (
+            patch("octoprint_logmonitor.LogTailer", return_value=tailer),
+            patch.object(self.plugin, "_ensure_flush_timer") as ensure,
+            self.app.test_request_context(
+                "/stream/multi/start",
+                method="POST",
+                json={"files": ["a.log"]},
+            ),
+        ):
+            self.plugin.start_multi_stream()
+
+        ensure.assert_called_once()
+
     def test_stop_multi_stream_stop_all(self):
         self.plugin._active_tailers = {
             "a.log": MagicMock(),
@@ -989,6 +1011,7 @@ class TestPluginHelpers(OctoPrintAccessPatchedTestCase):
 
         payload = self._resp(response).get_json()
         self.assertEqual(payload["status"], "all_stopped")
+        self.assertEqual(payload["total_stopped"], 2)
         self.assertEqual(len(self.plugin._active_tailers), 0)
 
     def test_on_shutdown_stops_tailers(self):

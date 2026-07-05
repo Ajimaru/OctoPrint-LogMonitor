@@ -43,6 +43,14 @@
 - 🔀 **Multi-Stream API** - Backend endpoints for parallel streaming of multiple logs
 - 🛡️ **Secure** - Path traversal protection, input validation, and rate limiting
 
+## Documentation
+
+Full documentation lives at **[ajimaru.github.io/OctoPrint-LogMonitor](https://ajimaru.github.io/OctoPrint-LogMonitor/)**:
+
+- [Configuration reference](https://ajimaru.github.io/OctoPrint-LogMonitor/configuration/) - every setting, default, and limit
+- [REST API reference](https://ajimaru.github.io/OctoPrint-LogMonitor/rest-api/) - all plugin endpoints and WebSocket push messages
+- [Troubleshooting](https://ajimaru.github.io/OctoPrint-LogMonitor/troubleshooting/) - common problems and fixes
+
 ## Installation
 
 ### Via Plugin Manager (Recommended)
@@ -70,7 +78,7 @@ The `releases/latest` URL always points to the newest stable release.
 
 ## Configuration
 
-Access plugin settings via OctoPrint Settings → Plugins → Log Monitor
+Access plugin settings via OctoPrint Settings → Plugins → Log Monitor. The most important options are listed below; see the [configuration reference](https://ajimaru.github.io/OctoPrint-LogMonitor/configuration/) for the complete list with ranges and built-in limits.
 
 ### Display Settings
 
@@ -130,6 +138,24 @@ When a log entry matches configured trigger severities (default: WARNING/ERROR/C
 - A badge appears in the Navbar (if enabled)
 - The Sidebar widget updates (if enabled)
 - Click the badge/widget to open the Log Monitor tab and reset alerts
+
+## Development
+
+```bash
+git clone https://github.com/Ajimaru/OctoPrint-LogMonitor.git
+cd OctoPrint-LogMonitor
+python -m venv .venv && source .venv/bin/activate
+python -m pip install -e .[develop]
+
+# Run the test suite
+python -m pytest
+
+# Lint / format
+python -m flake8 octoprint_logmonitor tests
+python -m black octoprint_logmonitor tests
+```
+
+The plugin API used by the frontend is documented in the [REST API reference](https://ajimaru.github.io/OctoPrint-LogMonitor/rest-api/).
 
 ## Contributing
 
