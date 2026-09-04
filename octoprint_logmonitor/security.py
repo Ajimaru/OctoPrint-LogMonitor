@@ -25,6 +25,11 @@ MAX_SEARCH_LIMIT: int = 1000
 #: Hard upper bound for alert-history ``limit`` parameter.
 MAX_HISTORY_LIMIT: int = 500
 
+#: Hard upper bound for the length of a user-supplied search query/regex.
+#: Keeps ``re.compile`` input small enough that even a pathological pattern
+#: cannot cause catastrophic backtracking to run for long.
+MAX_QUERY_LENGTH: int = 200
+
 #: Regex patterns used to detect and mask sensitive values in log text.
 #: Each entry is a (compiled_pattern, replacement_string) pair.
 _SENSITIVE_PATTERNS: list[tuple[re.Pattern, str]] = [

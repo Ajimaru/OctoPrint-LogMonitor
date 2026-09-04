@@ -13,6 +13,7 @@ from collections import deque
 from typing import Any, ClassVar, Optional
 
 from .log_parser import parse_line
+from .security import MAX_QUERY_LENGTH
 
 
 class LogSearcher:
@@ -105,6 +106,20 @@ class LogSearcher:
 
         # Compile search pattern
         search_pattern = None
+        if query and len(query) > MAX_QUERY_LENGTH:
+            if self._logger:
+                self._logger.error(
+                    f"Search query rejected: exceeds {MAX_QUERY_LENGTH} "
+                    "characters"
+                )
+            return {
+                "results": [],
+                "total": 0,
+                "offset": offset,
+                "limit": limit,
+                "error": f"Query exceeds maximum length of "
+                f"{MAX_QUERY_LENGTH} characters",
+            }
         if query:
             try:
                 if use_regex:
