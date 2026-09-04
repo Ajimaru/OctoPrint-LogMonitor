@@ -37,7 +37,8 @@ develop = [
     "build",
     "pytest",
     "pytest-cov",
-    "go-task-bin"
+    "go-task-bin",
+    "flask"
 ]
 
 [tool.black]
