@@ -10,6 +10,7 @@ Tests the plugin's REST API routes with various scenarios including:
 """
 
 import contextlib
+import io
 import os
 import tempfile
 import unittest
@@ -617,6 +618,148 @@ class TestManualBrowserTesting(unittest.TestCase):
         6. Verify status returns to "Connected"
         7. Verify logs resume streaming
         """
+
+
+class TestDownloadContentLength(unittest.TestCase):
+    """Regression tests for the log-download Content-Length race.
+
+    ``send_file(path)`` stats the file to set Content-Length, but the body
+    is only read afterwards while the response is streamed. A log file that
+    is still being written to grows in between, so more bytes are sent than
+    advertised and Tornado aborts with::
+
+        tornado.httputil.HTTPOutputError:
+            Tried to write more data than Content-Length
+
+    That error is raised after the view returns, so the endpoint's own
+    try/except cannot catch it; it surfaces as "Exception in WSGI
+    application". Reading a snapshot up front pins both values together.
+    """
+
+    def setUp(self):
+        """Create a log file and a Flask app serving it both ways."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.log_file = Path(self.temp_dir) / "growing.log"
+        self.log_file.write_bytes(b"x" * 10000)
+
+        flask = self._flask()
+        app = flask.Flask(__name__)
+        log_file = self.log_file
+
+        @app.route("/snapshot")
+        def snapshot():  # pragma: no cover - exercised via test client
+            with open(log_file, "rb") as handle:
+                payload = handle.read()
+            return flask.send_file(
+                io.BytesIO(payload),
+                as_attachment=True,
+                download_name="growing.log",
+                mimetype="text/plain",
+            )
+
+        self.app = app
+
+    def tearDown(self):
+        """Remove temporary files."""
+        with contextlib.suppress(OSError):
+            self.log_file.unlink()
+        with contextlib.suppress(OSError):
+            os.rmdir(self.temp_dir)
+
+    @staticmethod
+    def _flask():
+        """Import flask, skipping the test if it is unavailable."""
+        try:
+            import flask
+        except ImportError:  # pragma: no cover
+            raise unittest.SkipTest("flask not installed")
+        return flask
+
+    def _serve(self, path, grow_by=0):
+        """Drive the WSGI app the way OctoPrint's Tornado bridge does.
+
+        Returns:
+            Tuple of (declared Content-Length, actual body length).
+        """
+        environ = {
+            "REQUEST_METHOD": "GET",
+            "PATH_INFO": path,
+            "SERVER_NAME": "localhost",
+            "SERVER_PORT": "80",
+            "wsgi.url_scheme": "http",
+            "wsgi.input": io.BytesIO(b""),
+            "wsgi.errors": io.BytesIO(),
+        }
+        captured = {}
+
+        def start_response(status, headers, exc_info=None):
+            captured["headers"] = headers
+            return []
+
+        response = self.app(environ, start_response)
+        header_map = {k.lower(): v for k, v in captured["headers"]}
+        declared = int(header_map["content-length"])
+
+        # Grow the file after the headers are built but before the body is
+        # consumed -- exactly the window the bug lives in.
+        if grow_by:
+            with open(self.log_file, "ab") as handle:
+                handle.write(b"y" * grow_by)
+
+        body = b"".join(response)
+        if hasattr(response, "close"):
+            response.close()
+        return declared, len(body)
+
+    def test_content_length_matches_body_when_file_grows(self):
+        """A file growing mid-request must not desync Content-Length."""
+        declared, actual = self._serve("/snapshot", grow_by=5000)
+        self.assertEqual(
+            declared,
+            actual,
+            "Content-Length and body length diverged; Tornado would raise "
+            "HTTPOutputError",
+        )
+
+    def test_content_length_matches_body_when_file_is_static(self):
+        """The normal case keeps working."""
+        declared, actual = self._serve("/snapshot")
+        self.assertEqual(declared, actual)
+        self.assertEqual(actual, 10000)
+
+
+class TestDownloadSizeLimit(unittest.TestCase):
+    """The download endpoint buffers in memory, so it needs a size bound."""
+
+    def setUp(self):
+        """Create a temporary directory for size-check fixtures."""
+        self.temp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        """Remove temporary files."""
+        with contextlib.suppress(OSError):
+            for name in os.listdir(self.temp_dir):
+                os.unlink(os.path.join(self.temp_dir, name))
+            os.rmdir(self.temp_dir)
+
+    def test_limit_is_memory_safe(self):
+        """The bound must suit a Pi, not the 1 GiB disk-side file cap."""
+        from octoprint_logmonitor.security import (
+            MAX_DOWNLOAD_BYTES,
+            MAX_FILE_SIZE_BYTES,
+        )
+
+        self.assertLess(MAX_DOWNLOAD_BYTES, MAX_FILE_SIZE_BYTES)
+        self.assertLessEqual(MAX_DOWNLOAD_BYTES, 128 * 1024 * 1024)
+
+    def test_check_file_size_honours_download_limit(self):
+        """Files above the limit are reported as too large."""
+        from octoprint_logmonitor.security import check_file_size
+
+        small = Path(self.temp_dir) / "small.log"
+        small.write_bytes(b"x" * 1024)
+        self.assertTrue(check_file_size(str(small), 4096))
+        self.assertFalse(check_file_size(str(small), 512))
 
 
 if __name__ == "__main__":

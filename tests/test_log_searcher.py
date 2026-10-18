@@ -4,10 +4,12 @@ Tests for LogSearcher class.
 
 import os
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
 from octoprint_logmonitor.log_searcher import LogSearcher
+from octoprint_logmonitor.security import MAX_SCAN_LINES
 
 
 class TestLogSearcher(unittest.TestCase):
@@ -375,3 +377,109 @@ class TestLogSearcher(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestRegexDoSProtection(unittest.TestCase):
+    """Regression tests for the ReDoS fix (CodeQL py/regex-injection).
+
+    A user-supplied regex reaches ``re.search`` via the /search endpoint.
+    Patterns such as ``(x+)+$`` are only a handful of characters long, so
+    MAX_QUERY_LENGTH cannot stop them, and the stdlib ``re`` has no way to
+    bound matching time.
+    """
+
+    #: Patterns that hang a backtracking engine on a non-matching subject.
+    EVIL_PATTERNS = (r"(x+)+$", r"(x|x)*$", r"(a*)*$")
+
+    def setUp(self):
+        """Create a log file whose lines trigger worst-case backtracking."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.log_file = Path(self.temp_dir) / "redos.log"
+        payload = "x" * 40 + "!"
+        self.log_file.write_text(
+            f"2024-01-01 10:00:00,000 - octoprint - ERROR - {payload}\n" * 5
+        )
+        self.searcher = LogSearcher()
+
+    def tearDown(self):
+        """Remove the temporary log file."""
+        if self.log_file.exists():
+            self.log_file.unlink()
+        try:
+            os.rmdir(self.temp_dir)
+        except OSError:
+            pass
+
+    def test_evil_patterns_complete_quickly(self):
+        """A catastrophic pattern must not hang the search."""
+        for pattern in self.EVIL_PATTERNS:
+            with self.subTest(pattern=pattern):
+                start = time.monotonic()
+                result = self.searcher.search(
+                    str(self.log_file), query=pattern, use_regex=True
+                )
+                elapsed = time.monotonic() - start
+
+                # Generous bound: the point is "returns", not "is fast".
+                self.assertLess(
+                    elapsed,
+                    15.0,
+                    f"{pattern!r} took {elapsed:.1f}s - ReDoS not mitigated",
+                )
+                # It must fail loudly, not silently return bogus matches.
+                self.assertIsInstance(result, dict)
+
+    def test_benign_regex_still_works(self):
+        """The fix must not break legitimate regex search."""
+        result = self.searcher.search(
+            str(self.log_file), query=r"ERROR - x+!", use_regex=True
+        )
+        self.assertNotIn("error", result)
+        self.assertEqual(result["total"], 5)
+
+    def test_literal_search_unaffected(self):
+        """Literal search of regex metacharacters stays safe and exact."""
+        result = self.searcher.search(
+            str(self.log_file), query="(x+)+$", use_regex=False
+        )
+        self.assertNotIn("error", result)
+        self.assertEqual(result["total"], 0)
+
+    def test_invalid_pattern_returns_error_not_exception(self):
+        """Bad syntax yields an error dict regardless of regex engine.
+
+        ``regex.error`` does not subclass ``re.error``, so catching only
+        ``re.error`` would let this escape as a 500.
+        """
+        result = self.searcher.search(
+            str(self.log_file), query=r"(unclosed", use_regex=True
+        )
+        self.assertIn("error", result)
+        self.assertEqual(result["results"], [])
+
+    def test_scan_stops_at_line_budget(self):
+        """Scanning is bounded when a query matches nothing.
+
+        The existing early-exit only fires once a result page is full, so
+        it does not bound a query with few or no matches -- that case has
+        to read every line. MAX_SCAN_LINES is what caps it.
+        """
+        big = Path(self.temp_dir) / "big.log"
+        line = "2024-01-01 10:00:00,000 - octoprint - ERROR - hit\n"
+        big.write_text(line * (MAX_SCAN_LINES + 100))
+        try:
+            result = self.searcher.search(
+                str(big), query="nomatch-zzz", use_regex=False, limit=5
+            )
+            self.assertTrue(result.get("truncated"))
+            self.assertEqual(result.get("scan_limit"), MAX_SCAN_LINES)
+            self.assertEqual(result["total"], 0)
+        finally:
+            big.unlink()
+
+    def test_no_truncation_flag_for_small_files(self):
+        """Normal-sized searches must not advertise truncation."""
+        result = self.searcher.search(
+            str(self.log_file), query="ERROR", use_regex=False
+        )
+        self.assertNotIn("truncated", result)

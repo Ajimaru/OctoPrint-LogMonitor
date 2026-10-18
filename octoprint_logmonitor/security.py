@@ -9,7 +9,21 @@ import os
 import re
 import threading
 import time
-from typing import Optional
+from typing import Any, Optional
+
+try:  # pragma: no cover - import guard depends on the environment
+    # The third-party ``regex`` module is a drop-in replacement for ``re``
+    # that supports a per-call ``timeout``. The stdlib ``re`` has no way to
+    # bound matching time, so a user-supplied pattern can pin a CPU core
+    # indefinitely (ReDoS). ``regex`` is an optional dependency: when it is
+    # missing we fall back to ``re`` plus a conservative pattern-complexity
+    # check, which is weaker but needs no extra install.
+    import regex as _regex_module
+
+    HAS_REGEX_TIMEOUT: bool = True
+except ImportError:  # pragma: no cover - exercised in the no-regex env
+    _regex_module = None  # type: ignore[assignment]
+    HAS_REGEX_TIMEOUT = False
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -19,11 +33,37 @@ from typing import Optional
 #: to prevent excessive memory/CPU usage.
 MAX_FILE_SIZE_BYTES: int = 1024 * 1024 * 1024  # 1 GiB
 
+#: Hard upper bound for a log file served through the download endpoint.
+#: That endpoint buffers the file in memory to pin Content-Length against a
+#: file that is still being written to, so this bound is about available RAM,
+#: not disk: OctoPrint commonly runs on a Pi with well under 1 GiB free.
+#: Larger files are refused rather than risking the server process.
+MAX_DOWNLOAD_BYTES: int = 64 * 1024 * 1024  # 64 MiB
+
 #: Hard upper bound for the ``limit`` query parameter in search requests.
 MAX_SEARCH_LIMIT: int = 1000
 
 #: Hard upper bound for alert-history ``limit`` parameter.
 MAX_HISTORY_LIMIT: int = 500
+
+#: Hard upper bound for the length of a user-supplied search query/regex.
+#: Note: this is an input-size guard only. It does NOT prevent catastrophic
+#: backtracking -- a pattern such as ``(x+)+$`` is six characters long and can
+#: still hang a backtracking engine indefinitely. ReDoS is handled separately
+#: by the execution timeout in :func:`compile_search_pattern` /
+#: :func:`search_with_timeout`.
+MAX_QUERY_LENGTH: int = 200
+
+#: Wall-clock budget for a single regex match attempt, in seconds. A
+#: user-supplied pattern that exceeds this on one line is aborted rather than
+#: allowed to pin a CPU core. Only enforced when the ``regex`` module is
+#: available (see :data:`HAS_REGEX_TIMEOUT`).
+REGEX_TIMEOUT_SECONDS: float = 0.25
+
+#: Maximum number of lines a single search request may scan. Bounds the total
+#: work of one request even when every individual match stays under
+#: :data:`REGEX_TIMEOUT_SECONDS`.
+MAX_SCAN_LINES: int = 500_000
 
 #: Regex patterns used to detect and mask sensitive values in log text.
 #: Each entry is a (compiled_pattern, replacement_string) pair.
@@ -302,3 +342,170 @@ class RateLimiter:
                 self._clients[key] = remaining
             else:
                 del self._clients[key]
+
+
+# ---------------------------------------------------------------------------
+# Regex execution safety (ReDoS mitigation)
+# ---------------------------------------------------------------------------
+
+#: Characters that act as a quantifier directly after a group.
+_QUANTIFIER_CHARS = frozenset("*+{")
+
+
+#: Exception type(s) raised for invalid regex syntax by whichever engine is
+#: in use. ``regex.error`` does NOT subclass ``re.error``, so both must be
+#: caught; callers should use this tuple rather than ``re.error`` alone.
+PATTERN_SYNTAX_ERRORS: tuple = (
+    (re.error, _regex_module.error) if HAS_REGEX_TIMEOUT else (re.error,)
+)
+
+
+class UnsafePatternError(ValueError):
+    """Raised when a user-supplied regex is rejected as unsafe to execute."""
+
+
+class PatternTimeoutError(Exception):
+    """Raised when a regex match exceeds :data:`REGEX_TIMEOUT_SECONDS`."""
+
+
+def _looks_catastrophic(pattern: str) -> bool:
+    r"""Report whether a pattern has a shape known to backtrack badly.
+
+    This is a deliberately coarse heuristic used only when the ``regex``
+    module (and therefore a real execution timeout) is unavailable. It
+    rejects nested quantifiers such as ``(x+)+`` and quantified
+    alternations such as ``(a|a)*``.
+
+    Implemented as a single left-to-right scan rather than a regular
+    expression: matching this shape with a regex needs nested character
+    classes whose runtime grows quadratically with the input, which would
+    make the ReDoS guard a ReDoS vector itself. The scan below is O(n) and
+    allocates nothing.
+
+    It errs towards refusing: some nested shapes it rejects would in fact
+    run fine. That trade is deliberate -- this path is only reached when no
+    execution timeout is available, where a false refusal costs a search
+    and a false pass can cost the server. It also tracks escaping and
+    character classes, so ``\(x+\)+`` and ``[a*+]+`` are correctly
+    allowed where a regex-based check rejected them.
+
+    Args:
+        pattern: The raw, user-supplied regular expression source.
+
+    Returns:
+        True if the pattern should be refused.
+    """
+    # Track, per open group, whether it contains a quantifier or an
+    # alternation. When the group closes and is itself quantified, that is
+    # the nested-quantifier shape we refuse.
+    risky_stack: list[bool] = []
+    escaped = False
+    in_class = False
+    index = 0
+    length = len(pattern)
+
+    while index < length:
+        char = pattern[index]
+
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif in_class:
+            # Inside [...] the quantifier characters are literals.
+            if char == "]":
+                in_class = False
+        elif char == "[":
+            in_class = True
+        elif char == "(":
+            risky_stack.append(False)
+        elif char == ")":
+            risky = risky_stack.pop() if risky_stack else False
+            # Skip whitespace between the group and its quantifier.
+            probe = index + 1
+            while probe < length and pattern[probe].isspace():
+                probe += 1
+            quantified = probe < length and pattern[probe] in _QUANTIFIER_CHARS
+            if risky and quantified:
+                return True
+            # A quantified group is itself a risk marker for any group
+            # enclosing it.
+            if quantified and risky_stack:
+                risky_stack[-1] = True
+        elif char in _QUANTIFIER_CHARS or char == "|":
+            if risky_stack:
+                risky_stack[-1] = True
+
+        index += 1
+
+    return False
+
+
+def compile_search_pattern(
+    query: str,
+    *,
+    use_regex: bool,
+    case_sensitive: bool,
+) -> Any:
+    """Compile a user-supplied search query into a safe pattern object.
+
+    Literal searches are escaped, so they are always safe. Regex searches
+    are compiled with the ``regex`` module when available, which allows a
+    per-call execution timeout; otherwise they are screened with
+    :func:`_looks_catastrophic` and refused if they look dangerous.
+
+    Args:
+        query: Raw search text or regular expression from the client.
+        use_regex: True to treat ``query`` as a regular expression.
+        case_sensitive: True for a case-sensitive match.
+
+    Returns:
+        A compiled pattern object (``regex.Pattern`` or ``re.Pattern``).
+
+    Raises:
+        UnsafePatternError: The pattern is refused as likely-catastrophic.
+        re.error: The pattern is not valid regular expression syntax.
+    """
+    engine = _regex_module if HAS_REGEX_TIMEOUT else re
+    flags = 0 if case_sensitive else engine.IGNORECASE
+
+    if not use_regex:
+        # A literal search can never backtrack pathologically once escaped.
+        return engine.compile(engine.escape(query), flags)
+
+    if not HAS_REGEX_TIMEOUT and _looks_catastrophic(query):
+        raise UnsafePatternError(
+            "Pattern rejected: nested quantifiers can cause excessive "
+            "backtracking. Install the 'regex' package to allow it, or "
+            "simplify the expression."
+        )
+
+    return engine.compile(query, flags)
+
+
+def search_with_timeout(pattern: Any, text: str) -> bool:
+    """Run ``pattern`` against ``text`` under a wall-clock budget.
+
+    Args:
+        pattern: A compiled pattern from :func:`compile_search_pattern`.
+        text: The subject string (a single log line or message).
+
+    Returns:
+        True if the pattern matches.
+
+    Raises:
+        PatternTimeoutError: Matching exceeded
+            :data:`REGEX_TIMEOUT_SECONDS`. Only possible when the ``regex``
+            module is installed; the stdlib fallback cannot interrupt a
+            running match.
+    """
+    if not HAS_REGEX_TIMEOUT:
+        return bool(pattern.search(text))
+
+    try:
+        return bool(pattern.search(text, timeout=REGEX_TIMEOUT_SECONDS))
+    except TimeoutError as exc:
+        # regex>=2022 raises the builtin TimeoutError on expiry.
+        raise PatternTimeoutError(
+            "Search pattern exceeded its time budget"
+        ) from exc

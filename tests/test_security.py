@@ -21,6 +21,7 @@ from octoprint_logmonitor.security import (
     MAX_SEARCH_LIMIT,
     VALID_SEVERITY_LEVELS,
     RateLimiter,
+    _looks_catastrophic,
     check_file_size,
     is_safe_path,
     mask_sensitive_data,
@@ -435,6 +436,79 @@ class TestRateLimiter(unittest.TestCase):
         for _ in range(100):
             self.assertTrue(limiter.is_allowed("client"))
         self.assertFalse(limiter.is_allowed("client"))
+
+
+class TestCatastrophicPatternHeuristic(unittest.TestCase):
+    """Tests for the no-regex fallback that screens dangerous patterns.
+
+    This guard runs only when the ``regex`` module (and therefore a real
+    execution timeout) is unavailable. It used to be a regular expression
+    itself, which CodeQL flagged as py/polynomial-redos: matching the
+    nested-quantifier shape needed character classes whose runtime grew
+    quadratically, so the ReDoS guard was a ReDoS vector. It is now a
+    single linear scan.
+    """
+
+    def test_rejects_nested_quantifiers(self):
+        """Classic catastrophic shapes must be refused."""
+        for pattern in (
+            r"(x+)+$",
+            r"(a*)*$",
+            r"(a|a)*",
+            r"(ab|cd){2,}",
+            r"(\d+)+",
+        ):
+            with self.subTest(pattern=pattern):
+                self.assertTrue(_looks_catastrophic(pattern))
+
+    def test_accepts_ordinary_patterns(self):
+        """Legitimate searches must not be refused."""
+        for pattern in (
+            r"ERROR.*timeout",
+            r"^\d+ fail",
+            r"(abc)",
+            r"(abc)+",
+            r"foo|bar",
+        ):
+            with self.subTest(pattern=pattern):
+                self.assertFalse(_looks_catastrophic(pattern))
+
+    def test_quantifiers_inside_character_class_are_literal(self):
+        """``[a*+]+`` quantifies a class, not a group -- it is safe."""
+        self.assertFalse(_looks_catastrophic(r"[a*+]+"))
+
+    def test_escaped_parentheses_are_not_groups(self):
+        r"""``\(x+\)+`` matches literal brackets and cannot nest.
+
+        The previous regex-based heuristic rejected this; the scan tracks
+        escaping and allows it.
+        """
+        self.assertFalse(_looks_catastrophic(r"\(x+\)+"))
+
+    def test_runs_in_linear_time(self):
+        """The guard must not blow up on its own worst-case input.
+
+        CodeQL's reported attack string is "(" followed by many "*". The
+        old regex took ~6.7s at 50k characters; a linear scan stays in the
+        low milliseconds. The bound is loose so the test is not flaky on
+        slow CI runners -- it is checking the growth curve, not a budget.
+        """
+        payload = "(" + "*" * 50000
+        start = time.monotonic()
+        _looks_catastrophic(payload)
+        elapsed = time.monotonic() - start
+        self.assertLess(
+            elapsed,
+            1.0,
+            f"heuristic took {elapsed:.2f}s on a 50k input; it should be "
+            "linear",
+        )
+
+    def test_unbalanced_parentheses_do_not_crash(self):
+        """Malformed input must return a verdict, not raise."""
+        for pattern in ("(((", ")))", "(a+", "a+)", "", "("):
+            with self.subTest(pattern=pattern):
+                self.assertIsInstance(_looks_catastrophic(pattern), bool)
 
 
 if __name__ == "__main__":

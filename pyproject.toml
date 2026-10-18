@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "OctoPrint-LogMonitor"
-version = "0.2.4"
+version = "0.2.5"
 description = "Live log streaming and searching for OctoPrint with severity alerting"
 license = "AGPL-3.0-or-later"
 authors = [
@@ -15,7 +15,16 @@ readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.9, <4"
 
 # any additional requirements (besides OctoPrint) should be listed here
-dependencies = []
+#
+# `regex` is a drop-in replacement for the stdlib `re` that supports a
+# per-call execution timeout. Without it, a user-supplied search pattern can
+# trigger catastrophic backtracking and pin a CPU core (ReDoS). The plugin
+# degrades safely when it is absent -- patterns with nested quantifiers are
+# then refused outright -- but installing it keeps the regex search feature
+# fully usable.
+dependencies = [
+    "regex>=2022.1.18",
+]
 
 [tool.setuptools]
 include-package-data = true
@@ -37,7 +46,8 @@ develop = [
     "build",
     "pytest",
     "pytest-cov",
-    "go-task-bin"
+    "go-task-bin",
+    "flask"
 ]
 
 [tool.black]
