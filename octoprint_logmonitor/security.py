@@ -348,13 +348,8 @@ class RateLimiter:
 # Regex execution safety (ReDoS mitigation)
 # ---------------------------------------------------------------------------
 
-#: Heuristic markers for patterns prone to catastrophic backtracking: a
-#: quantified group that itself contains a quantifier or an alternation,
-#: e.g. ``(x+)+``, ``(a*)*``, ``(a|a)*``, ``(ab|cd){2,}``. Only used as a
-#: fallback when the ``regex`` module is unavailable.
-_NESTED_QUANTIFIER_RE = re.compile(
-    r"\([^()]*(?:[*+]|\{\d+(?:,\d*)?\}|\|)[^()]*\)\s*(?:[*+]|\{\d+(?:,\d*)?\})"
-)
+#: Characters that act as a quantifier directly after a group.
+_QUANTIFIER_CHARS = frozenset("*+{")
 
 
 #: Exception type(s) raised for invalid regex syntax by whichever engine is
@@ -374,12 +369,25 @@ class PatternTimeoutError(Exception):
 
 
 def _looks_catastrophic(pattern: str) -> bool:
-    """Report whether a pattern has a shape known to backtrack badly.
+    r"""Report whether a pattern has a shape known to backtrack badly.
 
     This is a deliberately coarse heuristic used only when the ``regex``
     module (and therefore a real execution timeout) is unavailable. It
     rejects nested quantifiers such as ``(x+)+`` and quantified
     alternations such as ``(a|a)*``.
+
+    Implemented as a single left-to-right scan rather than a regular
+    expression: matching this shape with a regex needs nested character
+    classes whose runtime grows quadratically with the input, which would
+    make the ReDoS guard a ReDoS vector itself. The scan below is O(n) and
+    allocates nothing.
+
+    It errs towards refusing: some nested shapes it rejects would in fact
+    run fine. That trade is deliberate -- this path is only reached when no
+    execution timeout is available, where a false refusal costs a search
+    and a false pass can cost the server. It also tracks escaping and
+    character classes, so ``\(x+\)+`` and ``[a*+]+`` are correctly
+    allowed where a regex-based check rejected them.
 
     Args:
         pattern: The raw, user-supplied regular expression source.
@@ -387,7 +395,50 @@ def _looks_catastrophic(pattern: str) -> bool:
     Returns:
         True if the pattern should be refused.
     """
-    return bool(_NESTED_QUANTIFIER_RE.search(pattern))
+    # Track, per open group, whether it contains a quantifier or an
+    # alternation. When the group closes and is itself quantified, that is
+    # the nested-quantifier shape we refuse.
+    risky_stack: list[bool] = []
+    escaped = False
+    in_class = False
+    index = 0
+    length = len(pattern)
+
+    while index < length:
+        char = pattern[index]
+
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif in_class:
+            # Inside [...] the quantifier characters are literals.
+            if char == "]":
+                in_class = False
+        elif char == "[":
+            in_class = True
+        elif char == "(":
+            risky_stack.append(False)
+        elif char == ")":
+            risky = risky_stack.pop() if risky_stack else False
+            # Skip whitespace between the group and its quantifier.
+            probe = index + 1
+            while probe < length and pattern[probe].isspace():
+                probe += 1
+            quantified = probe < length and pattern[probe] in _QUANTIFIER_CHARS
+            if risky and quantified:
+                return True
+            # A quantified group is itself a risk marker for any group
+            # enclosing it.
+            if quantified and risky_stack:
+                risky_stack[-1] = True
+        elif char in _QUANTIFIER_CHARS or char == "|":
+            if risky_stack:
+                risky_stack[-1] = True
+
+        index += 1
+
+    return False
 
 
 def compile_search_pattern(
