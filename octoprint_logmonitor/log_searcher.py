@@ -13,7 +13,15 @@ from collections import deque
 from typing import Any, ClassVar, Optional
 
 from .log_parser import parse_line
-from .security import MAX_QUERY_LENGTH
+from .security import (
+    MAX_QUERY_LENGTH,
+    MAX_SCAN_LINES,
+    PATTERN_SYNTAX_ERRORS,
+    PatternTimeoutError,
+    UnsafePatternError,
+    compile_search_pattern,
+    search_with_timeout,
+)
 
 
 class LogSearcher:
@@ -122,15 +130,22 @@ class LogSearcher:
             }
         if query:
             try:
-                if use_regex:
-                    flags = 0 if case_sensitive else re.IGNORECASE
-                    search_pattern = re.compile(query, flags)
-                else:
-                    # Escape regex special characters for literal search
-                    escaped_query = re.escape(query)
-                    flags = 0 if case_sensitive else re.IGNORECASE
-                    search_pattern = re.compile(escaped_query, flags)
-            except re.error as e:
+                search_pattern = compile_search_pattern(
+                    query,
+                    use_regex=use_regex,
+                    case_sensitive=case_sensitive,
+                )
+            except UnsafePatternError as e:
+                if self._logger:
+                    self._logger.warning(f"Unsafe regex rejected: {e}")
+                return {
+                    "results": [],
+                    "total": 0,
+                    "offset": offset,
+                    "limit": limit,
+                    "error": str(e),
+                }
+            except PATTERN_SYNTAX_ERRORS as e:
                 if self._logger:
                     self._logger.error(f"Invalid regex pattern: {e}")
                 return {
@@ -155,8 +170,21 @@ class LogSearcher:
             # list of [entry, remaining_line_count] pairs.
             pending_after: list[list[Any]] = []
 
+            truncated = False
             with open(filepath, encoding="utf-8", errors="replace") as f:
-                for line in f:
+                for lineno, line in enumerate(f, 1):
+                    # Bound total work per request: even with a per-match
+                    # timeout, an unbounded file would still let one request
+                    # burn arbitrary CPU.
+                    if lineno > MAX_SCAN_LINES:
+                        truncated = True
+                        if self._logger:
+                            self._logger.warning(
+                                f"Search stopped after {MAX_SCAN_LINES} "
+                                f"lines in {filepath}"
+                            )
+                        break
+
                     parsed = self._parse_line(line)
 
                     # Feed after-context of earlier matches first, so the
@@ -204,13 +232,33 @@ class LogSearcher:
                     if before_buffer is not None:
                         before_buffer.append(parsed)
 
-            return {
+            response: dict[str, Any] = {
                 "results": results,
                 "total": total_matches,
                 "offset": offset,
                 "limit": limit,
             }
+            if truncated:
+                # Signal that `total` is a lower bound, not the real count.
+                response["truncated"] = True
+                response["scan_limit"] = MAX_SCAN_LINES
+            return response
 
+        except PatternTimeoutError:
+            if self._logger:
+                self._logger.warning(
+                    f"Search aborted: pattern too slow for query {query!r}"
+                )
+            return {
+                "results": [],
+                "total": 0,
+                "offset": offset,
+                "limit": limit,
+                "error": (
+                    "Search pattern took too long to evaluate. "
+                    "Please simplify the expression."
+                ),
+            }
         except OSError as e:
             if self._logger:
                 self._logger.error(f"Error searching log file: {e}")
@@ -257,11 +305,12 @@ class LogSearcher:
         if not search_pattern:
             return True
 
-        # Search in message field, fall back to full raw line
-        return bool(
-            search_pattern.search(parsed["message"])
-            or search_pattern.search(parsed["raw"])
-        )
+        # Search in message field, fall back to full raw line.
+        # search_with_timeout bounds each attempt so a pathological
+        # user-supplied pattern cannot pin a CPU core (ReDoS).
+        return search_with_timeout(
+            search_pattern, parsed["message"]
+        ) or search_with_timeout(search_pattern, parsed["raw"])
 
     def get_file_stats(self, filepath: str) -> dict[str, Any]:
         """Get statistics about a log file.
