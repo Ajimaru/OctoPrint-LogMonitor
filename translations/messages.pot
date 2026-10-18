@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-18 12:56+0200\n"
+"POT-Creation-Date: 2026-10-18 17:34+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -141,6 +141,10 @@ msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:146
 msgid "Export TXT"
+msgstr ""
+
+#: octoprint_logmonitor/static/js/logmonitor.js:1004
+msgid "Failed to download log file"
 msgstr ""
 
 #: octoprint_logmonitor/templates/logmonitor_tab.jinja2:71
