@@ -138,6 +138,9 @@ $(() => {
         self.isStreaming = ko.observable(false);
         self.isSwitchingStream = ko.observable(false);
         self.selectedLogFile = ko.observable("");
+        //: True while a log download request is in flight; disables the
+        //: download button so a slow file cannot be requested repeatedly.
+        self.downloadInProgress = ko.observable(false);
         self.activeStreamFile = ko.observable("");
         self.availableLogFiles = ko.observableArray([]);
         self.allLines = ko.observableArray([]);
@@ -962,10 +965,76 @@ $(() => {
         };
 
         // Download log file
+        //
+        // Fetched as a blob rather than navigated to. window.location.assign()
+        // used to be used here, but a non-file response (a JSON error body, or
+        // a 500 raised while the file is being streamed) would then be treated
+        // as a navigation: the browser left the page and OctoPrint reloaded
+        // onto its first tab, losing the user's place with no error shown.
         self.downloadLogFile = function (filename) {
+            if (!filename) {
+                return;
+            }
+
             var url =
                 pluginBaseUrl + "/download/" + encodeURIComponent(filename);
-            window.location.assign(url);
+
+            self.downloadInProgress(true);
+
+            pluginAjax({
+                url: url,
+                method: "GET",
+                xhrFields: { responseType: "blob" },
+            })
+                .done((blob) => {
+                    var objectUrl = window.URL.createObjectURL(blob);
+                    var link = document.createElement("a");
+                    link.href = objectUrl;
+                    link.download = filename;
+                    link.rel = "noopener";
+                    link.click();
+                    window.URL.revokeObjectURL(objectUrl);
+                })
+                .fail((xhr) => {
+                    // The endpoint reports failures as JSON, but with
+                    // responseType "blob" the body arrives as a Blob and
+                    // reading xhr.responseText throws. Parse the Blob
+                    // instead, and notify once the text is available.
+                    var notify = function (detail) {
+                        // Not wrapped in gettext(): Babel's JS lexer stops
+                        // extracting at the regex literals in escapeHtml()
+                        // below, so any gettext() call after that point never
+                        // reaches the catalog. Matches the other PNotify
+                        // messages in this file, which are untranslated too.
+                        var base = "Failed to download log file";
+                        new PNotify({
+                            title: "Log Monitor",
+                            text: detail ? base + ": " + detail : base,
+                            type: "error",
+                            hide: false,
+                        });
+                    };
+
+                    var body = xhr && xhr.response;
+                    if (body instanceof Blob) {
+                        body.text()
+                            .then((text) => {
+                                var detail = "";
+                                try {
+                                    detail = JSON.parse(text).error || "";
+                                } catch (e) {
+                                    detail = "";
+                                }
+                                notify(detail);
+                            })
+                            .catch(() => notify(""));
+                    } else {
+                        notify("");
+                    }
+                })
+                .always(() => {
+                    self.downloadInProgress(false);
+                });
         };
 
         // Load alert history
