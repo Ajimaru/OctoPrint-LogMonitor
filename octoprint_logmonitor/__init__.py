@@ -6,6 +6,7 @@ with severity-based alerting.
 
 from __future__ import annotations
 
+import io
 import json
 import logging
 import os
@@ -21,6 +22,7 @@ from ._version import VERSION as PLUGIN_VERSION
 from .log_searcher import LogSearcher
 from .log_tailer import LogTailer
 from .security import (
+    MAX_DOWNLOAD_BYTES,
     MAX_HISTORY_LIMIT,
     MAX_SEARCH_LIMIT,
     RateLimiter,
@@ -1050,8 +1052,36 @@ class LogmonitorPlugin(
             if not os.path.isfile(filepath):
                 return flask.jsonify({"error": "File not found"}), 404
 
+            if not check_file_size(filepath, MAX_DOWNLOAD_BYTES):
+                size_mb = MAX_DOWNLOAD_BYTES // (1024 * 1024)
+                return (
+                    flask.jsonify(
+                        {
+                            "error": (
+                                f"File is too large to download "
+                                f"(limit {size_mb} MiB)"
+                            )
+                        }
+                    ),
+                    413,
+                )
+
+            # Serve a fixed-size snapshot rather than handing send_file() the
+            # path. A live log keeps growing: send_file() stats the file to
+            # set Content-Length, but the body is only read afterwards, while
+            # the response is streamed. If the file grew in between, the body
+            # is longer than the advertised length and Tornado aborts the
+            # response with "Tried to write more data than Content-Length",
+            # which escapes this handler (it is raised after the return) and
+            # surfaces as "Exception in WSGI application".
+            with open(filepath, "rb") as handle:
+                payload = handle.read()
+
             return flask.send_file(
-                filepath, as_attachment=True, download_name=filename
+                io.BytesIO(payload),
+                as_attachment=True,
+                download_name=filename,
+                mimetype="text/plain",
             )
 
         except Exception as e:

@@ -33,6 +33,13 @@ except ImportError:  # pragma: no cover - exercised in the no-regex env
 #: to prevent excessive memory/CPU usage.
 MAX_FILE_SIZE_BYTES: int = 1024 * 1024 * 1024  # 1 GiB
 
+#: Hard upper bound for a log file served through the download endpoint.
+#: That endpoint buffers the file in memory to pin Content-Length against a
+#: file that is still being written to, so this bound is about available RAM,
+#: not disk: OctoPrint commonly runs on a Pi with well under 1 GiB free.
+#: Larger files are refused rather than risking the server process.
+MAX_DOWNLOAD_BYTES: int = 64 * 1024 * 1024  # 64 MiB
+
 #: Hard upper bound for the ``limit`` query parameter in search requests.
 MAX_SEARCH_LIMIT: int = 1000
 

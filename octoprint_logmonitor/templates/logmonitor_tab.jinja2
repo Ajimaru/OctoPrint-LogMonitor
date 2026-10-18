@@ -29,7 +29,7 @@
                         {{ _("Start Streaming") }}
                     </button>
                     <button class="btn btn-default"
-                            data-bind="click: function () { return downloadLogFile(selectedLogFile()); }, enable: selectedLogFile()">
+                            data-bind="click: function () { return downloadLogFile(selectedLogFile()); }, enable: selectedLogFile() && !downloadInProgress()">
                         {{ _("Download Log") }}
                     </button>
                     <button class="btn btn-default" data-bind="click: clearDisplay">{{ _("Clear") }}</button>
