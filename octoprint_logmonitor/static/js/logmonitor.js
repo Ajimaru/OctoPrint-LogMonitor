@@ -1001,12 +1001,7 @@ $(() => {
                     // reading xhr.responseText throws. Parse the Blob
                     // instead, and notify once the text is available.
                     var notify = function (detail) {
-                        // Not wrapped in gettext(): Babel's JS lexer stops
-                        // extracting at the regex literals in escapeHtml()
-                        // below, so any gettext() call after that point never
-                        // reaches the catalog. Matches the other PNotify
-                        // messages in this file, which are untranslated too.
-                        var base = "Failed to download log file";
+                        var base = gettext("Failed to download log file");
                         new PNotify({
                             title: "Log Monitor",
                             text: detail ? base + ": " + detail : base,
