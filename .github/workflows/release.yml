@@ -2,8 +2,7 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*"
+    tags: ["v*", "[0-9]*"]
 
 permissions:
   contents: write
@@ -29,17 +28,53 @@ jobs:
           python -m pip install build
 
       - name: Build sdist and wheel
-        run: |
-          python -m build
+        run: python -m build
 
-      - name: Create zip assets (versioned + latest)
+      - name: Validate paths (prevent directory traversal)
+        run: |
+          for f in dist/*; do
+            rel="$(realpath --relative-to="$(pwd)" "$f")"
+            case "$rel" in
+              .*) echo "Suspicious path: $f ($rel)"; exit 1 ;;
+            esac
+          done
+
+      - name: Determine prerelease
+        id: prerelease
+        run: |
+          TAG="${{ github.ref_name }}"
+          TAG_LOWER="$(printf '%s' "$TAG" | tr '[:upper:]' '[:lower:]')"
+          # Prerelease = a/b/rc/dev segment in the VERSION part of the tag
+          # (PEP 440 style, digit or separator before it, e.g. 0.2.2rc1 or
+          # 0.2.2.dev6). The match must end at the tag end or at the local
+          # part ("+hash"), so a commit hash that happens to end in e.g.
+          # "b1" can never flip the detection.
+          if echo "$TAG_LOWER" | grep -qE '(^|[-.0-9])(a|b|rc|dev)([.-]?[0-9]+)?($|\+)'; then
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Stage release artifacts
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p release_zips
 
+          # Keep the wheel's original, PEP 427-compliant filename
+          # ({name}-{version}-{pytag}-{abitag}-{platformtag}.whl). pip rejects
+          # any renamed wheel ("wrong number of parts"), so it must not be
+          # aliased — both the OctoPrint plugin manager and pip parse the name.
+          cp dist/*.whl dist/*.tar.gz release_zips/
+
+          # Also publish a source .zip (versioned + a stable -latest.zip). A zip
+          # has no strict filename parser, so the OctoPrint plugin manager can
+          # install it directly from a fixed "…-latest.zip" URL. Build it from
+          # the sdist tarball rather than the working tree so it matches the
+          # released source exactly.
           version="${GITHUB_REF_NAME#v}"
-          zip_versioned="dist/OctoPrint-LogMonitor-${version}.zip"
-          zip_latest="dist/OctoPrint-LogMonitor-latest.zip"
+          zip_versioned="release_zips/OctoPrint-LogMonitor-${version}.zip"
+          zip_latest="release_zips/OctoPrint-LogMonitor-latest.zip"
 
           shopt -s nullglob
           sdist_candidates=(dist/*"${version}".tar.gz)
@@ -49,11 +84,6 @@ jobs:
             exit 1
           fi
           sdist="${sdist_candidates[0]}"
-
-          if [[ ! -f "$sdist" ]]; then
-            echo "Expected sdist not found: $sdist" >&2
-            exit 1
-          fi
 
           python - "$sdist" "$zip_versioned" <<'PY'
           import sys
@@ -72,8 +102,8 @@ jobs:
                   if not member.isfile():
                       continue
 
-                  # Defensive: ensure tar member paths cannot become path traversal entries in the zip.
-                  # Tar archives always use POSIX-style paths.
+                  # Defensive: never let a tar member become a path-traversal
+                  # entry in the zip. Tar archives always use POSIX paths.
                   member_path = PurePosixPath(member.name)
                   if (
                       member_path.is_absolute()
@@ -86,11 +116,10 @@ jobs:
                   extracted = tf.extractfile(member)
                   if extracted is None:
                       continue
-                  data = extracted.read()
 
                   zi = zipfile.ZipInfo(str(member_path))
                   zi.external_attr = (member.mode & 0o777) << 16
-                  zf.writestr(zi, data)
+                  zf.writestr(zi, extracted.read())
           PY
 
           cp -f "$zip_versioned" "$zip_latest"
@@ -99,60 +128,21 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: dist
-          path: dist/*
+          path: release_zips/*
 
-      - name: Generate release notes
-        uses: actions/github-script@v9
+      - name: Create GitHub release (draft)
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
-          script: |
-            const fs = require("fs");
-
-            const tag = process.env.GITHUB_REF_NAME;
-            const title = String(tag || "")
-              .replace(/^OctoPrint[-_\s]?LogMonitor[-_\s]?/i, "")
-              .trim() || tag;
-
-            const { owner, repo } = context.repo;
-            const response = await github.rest.repos.generateReleaseNotes({
-              owner,
-              repo,
-              tag_name: tag,
-            });
-
-            const assets = [
-              "wheel (.whl)",
-              "sdist (.tar.gz)",
-              "versioned zip (.zip)",
-              "OctoPrint-LogMonitor-latest.zip",
-            ];
-
-            const body = [
-              title,
-              "",
-              response.data.body?.trim() || "",
-              "",
-              "Assets:",
-              ...assets.map((a) => `- ${a}`),
-              "",
-            ].join("\n");
-
-            fs.writeFileSync("release_notes.md", body, { encoding: "utf-8" });
-            fs.writeFileSync("release_title.txt", title, { encoding: "utf-8" });
-
-      - name: Read release title
-        id: release_title
-        run: |
-          title=$(cat release_title.txt)
-          echo "title=$title" >> "$GITHUB_OUTPUT"
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
-        with:
-          name: ${{ steps.release_title.outputs.title }}
-          draft: false
-          prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'a') || contains(github.ref_name, 'b') }}
-          body_path: release_notes.md
-          files: dist/*
+          files: |
+            release_zips/*
+          # Notes are grouped by PR label; the categories live in
+          # .github/release.yml.
+          generate_release_notes: true
+          # Always a draft: a release is published by hand once the notes and
+          # the attached artifacts have been eyeballed. Pushing a tag must
+          # never publish on its own.
+          draft: true
+          prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
 
       # Optional: Publish to PyPI
       #
